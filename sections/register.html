@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - DealerClub</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/auth.css"> <!-- Nuevo CSS para autenticación -->
+</head>
+<body>
+    <header class="auth-header">
+        <div class="logo">
+            <a href="../index.html">DealerClub</a>
+        </div>
+    </header>
+
+    <main class="auth-main">
+        <section id="register-section" class="auth-container">
+            <h2>Regístrate como Estudiante</h2>
+            <form id="register-form" class="auth-form">
+                <div class="form-group">
+                    <label for="registerEmail">Correo Electrónico:</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Contraseña:</label>
+                    <input type="password" id="registerPassword" required>
+                    <small>Mínimo 6 caracteres.</small>
+                </div>
+                <div class="form-group">
+                    <label for="registerFullName">Nombre Completo:</label>
+                    <input type="text" id="registerFullName" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Crear Cuenta</button>
+                <div id="register-message" class="message"></div>
+                <p class="auth-link">¿Ya tienes cuenta? <a href="login.html">Inicia Sesión aquí</a></p>
+            </form>
+        </section>
+    </main>
+
+    <footer class="auth-footer">
+        <p>&copy; 2025 DealerClub. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
+            authDomain: "dealerclubpe.firebaseapp.com",
+            projectId: "dealerclubpe",
+            storageBucket: "dealerclubpe.firebasestorage.app",
+            messagingSenderId: "330568352415",
+            appId: "1:330568352415:web:9fcd7651698bfafac998aa",
+            measurementId: "G-PF3W9NDSDP"
+        };
+        const appIdForFirestorePath = 'default-app-id';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.firebaseAuth = auth;
+        window.firebaseCreateUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.firebaseDb = db;
+        window.firebaseCollection = collection;
+        window.firebaseDoc = doc;
+        window.firebaseSetDoc = setDoc;
+        window.appId = appIdForFirestorePath;
+    </script>
+    <script type="module" src="../assets/js/register.js"></script> <!-- Nuevo JS para registro -->
+</body>
+</html>

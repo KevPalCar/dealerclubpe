@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - DealerClub</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/auth.css"> <!-- Nuevo CSS para autenticación -->
+</head>
+<body>
+    <header class="auth-header">
+        <div class="logo">
+            <a href="../index.html">DealerClub</a>
+        </div>
+    </header>
+
+    <main class="auth-main">
+        <section id="login-section" class="auth-container">
+            <h2>Inicia Sesión en tu Cuenta</h2>
+            <form id="login-form" class="auth-form">
+                <div class="form-group">
+                    <label for="loginEmail">Correo Electrónico:</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Contraseña:</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+                <div id="login-message" class="message"></div>
+                <p class="auth-link">¿No tienes cuenta? <a href="register.html">Regístrate aquí</a></p>
+            </form>
+        </section>
+    </main>
+
+    <footer class="auth-footer">
+        <p>&copy; 2025 DealerClub. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
+            authDomain: "dealerclubpe.firebaseapp.com",
+            projectId: "dealerclubpe",
+            storageBucket: "dealerclubpe.firebasestorage.app",
+            messagingSenderId: "330568352415",
+            appId: "1:330568352415:web:9fcd7651698bfafac998aa",
+            measurementId: "G-PF3W9NDSDP"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        window.firebaseAuth = auth;
+        window.firebaseSignInWithEmailAndPassword = signInWithEmailAndPassword;
+    </script>
+    <script type="module" src="../assets/js/login.js"></script> <!-- Nuevo JS para login -->
+</body>
+</html>

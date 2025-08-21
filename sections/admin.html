@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - DealerClub</title>
+    
+    <!-- Enlaces a tus hojas de estilo (rutas CORRECTAS) -->
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/admin.css"> 
+    
+    <!-- NOTA: Las importaciones de fuentes y Font Awesome ya están en main.css -->
+</head>
+<body>
+    <header class="admin-header">
+        <div class="logo">
+            <a href="../index.html">DealerClub Admin</a>
+        </div>
+        <nav class="admin-nav" id="admin-nav-menu" style="display: none;">
+            <ul>
+                <li><a href="#" id="show-quotes-btn" class="current">Cotizaciones</a></li>
+                <li><a href="#" id="show-courses-btn">Cursos</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="admin-main">
+        <section id="login-section" class="login-container">
+            <h2>Acceso al Panel de Administración</h2>
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="password">Contraseña:</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Ingresar</button>
+                <div id="login-message" class="message"></div>
+            </form>
+        </section>
+
+        <!-- Sección de Gestión de Cotizaciones -->
+        <section id="quotes-dashboard-section" class="dashboard-container">
+            <h2>Solicitudes de Cotización Recientes</h2>
+            <div id="global-table-message" class="message" style="display: none;"></div>
+            <div id="loading-quotes" class="loading-message">Cargando solicitudes...</div>
+            <div class="table-container">
+                <table id="quotes-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Teléfono</th>
+                            <th>Tipo de Evento</th>
+                            <th>Fecha Evento</th>
+                            <th>Detalles</th>
+                            <th>Contexto</th>
+                            <th>Estado</th> 
+                            <th>Acciones</th> 
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Las filas de las cotizaciones se cargarán aquí dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="no-quotes-message" class="no-data-message" style="display: none;">
+                No hay solicitudes de cotización en este momento.
+            </div>
+        </section>
+
+        <!-- Sección de Gestión de Cursos -->
+        <section id="courses-management-section" class="dashboard-container" style="display: none;">
+            <h2>Gestión de Cursos</h2>
+            <button id="add-course-btn" class="btn btn-primary add-item-btn">Añadir Nuevo Curso</button>
+            <div id="global-course-message" class="message" style="display: none;"></div>
+            <div id="loading-courses" class="loading-message">Cargando cursos...</div>
+            <div class="table-container">
+                <table id="courses-table">
+                    <thead>
+                        <tr>
+                            <th>Orden</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Precio</th>
+                            <th>Horario</th>
+                            <th>Duración</th>
+                            <th>Juegos Incluidos</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Las filas de los cursos se cargarán aquí dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="no-courses-message" class="no-data-message" style="display: none;">
+                No hay cursos definidos en este momento.
+            </div>
+        </section>
+    </main>
+
+    <footer class="admin-footer">
+        <p>&copy; 2025 DealerClub Admin. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- Modal para Añadir/Editar Curso -->
+    <div id="courseModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2 id="courseModalTitle">Añadir Nuevo Curso</h2>
+            <form id="courseForm">
+                <input type="hidden" id="courseId" name="courseId"> <!-- Para edición -->
+                <div class="form-group">
+                    <label for="courseOrder">Orden:</label>
+                    <input type="number" id="courseOrder" name="order" required>
+                </div>
+                <div class="form-group">
+                    <label for="courseName">Nombre del Curso:</label>
+                    <input type="text" id="courseName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="courseDescription">Descripción:</label>
+                    <textarea id="courseDescription" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="coursePrice">Precio:</label>
+                    <input type="text" id="coursePrice" name="price" required>
+                </div>
+                <div class="form-group">
+                    <label for="courseSchedule">Horario:</label>
+                    <input type="text" id="courseSchedule" name="schedule">
+                </div>
+                <div class="form-group">
+                    <label for="courseDuration">Duración:</label>
+                    <input type="text" id="courseDuration" name="duration">
+                </div>
+                <div class="form-group">
+                    <label for="courseGames">Juegos Incluidos (separados por coma):</label>
+                    <input type="text" id="courseGames" name="gamesIncluded">
+                    <small>(Ej: Blackjack, Ruleta Europea, Poker Caribeño)</small>
+                </div>
+                <button type="submit" class="btn btn-primary" id="saveCourseBtn">Guardar Curso</button>
+                <div id="courseFormMessage" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE (mantener al final del body) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; // Importar addDoc y deleteDoc
+
+        // 🚨 IMPORTANTE: Pega aquí TU configuración real de Firebase SDK.
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+  apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY",
+  authDomain: "dealerclubpe.firebaseapp.com",
+  projectId: "dealerclubpe",
+  storageBucket: "dealerclubpe.firebasestorage.app",
+  messagingSenderId: "330568352415",
+  appId: "1:330568352415:web:9fcd7651698bfafac998aa",
+  measurementId: "G-PF3W9NDSDP"
+};
+
+        const appIdForFirestorePath = 'default-app-id'; 
+        const initialAuthToken = null; 
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        window.firebaseApp = app;
+        window.firebaseDb = db;
+        window.firebaseAuth = auth;
+        window.firebaseGetDocs = getDocs; 
+        window.firebaseCollection = collection;
+        window.firebaseDoc = doc; 
+        window.firebaseUpdateDoc = updateDoc; 
+        window.firebaseAddDoc = addDoc; // Exportar addDoc
+        window.firebaseDeleteDoc = deleteDoc; // Exportar deleteDoc
+        window.appId = appIdForFirestorePath;
+        window.initialAuthToken = initialAuthToken; 
+        window.signInAnonymously = signInAnonymously; 
+        window.signInWithCustomToken = signInWithCustomToken;
+    </script>
+    
+    <!-- TU SCRIPT JS DE LÓGICA DE PÁGINA (debe ir DESPUÉS del script de Firebase) -->
+    <script type="module" src="../assets/js/admin.js"></script>
+</body>
+</html>

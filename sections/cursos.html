@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursos - DealerClub</title>
+    
+    <!-- Enlaces a tus hojas de estilo personalizadas (Rutas CORRECTAS) -->
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/cursos.css"> 
+    
+    <!-- NOTA IMPORTANTE: Las importaciones de fuentes y Font Awesome DEBEN estar en tu archivo assets/css/main.css. -->
+</head>
+<body>
+    <!-- HEADER: Este será el contenedor principal con la imagen de fondo que abarca todo.
+          Contiene la barra de navegación y el contenido principal del hero. -->
+    <header class="hero-section"> 
+        <nav class="navbar">
+            <div class="logo">
+                <a href="../index.html">DealerClub</a> <!-- Ruta para volver a la página de inicio -->
+            </div>
+            <ul class="nav-menu">
+                <li><a href="../index.html">Inicio</a></li> 
+                <li><a href="cursos.html" class="current">Cursos</a></li>
+                <li><a href="servicios.html">Servicios</a></li>
+                <li><a href="../index.html#nosotros">Nosotros</a></li>
+                <!-- Nuevo enlace al dashboard de estudiante / login -->
+                <li><a href="student_dashboard.html" id="student-access-link">Mi Cuenta</a></li>
+            </ul>
+        </nav>
+
+        <!-- Contenido del hero (título, párrafo, botones) -->
+        <div class="hero-content text-center">
+            <h1>Conviértete en un Dealer de Élite</h1>
+            <p>Nuestros programas de formación te guiarán desde lo básico hasta la maestría en el arte del juego. ¡Tu carrera empieza aquí!</p>
+            <div class="hero-ctas">
+                <a href="#paquetes-formacion" class="btn btn-secondary">Explora nuestros niveles</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Sección de Propuesta de Paquetes de Formación Intensiva -->
+        <section id="paquetes-formacion" class="section-dark section-padded">
+            <div class="container">
+                <h2>Propuesta de Paquetes de Formación Intensiva</h2>
+                <!-- Aquí se cargarán los cursos dinámicamente desde Firestore -->
+                <div id="courses-grid-container" class="paquete-grid">
+                    <!-- Mensaje de carga mientras se obtienen los cursos -->
+                    <div id="loading-courses" style="text-align: center; color: #ffc107; font-size: 1.2em; padding: 50px;">
+                        Cargando cursos...
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Sección de Consideraciones Adicionales (con imagen de fondo) -->
+        <section class="full-screen-section content-section with-bg-image" id="consideraciones-adicionales">
+            <div class="content-wrapper">
+                <h2 class="section-title">Consideraciones Adicionales</h2>
+                <div class="consideraciones-grid">
+                    <div class="consideracion-item">
+                        <i class="fas fa-clock"></i>
+                        <h4>Horarios Flexibles</h4>
+                        <p>Diseñamos horarios que se adaptan a tu ritmo de vida, con clases disponibles por la mañana, tarde y fines de semana.</p>
+                    </div>
+                    <div class="consideracion-item">
+                        <i class="fas fa-users"></i>
+                        <h4>Grupos Reducidos</h4>
+                        <p>Nuestras clases se imparten en grupos pequeños para asegurar una atención personalizada y una práctica intensa.</p>
+                    </div>
+                    <div class="consideracion-item">
+                        <i class="fas fa-gamepad"></i>
+                        <h4>Práctica Constante</h4>
+                        <p>Contamos con mesas, fichas y barajas profesionales para que practiques en un entorno real de casino.</p>
+                    </div>
+                    <div class="consideracion-item">
+                        <i class="fas fa-certificate"></i>
+                        <h4>Certificación Oficial</h4>
+                        <p>Al finalizar el programa, obtienes un certificado que valida tus habilidades y te prepara para el mundo laboral.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer: Consistente con el resto del sitio -->
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-info">
+                <h3>DealerClub</h3>
+                <p>Tu talento, es nuestro estandar.</p>
+            </div>
+            <div class="footer-contact">
+                <h3>Contacto</h3>
+                <p>WhatsApp: +51 936437502</p>
+                <p>Dirección: Calle Los Mirtos 145 / Independencia</p>
+            </div>
+            <div class="footer-social">
+                <h3>Síguenos</h3>
+                <a href="https://www.instagram.com/dealerclub.pe/" target="_blank" rel="noopener noreferrer">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" class="social-icon">
+                </a>
+            </div>
+            <!-- Enlace discreto al panel de administración -->
+            <div class="footer-admin-link">
+                <a href="admin.html">Admin Panel</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 DealerClub. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Icono flotante de WhatsApp (asegúrate de que este esté en todas tus páginas) -->
+    <a href="https://wa.me/51936437502?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20m%C3%A1s%20informaci%C3%B3n." class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- Nuevo Modal de Inscripción a Cursos -->
+    <div id="enrollCourseModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeEnrollModalBtn">&times;</span>
+            <h2>Inscripción al Curso</h2>
+            <p id="enrollCourseName"></p> <!-- Para mostrar el nombre del curso seleccionado -->
+            <form id="enrollmentForm">
+                <div class="form-group">
+                    <label for="enrollFullName">Nombre Completo:</label>
+                    <input type="text" id="enrollFullName" name="fullName" required>
+                </div>
+                <div class="form-group">
+                    <label for="enrollEmail">Correo Electrónico:</label>
+                    <input type="email" id="enrollEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="enrollPhone">Teléfono (WhatsApp):</label>
+                    <input type="tel" id="enrollPhone" name="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="enrollComments">Comentarios o Preguntas:</label>
+                    <textarea id="enrollComments" name="comments" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" id="submitEnrollmentBtn">Confirmar Inscripción</button>
+                <div id="enrollFormMessage" class="form-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE (mantener al final del body) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"; // Importar onAuthStateChanged
+        import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = 'default-app-id'; // Usamos 'default-app-id' para entornos locales
+        const firebaseConfig = {
+            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", // Reemplaza con tu API Key real
+            authDomain: "dealerclubpe.firebaseapp.com", // Reemplaza con tu Auth Domain real
+            projectId: "dealerclubpe", // Reemplaza con tu Project ID real
+            storageBucket: "dealerclubpe.firebasestorage.app", // Reemplaza con tu Storage Bucket real
+            messagingSenderId: "330568352415", // Reemplaza con tu Messaging Sender ID real
+            appId: "1:330568352415:web:9fcd7651698bfafac998aa", // Reemplaza con tu App ID real
+            measurementId: "G-PF3W9NDSDP" // Reemplaza con tu Measurement ID real
+        };
+        const initialAuthToken = null; // Para entornos locales
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        window.firebaseApp = app;
+        window.firebaseDb = db;
+        window.firebaseAuth = auth;
+        window.firebaseGetDocs = getDocs; 
+        window.firebaseCollection = collection;
+        window.firebaseAddDoc = addDoc; 
+        window.appId = appId; 
+        window.initialAuthToken = initialAuthToken; 
+        window.signInAnonymously = signInAnonymously; 
+        window.signInWithCustomToken = signInWithCustomToken;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged; // Exportar onAuthStateChanged
+    </script>
+    
+    <!-- TU SCRIPT JS DE LÓGICA DE PÁGINA (debe ir DESPUÉS del script de Firebase) -->
+    <script type="module" src="../assets/js/cursos.js"></script>
+</body>
+</html>

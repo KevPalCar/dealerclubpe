@@ -1,0 +1,109 @@
+/* Importación de todas las fuentes necesarias */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+/* Importación de Font Awesome para iconos */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+
+
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Evita el scroll horizontal */
+}
+
+/* Estilos globales */
+body {
+    font-family: 'Montserrat', sans-serif; /* Fuente principal para el cuerpo */
+    background-color: #0d0d0d; /* Fondo negro oscuro */
+    color: #f0f0f0; /* Color de texto predeterminado claro */
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif; /* Fuente para títulos */
+    /* El color se definirá en los CSS específicos de cada página para mayor control */
+}
+
+a {
+    text-decoration: none;
+    color: inherit; /* Hereda el color del texto del padre */
+}
+
+/* Estilos de botones generales (para usar en todo el sitio) */
+.btn {
+    padding: 12px 24px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    display: inline-block; /* Para que los botones se comporten correctamente con padding */
+    text-align: center;
+}
+
+.btn-primary {
+    background-color: #ffc107; /* Dorado */
+    color: #000; /* Texto negro */
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #e0a800; /* Dorado más oscuro al pasar el ratón */
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: #ffc107; /* Texto dorado */
+    border: 2px solid #ffc107; /* Borde dorado */
+}
+
+.btn-secondary:hover {
+    background-color: #ffc107;
+    color: #000;
+}
+
+/* ESTILOS PARA EL ICONO FLOTANTE DE WHATSAPP */
+.whatsapp-float {
+    position: fixed; /* Mantiene el botón fijo en la pantalla al hacer scroll */
+    width: 60px;
+    height: 60px;
+    bottom: 40px; /* Distancia desde la parte inferior */
+    right: 40px; /* Distancia desde la parte derecha */
+    background-color: #25d366; /* Color verde de WhatsApp */
+    color: #FFF; /* Color del icono */
+    border-radius: 50px; /* Forma circular */
+    text-align: center;
+    font-size: 30px; /* Tamaño del icono */
+    box-shadow: 2px 2px 3px rgba(0,0,0,0.4); /* Sombra sutil */
+    z-index: 9999; /* Asegura que esté por encima de todos los demás elementos */
+    display: flex; /* Para centrar el icono vertical y horizontalmente */
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s ease; /* Suave transición al pasar el ratón */
+}
+
+.whatsapp-float:hover {
+    transform: scale(1.1); /* Ligeramente más grande al pasar el ratón */
+    box-shadow: 3px 3px 5px rgba(0,0,0,0.6); /* Sombra más pronunciada */
+}
+
+/* Ajuste para dispositivos móviles */
+@media (max-width: 768px) {
+    .whatsapp-float {
+        width: 50px;
+        height: 50px;
+        bottom: 20px;
+        right: 20px;
+        font-size: 25px;
+    }
+}

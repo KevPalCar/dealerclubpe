@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Estudiante - DealerClub</title>
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/student_dashboard.css"> <!-- Nuevo CSS para dashboard de estudiante -->
+</head>
+<body>
+    <header class="dashboard-header">
+        <div class="logo">
+            <a href="../index.html">DealerClub</a>
+        </div>
+        <nav class="dashboard-nav">
+            <ul>
+                <li><a href="#" id="dashboard-link" class="current">Mi Dashboard</a></li>
+                <li><a href="#" id="logout-btn">Cerrar Sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="dashboard-main">
+        <section id="welcome-section" class="dashboard-container">
+            <h2 id="welcome-message">Bienvenido/a, Estudiante!</h2>
+            <p>Este es tu panel de control personalizado.</p>
+            <div id="auth-status-message" class="message">Verificando estado de la sesión...</div>
+
+            <!-- Aquí se cargará el contenido dinámico del dashboard -->
+            <div class="dashboard-content">
+                <h3>Mis Cursos Inscritos</h3>
+                <div id="enrolled-courses-list" class="courses-list">
+                    <p id="loading-enrolled-courses">Cargando cursos...</p>
+                    <p id="no-enrolled-courses" style="display: none;">No estás inscrito/a en ningún curso aún.</p>
+                </div>
+
+                <h3>Mi Progreso</h3>
+                <div id="student-progress">
+                    <p>Progreso del curso y notas se mostrarán aquí.</p>
+                </div>
+
+                <h3>Notas del Administrador</h3>
+                <div id="admin-notes">
+                    <p>Notas y tareas asignadas por el administrador.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="dashboard-footer">
+        <p>&copy; 2025 DealerClub. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
+            authDomain: "dealerclubpe.firebaseapp.com",
+            projectId: "dealerclubpe",
+            storageBucket: "dealerclubpe.firebasestorage.app",
+            messagingSenderId: "330568352415",
+            appId: "1:330568352415:web:9fcd7651698bfafac998aa",
+            measurementId: "G-PF3W9NDSDP"
+        };
+        const appIdForFirestorePath = 'default-app-id';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.firebaseAuth = auth;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged;
+        window.firebaseSignOut = signOut;
+        window.firebaseDb = db;
+        window.firebaseDoc = doc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseCollection = collection;
+        window.firebaseQuery = query;
+        window.firebaseWhere = where;
+        window.firebaseGetDocs = getDocs;
+        window.appId = appIdForFirestorePath;
+    </script>
+    <script type="module" src="../assets/js/student_dashboard.js"></script> <!-- Nuevo JS para el dashboard -->
+</body>
+</html>

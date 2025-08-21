@@ -1,0 +1,505 @@
+/* Estilos específicos para la página de Cursos */
+
+/* HERO SECTION (el HEADER): Ahora abarca todo el ancho y la altura con la imagen de fondo */
+.hero-section { /* Esta clase ahora está en el <header> */
+    position: relative;
+    width: 99vw; /* Ocupa el 100% del ancho del viewport */
+    height: 60vh; /* Ajusta esta altura para controlar cuánto de la imagen se muestra */
+    display: flex; 
+    flex-direction: column; 
+    justify-content: flex-start; /* Alinea la navbar arriba, el contenido central */
+    align-items: center;
+    background: url('https://images.pexels.com/photos/3279695/pexels-photo-3279695.jpeg?_gl=1*1ktr04i*_ga*MTYzNzQ1NTkxNC4xNzUzNTcyNjg5*_ga_8JE65Q40S6*czE3NTQ1MTc0MzMkbzYkZzEkdDE3NTQ1MTc1MDgkajUyJGwwJGgw') no-repeat center center/cover;
+    background-attachment: fixed; /* Opcional: Para efecto parallax */
+    color: #fff;
+    text-align: center;
+    overflow: hidden; 
+    /* Aseguramos que el header no tenga ningún margen o padding que lo restrinja */
+    margin: 0; 
+    padding: 0; 
+    left: 0; /* Asegura que empieza desde el borde izquierdo del viewport */
+}
+
+/* Overlay para la imagen de fondo del hero */
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); 
+    z-index: 0; /* Detrás del contenido de la navbar y el hero-content */
+}
+
+/* Estilos de la barra de navegación */
+.navbar {
+    position: absolute; /* Para que la navbar flote sobre la imagen */
+    top: 0;
+    left: 0;
+    width: 100%; /* La navbar debe estirarse al 100% del ancho del header */
+    display: flex;
+    justify-content: center; /* Centra el contenido de la navbar */
+    align-items: center;
+    padding: 20px 0; /* Ajustamos padding para que no interfiera con el ancho */
+    box-sizing: border-box;
+    z-index: 2; 
+}
+
+/* Contenedor interno para el logo y el menú de navegación para controlar el ancho */
+.navbar .logo, .navbar .nav-menu {
+    max-width: 1200px; /* Ancho máximo para el contenido real de la navbar */
+    flex-basis: 50%; /* Divide el espacio entre logo y menú */
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Espacio entre logo y menú */
+}
+.navbar .logo {
+    justify-content: flex-start;
+    padding-left: 50px; /* Alineación del logo a la izquierda */
+}
+.navbar .nav-menu {
+    justify-content: flex-end;
+    padding-right: 50px; /* Alineación del menú a la derecha */
+}
+
+
+.navbar .logo a {
+    font-size: 24px;
+    font-weight: bold;
+    color: #fff;
+    text-decoration: none;
+}
+
+.navbar ul.nav-menu { /* Apuntamos directamente a ul.nav-menu */
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 30px; 
+}
+
+.navbar .nav-menu li a {
+    color: #f0f0f0;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 5px;
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+.navbar .nav-menu li a:hover,
+.navbar .nav-menu li a.current {
+    color: #ffc107; 
+}
+
+/* Contenido del hero (título, párrafo, botones) */
+.hero-content {
+    position: relative; 
+    z-index: 1; 
+    max-width: 800px;
+    padding: 20px;
+    margin-top: 100px; /* Ajusta este valor para bajar el texto y evitar que la navbar lo tapa */
+    flex-grow: 1; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center;
+}
+
+.hero-content h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+    font-family: 'Playfair Display', serif;
+    color: #ffc107; 
+}
+.hero-content p {
+    font-size: 1.1em;
+    margin-bottom: 30px;
+}
+
+/* Estilos de las secciones de contenido */
+/* APLICACIÓN DE ESTILOS MÁS DINÁMICOS/ATRACTIVOS AQUÍ */
+.section-dark { /* Usado por #paquetes-formacion */
+    /* Fondo con un sutil degradado lineal para un toque más dinámico */
+    background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
+    /* Sombra sutil para darle más profundidad a la sección */
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5); 
+}
+
+.section-padded {
+    padding: 80px 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+h2 {
+    font-size: 2.5em;
+    color: #ffc107;
+    margin-bottom: 40px;
+    text-align: center;
+    font-family: 'Playfair Display', serif;
+}
+
+/* Estilos para la sección de paquetes de formación */
+.paquete-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+.paquete-card {
+    background-color: #212121;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Transición para el hover */
+}
+
+.paquete-card:hover {
+    transform: translateY(-10px); /* Pequeño levantamiento al pasar el ratón */
+    box-shadow: 0 8px 25px rgba(255, 193, 7, 0.2); /* Sombra más fuerte al pasar el ratón */
+}
+
+.paquete-card h3 {
+    font-size: 1.8em;
+    color: #ffc107;
+    margin-bottom: 10px;
+}
+
+.paquete-card .price {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #ffc107;
+    margin: 15px 0;
+}
+
+.paquete-card ul {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+    margin: 20px 0;
+}
+
+.paquete-card ul li {
+    margin-bottom: 5px;
+    color: #ccc;
+}
+.paquete-card p {
+    color: #ccc;
+}
+.paquete-card .btn-primary {
+    margin-top: auto; 
+}
+
+
+/* Estilos para las secciones con imagen de fondo (ej: Consideraciones Adicionales) */
+.full-screen-section {
+    min-height: 50vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.with-bg-image {
+    background: url('https://images.pexels.com/photos/161245/pexels-photo-161245.jpeg?_gl=1*10w6l7o*_ga*MTYzNzQ1NTkxNC4xNzUzNTcyNjg5*_ga_8JE65Q40S6*czE3NTQ1MTgzNDYkYzE1MjIzMTEwNiZ0NzgxMjc5NjgzJnMwJmI4ODQwMTI2N2Y1M2ZmMjJjZDA0YjY0ZDI1ZjY3MjYy') no-repeat center center/cover;
+    background-attachment: fixed; 
+}
+
+/* Contenedor del contenido dentro de las secciones con imagen de fondo */
+.content-wrapper {
+    /* Fondo ligeramente más oscuro y con sombra más pronunciada */
+    padding: 40px;
+    border-radius: 10px;
+    max-width: 900px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7); /* Sombra más fuerte y difusa */
+    border: 1px solid rgba(255, 193, 7, 0.2); /* Borde sutil dorado */
+    backdrop-filter: blur(3px); /* Efecto de desenfoque en el fondo del contenedor */
+}
+
+.section-title {
+    font-size: 2.2em;
+    color: #ffc107;
+    margin-bottom: 40px;
+    font-family: 'Playfair Display', serif;
+}
+
+.consideraciones-grid { /* Solo mantenemos esta, ya que plan-grid fue eliminada */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.consideracion-item {
+    background-color: #212121;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: left;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Transición para el hover */
+}
+
+.consideracion-item:hover {
+    transform: translateY(-5px); /* Pequeño levantamiento al pasar el ratón */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5); /* Sombra más fuerte al pasar el ratón */
+}
+
+.consideracion-item h4 {
+    color: #ffc107;
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.consideracion-item i {
+    font-size: 2em;
+    color: #ffc107;
+    margin-bottom: 10px;
+    display: block; 
+    text-align: center;
+}
+
+/* Footer (estilos que ya habíamos acordado, para que lo uses en todas las páginas) */
+.main-footer {
+    background-color: #0d0d0d;
+    color: #fff;
+    padding: 40px 20px;
+    font-size: 14px;
+    border-top: 1px solid #ffc107;
+}
+
+.footer-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: flex-start;
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.footer-info, .footer-contact, .footer-social {
+    flex: 1;
+    min-width: 200px;
+}
+
+.footer-info h3, .footer-contact h3, .footer-social h3 {
+    color: #ffc107;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.footer-contact p {
+    margin: 5px 0;
+}
+
+.social-icon {
+    width: 30px;
+    height: 30px;
+    margin-right: 15px;
+}
+
+.footer-bottom {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-bottom p {
+    margin: 0;
+    color: #ccc;
+}
+
+/* MODAL DE INSCRIPCIÓN A CURSOS (NUEVO) */
+.modal {
+    display: none; /* Oculto por defecto */
+    position: fixed; /* Posición fija para cubrir toda la pantalla */
+    z-index: 10000; /* Alto z-index para que esté por encima de todo */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Habilita scroll si el contenido es demasiado largo */
+    background-color: rgba(0,0,0,0.7); /* Fondo oscuro semi-transparente */
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.modal-content {
+    background-color: #1a1a1a; /* Fondo oscuro del modal */
+    margin: auto;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px; /* Ancho máximo para el modal de inscripción */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    position: relative;
+    color: #f0f0f0;
+    animation-name: animatetop;
+    animation-duration: 0.4s;
+}
+
+@keyframes animatetop {
+    from {top: -300px; opacity: 0}
+    to {top: 0; opacity: 1}
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: #ffc107;
+    text-decoration: none;
+}
+
+.modal-content h2 {
+    color: #ffc107;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.modal-content p#enrollCourseName { /* Para el nombre del curso en el modal */
+    text-align: center;
+    color: #ccc;
+    margin-bottom: 20px;
+    font-style: italic;
+    font-size: 1.1em;
+}
+
+.form-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #f0f0f0;
+    font-weight: 500;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background-color: #2a2a2a;
+    color: #f0f0f0;
+    font-size: 1em;
+    box-sizing: border-box; /* Incluye padding y border en el width */
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="email"]:focus,
+.form-group input[type="tel"]:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #ffc107;
+    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+}
+
+.form-group textarea {
+    resize: vertical; /* Permite redimensionar verticalmente */
+}
+
+#submitEnrollmentBtn {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.1em;
+    margin-top: 10px;
+}
+
+.form-message {
+    text-align: center;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 15px;
+    font-weight: bold;
+    color: #f0f0f0; /* Color de texto por defecto */
+}
+
+.form-message.success {
+    background-color: #28a745; /* Verde para éxito */
+    color: #fff;
+}
+
+.form-message.error {
+    background-color: #dc3545; /* Rojo para error */
+    color: #fff;
+}
+
+.form-message.loading {
+    background-color: #ffc107; /* Dorado para carga */
+    color: #000;
+}
+
+
+/* Media Query para móvil */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        align-items: center;
+        padding: 15px 20px;
+    }
+    .navbar .logo {
+        margin-bottom: 15px;
+    }
+    .navbar .nav-menu ul {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .hero-content h1 {
+        font-size: 2em;
+    }
+    .footer-container {
+        text-align: center;
+    }
+    .footer-info, .footer-contact, .footer-social {
+        min-width: unset;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    .paquete-grid, .consideraciones-grid { 
+        grid-template-columns: 1fr;
+    }
+    .modal-content { /* Ajustes para el modal en móvil */
+        width: 95%;
+        padding: 20px;
+    }
+    .close-button {
+        font-size: 24px;
+        top: 5px;
+        right: 15px;
+    }
+    .modal-content h2 {
+        font-size: 1.8em;
+    }
+    .form-group label, .form-group input, .form-group textarea, #submitEnrollmentBtn {
+        font-size: 0.9em;
+    }
+}

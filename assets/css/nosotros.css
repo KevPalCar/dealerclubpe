@@ -1,0 +1,329 @@
+/* Estilos específicos para la página Nosotros */
+
+/* HERO SECTION (el HEADER): Ahora abarca todo el ancho y la altura con la imagen de fondo */
+.hero-section {
+    position: relative;
+    width: 99vw; /* Asegura que ocupe todo el ancho del viewport */
+    height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    background: url('https://images.unsplash.com/photo-1504279807002-09854ccc9b6c?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxjb2xsZWN0aW9uLXBhZ2V8MjJ8UjB0NWJPUlNNSnd8fGVufDB8fHx8fA%3D%3D') no-repeat center center/cover;
+    background-attachment: fixed;
+    color: #fff;
+    text-align: center;
+    overflow: hidden;
+    margin: 0; /* Elimina cualquier margen externo por defecto */
+    padding: 0; /* Elimina cualquier padding por defecto */
+    left: 0; /* Asegura que inicie desde el borde izquierdo */
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 0;
+}
+
+/* Estilos de la barra de navegación */
+.navbar {
+    position: absolute; /* Permite que la navbar flote sobre la imagen del header */
+    top: 0;
+    left: 0;
+    width: 100%; /* La navbar debe estirarse al 100% del ancho del header */
+    display: flex;
+    justify-content: center; /* Centra el contenedor interno de la navbar */
+    align-items: center;
+    padding: 20px 0; /* Padding superior/inferior, el padding lateral se manejará internamente */
+    box-sizing: border-box;
+    z-index: 2; /* Asegura que esté por encima del overlay y el contenido del hero */
+}
+
+/* Contenedor interno para el logo y el menú de navegación para controlar el ancho */
+.navbar .logo, .navbar .nav-menu {
+    /* Aquí se aplican los estilos para que el contenido se vea centrado y espaciado */
+    max-width: 1200px; /* Ancho máximo para el contenido real de la navbar */
+    flex-basis: 50%; /* Divide el espacio entre logo y menú */
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Espacio entre logo y menú */
+}
+.navbar .logo {
+    justify-content: flex-start;
+    padding-left: 50px; /* Alineación del logo a la izquierda dentro del max-width */
+}
+.navbar .nav-menu {
+    justify-content: flex-end;
+    padding-right: 50px; /* Alineación del menú a la derecha dentro del max-width */
+}
+
+.navbar .logo a {
+    font-size: 24px;
+    font-weight: bold;
+    color: #fff;
+    text-decoration: none;
+}
+
+.navbar ul.nav-menu { /* Apuntamos directamente a ul.nav-menu */
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 30px;
+}
+
+.navbar .nav-menu li a {
+    color: #f0f0f0;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 5px;
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+.navbar .nav-menu li a:hover,
+.navbar .nav-menu li a.current {
+    color: #ffc107;
+}
+
+/* Contenido del hero */
+.hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    padding: 20px;
+    margin-top: 150px; /* Ajusta este valor para posicionar el texto debajo de la navbar */
+}
+
+.hero-content h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+    font-family: 'Playfair Display', serif;
+    color: #ffc107;
+}
+
+.hero-content p {
+    font-size: 1.1em;
+}
+
+/* Estilos generales de sección (reutilizados) */
+.section-light {
+    background-color: #121212;
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4);
+}
+.section-dark {
+    background-color: #1a1a1a;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+.section-padded {
+    padding: 80px 20px;
+}
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+}
+h2 {
+    font-size: 2.5em;
+    color: #ffc107;
+    margin-bottom: 50px;
+    font-family: 'Playfair Display', serif;
+}
+
+/* Estilos de imágenes circulares */
+.circular-img {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #ffc107;
+    transition: transform 0.3s ease;
+}
+
+.circular-img:hover {
+    transform: scale(1.05);
+}
+
+
+/* SECCIÓN: Fundador */
+.fundador-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.fundador-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 800px;
+    background-color: #212121;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+.fundador-card h3 {
+    font-size: 2em;
+    color: #ffc107;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+.fundador-bio {
+    font-size: 1.1em;
+    line-height: 1.8;
+    color: #ccc;
+    text-align: center;
+}
+
+/* SECCIÓN: Misión y Visión */
+.mision-vision-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 40px;
+}
+.mision, .vision {
+    background-color: #212121;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+.mision h4, .vision h4 {
+    font-size: 1.5em;
+    color: #ffc107;
+    margin-bottom: 15px;
+}
+.mision p, .vision p {
+    color: #ccc;
+    line-height: 1.7;
+}
+
+/* SECCIONES: Profesores y Alumnos */
+.profesores-grid,
+.alumnos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+.profesor-card,
+.alumno-card {
+    background-color: #212121;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.profesor-card:hover,
+.alumno-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+}
+.profesor-card h3,
+.alumno-card h3 {
+    font-size: 1.5em;
+    color: #ffc107;
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+.profesor-card p,
+.alumno-card p {
+    font-size: 0.95em;
+    color: #ccc;
+    line-height: 1.6;
+}
+.profesor-bio, .alumno-testimonio {
+    margin-top: 10px;
+    font-style: italic;
+    color: #a0a0a0;
+}
+.alumno-info {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+/* Footer (misma estructura) */
+.main-footer {
+    background-color: #0d0d0d;
+    color: #fff;
+    padding: 40px 20px;
+    font-size: 14px;
+    border-top: 1px solid #ffc107;
+}
+.footer-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: flex-start;
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: left;
+}
+.footer-info, .footer-contact, .footer-social {
+    flex: 1;
+    min-width: 200px;
+}
+.footer-info h3, .footer-contact h3, .footer-social h3 {
+    color: #ffc107;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+.footer-contact p {
+    margin: 5px 0;
+}
+.social-icon {
+    width: 30px;
+    height: 30px;
+    margin-right: 15px;
+}
+.footer-bottom {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.footer-bottom p {
+    margin: 0;
+    color: #ccc;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        align-items: center;
+        padding: 15px 20px;
+    }
+    .navbar .logo {
+        margin-bottom: 15px;
+        padding-left: 0;
+    }
+    .navbar .nav-menu {
+        flex-direction: column;
+        gap: 10px;
+        padding-right: 0;
+    }
+    .hero-content h1 {
+        font-size: 2em;
+    }
+    .fundador-card {
+        padding: 20px;
+    }
+    .mision-vision-grid, .profesores-grid, .alumnos-grid {
+        grid-template-columns: 1fr;
+    }
+    .footer-container {
+        text-align: center;
+    }
+    .footer-info, .footer-contact, .footer-social {
+        min-width: unset;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+}

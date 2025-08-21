@@ -1,0 +1,222 @@
+/* Estilos específicos para el Dashboard de Estudiante */
+
+body {
+    background-color: #0d0d0d; /* Fondo oscuro consistente */
+    color: #f0f0f0; /* Texto claro */
+    font-family: 'Montserrat', sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.dashboard-header {
+    background-color: #1a1a1a;
+    padding: 20px;
+    border-bottom: 2px solid #ffc107;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan en pantallas pequeñas */
+}
+
+.dashboard-header .logo a {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    color: #ffc107;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.dashboard-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 20px;
+}
+
+.dashboard-nav li a {
+    color: #ccc;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 8px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dashboard-nav li a:hover,
+.dashboard-nav li a.current {
+    background-color: #333;
+    color: #ffc107;
+}
+
+#logout-btn {
+    background-color: #dc3545; /* Rojo para cerrar sesión */
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease;
+}
+
+#logout-btn:hover {
+    background-color: #a00;
+}
+
+.dashboard-main {
+    flex-grow: 1;
+    padding: 40px 20px;
+    max-width: 1000px;
+    margin: 20px auto;
+    background-color: #121212;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.dashboard-container {
+    padding: 20px;
+    text-align: center;
+}
+
+.dashboard-container h2 {
+    color: #ffc107;
+    margin-bottom: 20px;
+    font-family: 'Playfair Display', serif;
+    font-size: 2.5em;
+}
+
+.dashboard-container p {
+    color: #ccc;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.dashboard-content {
+    text-align: left;
+    margin-top: 30px;
+    border-top: 1px solid rgba(255, 193, 7, 0.1);
+    padding-top: 30px;
+}
+
+.dashboard-content h3 {
+    color: #ffc107;
+    margin-bottom: 15px;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8em;
+}
+
+/* Estilos para la lista de cursos inscritos */
+.courses-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    background-color: #1a1a1a;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.enrolled-course-item {
+    background-color: #212121;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 193, 7, 0.1); /* Borde sutil */
+    transition: transform 0.2s ease;
+}
+
+.enrolled-course-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.enrolled-course-item h4 {
+    color: #ffc107;
+    font-size: 1.3em;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.enrolled-course-item p {
+    font-size: 0.9em;
+    color: #ccc;
+    line-height: 1.5;
+    margin-bottom: 5px;
+}
+
+.enrolled-course-item strong {
+    color: #f0f0f0; /* Asegura que las etiquetas sean visibles */
+}
+
+
+#student-progress, #admin-notes {
+    background-color: #1a1a1a;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+#student-progress p, #admin-notes p {
+    color: #ccc;
+    font-size: 0.95em;
+}
+
+.message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    color: #f0f0f0;
+    text-align: center;
+}
+
+.message.error {
+    background-color: #dc3545;
+    color: #fff;
+}
+.message.success {
+    background-color: #28a745;
+    color: #fff;
+}
+.message.loading {
+    background-color: #ffc107;
+    color: #000;
+}
+
+
+.dashboard-footer {
+    text-align: center;
+    padding: 20px;
+    color: #ccc;
+    font-size: 0.9em;
+    border-top: 1px solid rgba(255, 193, 7, 0.1);
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .dashboard-nav ul {
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    .dashboard-main {
+        padding: 20px;
+    }
+    .dashboard-container h2 {
+        font-size: 2em;
+    }
+    .dashboard-content h3 {
+        font-size: 1.5em;
+    }
+    .courses-list {
+        grid-template-columns: 1fr; /* Una columna en móvil */
+    }
+}

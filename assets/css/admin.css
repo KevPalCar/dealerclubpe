@@ -1,0 +1,415 @@
+/* Estilos específicos para el Panel de Administración */
+
+body {
+    background-color: #0d0d0d; /* Fondo oscuro consistente */
+    color: #f0f0f0; /* Texto claro */
+    font-family: 'Montserrat', sans-serif;
+}
+
+.admin-header {
+    background-color: #1a1a1a;
+    padding: 20px;
+    border-bottom: 2px solid #ffc107;
+    text-align: center;
+}
+
+.admin-header .logo a {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    color: #ffc107;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* Navegación dentro del panel de administración */
+.admin-nav {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.admin-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 20px;
+}
+
+.admin-nav li a {
+    color: #ccc;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 8px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.admin-nav li a:hover {
+    background-color: #333;
+    color: #ffc107;
+}
+
+.admin-nav li a.current {
+    background-color: #ffc107;
+    color: #1a1a1a;
+    pointer-events: none; /* Deshabilitar clics en la pestaña activa */
+}
+
+.admin-main {
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 20px auto;
+    background-color: #121212;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Estilos del formulario de Login */
+.login-container {
+    padding: 30px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 193, 7, 0.1);
+    margin-bottom: 30px;
+}
+
+.login-container h2 {
+    color: #ffc107;
+    margin-bottom: 30px;
+    font-family: 'Playfair Display', serif;
+}
+
+.login-form {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #212121;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.login-form .form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.login-form label {
+    display: block;
+    margin-bottom: 8px;
+    color: #ccc;
+    font-weight: 500;
+}
+
+.login-form input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background-color: #2a2a2a;
+    color: #f0f0f0;
+    font-size: 1em;
+    box-sizing: border-box;
+}
+
+.login-form input[type="password"]:focus {
+    outline: none;
+    border-color: #ffc107;
+    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+}
+
+.login-form .btn-primary {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.1em;
+    margin-top: 10px;
+}
+
+.message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    color: #f0f0f0;
+    text-align: center;
+}
+
+.message.error {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.message.success {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.message.loading {
+    background-color: #ffc107;
+    color: #000;
+}
+
+
+/* Estilos de las secciones del Dashboard */
+.dashboard-container {
+    display: none; /* Por defecto oculto, se muestra tras login */
+}
+
+.dashboard-container.active {
+    display: block; /* La sección activa se muestra */
+}
+
+.dashboard-container h2 {
+    color: #ffc107;
+    margin-bottom: 30px;
+    text-align: center;
+    font-family: 'Playfair Display', serif;
+}
+
+.loading-message, .no-data-message {
+    text-align: center;
+    color: #ffc107;
+    font-size: 1.2em;
+    padding: 30px 0;
+}
+
+.no-data-message {
+    color: #ccc;
+}
+
+.table-container {
+    overflow-x: auto; /* Permite desplazamiento horizontal en pantallas pequeñas */
+    margin-top: 20px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+#quotes-table, #courses-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px; /* Asegura que la tabla tenga un ancho mínimo */
+}
+
+#quotes-table th, #quotes-table td, 
+#courses-table th, #courses-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #333;
+    text-align: left;
+    color: #f0f0f0;
+}
+
+#quotes-table th, #courses-table th {
+    background-color: #2a2a2a;
+    color: #ffc107;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+#quotes-table tbody tr:nth-child(even),
+#courses-table tbody tr:nth-child(even) {
+    background-color: #1f1f1f;
+}
+
+#quotes-table tbody tr:hover,
+#courses-table tbody tr:hover {
+    background-color: #2a2a2a;
+    transition: background-color 0.2s ease;
+}
+
+/* Estilos para filas procesadas (cotizaciones) */
+.processed-row {
+    opacity: 0.7; /* Ligeramente más transparente */
+    background-color: #181818 !important; /* Más oscuro para indicar procesamiento */
+    font-style: italic;
+}
+
+.processed-row .status-cell {
+    color: #28a745; /* Verde para el texto "Procesada" */
+    font-weight: bold;
+}
+
+/* Estilos para botones de acción en la tabla */
+.btn-action {
+    padding: 8px 12px;
+    font-size: 0.85em;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-right: 5px; /* Espacio entre botones */
+}
+.btn-action.edit {
+    background-color: #007bff; /* Azul */
+    color: #fff;
+}
+.btn-action.edit:hover {
+    background-color: #0056b3;
+}
+.btn-action.delete {
+    background-color: #dc3545; /* Rojo */
+    color: #fff;
+}
+.btn-action.delete:hover {
+    background-color: #b00;
+}
+
+.add-item-btn {
+    margin-bottom: 20px;
+    width: auto; /* Ancho automático para no ser 100% */
+    padding: 10px 20px;
+    font-size: 1em;
+}
+
+/* Estilos para el Modal (añadir/editar curso) */
+.modal {
+    display: none; /* Oculto por defecto */
+    position: fixed; /* Fijo en la pantalla */
+    z-index: 1000; /* Por encima de todo lo demás */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Habilitar scroll si el contenido es demasiado largo */
+    background-color: rgba(0, 0, 0, 0.8); /* Fondo oscuro semitransparente */
+    justify-content: center; /* Centrar contenido horizontalmente */
+    align-items: center; /* Centrar contenido verticalmente */
+}
+
+.modal-content {
+    background-color: #1a1a1a;
+    margin: auto;
+    padding: 30px;
+    border: 1px solid #444;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    position: relative;
+    color: #f0f0f0;
+}
+
+.modal-content .close-button {
+    color: #aaa;
+    position: absolute;
+    top: 15px;
+    right: 25px;
+    font-size: 35px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.modal-content .close-button:hover,
+.modal-content .close-button:focus {
+    color: #ffc107;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#courseModalTitle {
+    color: #ffc107;
+    text-align: center;
+    margin-bottom: 20px;
+    font-family: 'Playfair Display', serif;
+}
+
+#courseForm .form-group {
+    margin-bottom: 15px;
+}
+
+#courseForm label {
+    display: block;
+    margin-bottom: 5px;
+    color: #ccc;
+}
+
+#courseForm input[type="text"],
+#courseForm input[type="number"],
+#courseForm textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background-color: #2a2a2a;
+    color: #f0f0f0;
+    font-size: 1em;
+    box-sizing: border-box;
+}
+
+#courseForm input:focus,
+#courseForm textarea:focus {
+    outline: none;
+    border-color: #ffc107;
+    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+}
+
+#courseForm small {
+    display: block;
+    color: #888;
+    margin-top: 5px;
+    font-size: 0.85em;
+}
+
+#saveCourseBtn {
+    width: 100%;
+    margin-top: 20px;
+}
+
+#courseFormMessage {
+    margin-top: 15px;
+}
+
+
+/* Footer del Admin */
+.admin-footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 40px;
+    color: #ccc;
+    font-size: 0.9em;
+    border-top: 1px solid rgba(255, 193, 7, 0.1);
+}
+
+/* Media Queries para responsividad */
+@media (max-width: 768px) {
+    .admin-header .logo a {
+        font-size: 24px;
+    }
+    .admin-nav ul {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .admin-nav li a {
+        padding: 6px 10px;
+        font-size: 0.9em;
+    }
+    .admin-main {
+        padding: 20px;
+        margin: 10px auto;
+    }
+    .login-form {
+        padding: 15px;
+    }
+    .dashboard-container h2 {
+        font-size: 2em;
+    }
+    #quotes-table, #courses-table {
+        min-width: 100%; 
+        font-size: 0.85em; /* Ajusta el tamaño de fuente para tablas */
+    }
+    #quotes-table th, #quotes-table td, 
+    #courses-table th, #courses-table td {
+        padding: 8px 10px;
+    }
+    .btn-action {
+        font-size: 0.75em;
+        padding: 6px 10px;
+        margin-right: 3px;
+    }
+    .add-item-btn {
+        width: 100%;
+    }
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+    }
+}

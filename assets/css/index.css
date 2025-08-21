@@ -1,0 +1,298 @@
+/* Estilos para el encabezado */
+.hero-section {
+    position: relative;
+    width: 100%;
+    height: 60vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background-image: url('../images/FondoInicio.jpeg'); /* Esta es la ruta correcta */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Superposición oscura para mejorar la legibilidad del texto */
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Color negro con 60% de opacidad */
+}
+
+/* Asegurar que el contenido esté sobre la superposición */
+.navbar,
+.hero-content {
+    position: relative;
+    z-index: 10;
+}
+
+/* Estilos para la barra de navegación */
+.navbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 50px;
+    box-sizing: border-box;
+}
+
+.navbar .logo a {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.navbar .nav-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 30px;
+}
+
+/* Estilos para el contenido principal (texto y botones) */
+.hero-content {
+    max-width: 800px;
+}
+
+.hero-content h1 {
+    font-size: 45px;
+    margin-bottom: 20px;
+    color: #ffc107;
+}
+
+.hero-content p {
+    font-size: 18px;
+    margin-bottom: 40px;
+}
+
+.hero-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+/* Estilos para la sección "¿Por qué elegir DealerClub?" */
+.why-us-section {
+    padding: 80px 20px;
+    text-align: center;
+    background-color: #1a1a1a; /* Un color de fondo más oscuro */
+    color: #fff; /* Texto blanco */
+}
+
+.why-us-section h2 {
+    font-size: 2.5em;
+    margin-bottom: 60px; /* Más espacio debajo del título */
+    color: #ffc107; /* Título en dorado */
+}
+
+.reasons-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 columnas con el mismo ancho */
+    gap: 30px; /* Espacio entre las casillas */
+    max-width: 1200px; /* Ancho máximo para el grid */
+    margin: 0 auto; /* Centrar el grid */
+}
+
+.reason-card {
+    background-color: #212121; /* Fondo de la tarjeta en un negro ligeramente más claro */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    text-align: left;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    border: 1px solid #333; /* Borde sutil para definir la tarjeta */
+}
+
+.reason-card:hover {
+    transform: translateY(-8px); /* Efecto de elevación más notorio */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6); /* Sombra más pronunciada */
+}
+
+.reason-card h3 {
+    font-size: 1.5em;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #ffc107; /* Título de la tarjeta en dorado */
+}
+
+.reason-card p {
+    line-height: 1.6;
+    color: #ccc; /* Texto en un gris claro para mejor lectura */
+}
+
+/* Media query para pantallas más pequeñas (ej. móviles) */
+@media (max-width: 992px) {
+    .reasons-grid {
+        grid-template-columns: repeat(2, 1fr); /* 2 columnas en tablets */
+    }
+}
+@media (max-width: 576px) {
+    .reasons-grid {
+        grid-template-columns: 1fr; /* Una sola columna en móviles */
+    }
+}
+/* Estilos para la sección "Nuestro Trabajo" con Swiper */
+.our-work-section {
+    padding: 80px 20px;
+    background-color: #0d0d0d;
+    text-align: center;
+    color: #fff;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.work-content {
+    max-width: 800px;
+    margin: 0 auto 40px;
+    text-align: left;
+}
+
+.work-content h2 {
+    font-size: 2.5em;
+    color: #ffc107;
+    margin-bottom: 20px;
+}
+
+.work-content p {
+    line-height: 1.6;
+    margin-bottom: 30px;
+    color: #ccc;
+}
+
+.work-gallery {
+    position: relative;
+    padding: 0 50px;
+}
+
+/* Estilos de los slides de Swiper */
+.swiper {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    padding: 20px 0;
+}
+
+.swiper-slide {
+    width: 60% !important;
+    height: 400px;
+    background-color: #212121;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease-in-out;
+    transform: scale(0.7);
+    opacity: 0.5;
+}
+
+.swiper-slide-active {
+    transform: scale(1.15);
+    opacity: 1;
+    z-index: 10;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8);
+}
+
+.swiper-slide img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 15px;
+    object-fit: cover;
+}
+
+.swiper-button-next,
+.swiper-button-prev {
+    color: #ffc107 !important;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 10px 15px;
+    border-radius: 50%;
+}
+
+.swiper-button-prev { left: 10px; }
+.swiper-button-next { right: 10px; }
+
+@media (max-width: 992px) {
+    .our-work-section {
+        text-align: center;
+    }
+    .work-content {
+        max-width: 100%;
+        text-align: center;
+    }
+}
+@media (max-width: 576px) {
+    .swiper-slide {
+        height: 250px;
+    }
+}
+
+/* Estilos para el Footer */
+.main-footer {
+    background-color: #0d0d0d;
+    color: #fff;
+    padding: 40px 20px;
+    font-size: 14px;
+    border-top: 1px solid #ffc107;
+}
+
+.footer-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: flex-start;
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.footer-info,
+.footer-contact,
+.footer-social {
+    flex: 1;
+    min-width: 200px;
+}
+
+.footer-info h3,
+.footer-contact h3,
+.footer-social h3 {
+    color: #ffc107;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.footer-contact p {
+    margin: 5px 0;
+}
+
+.social-icon {
+    width: 30px;
+    height: 30px;
+    margin-right: 15px;
+}
+
+.footer-bottom {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-bottom p {
+    margin: 0;
+    color: #ccc;
+}
+
+@media (max-width: 768px) {
+    .footer-container {
+        text-align: center;
+    }
+}

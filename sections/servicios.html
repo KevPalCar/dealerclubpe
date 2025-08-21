@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servicios - DealerClub</title>
+    
+    <!-- Enlaces a tus hojas de estilo (rutas CORRECTAS) -->
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/servicios.css"> 
+    
+    <!-- NOTA: Las importaciones de fuentes y Font Awesome ya están en main.css -->
+</head>
+<body>
+    <!-- HEADER: Contenedor principal con la imagen de fondo para el hero -->
+    <header class="hero-section"> 
+        <nav class="navbar">
+            <div class="logo">
+                <a href="../index.html">DealerClub</a> 
+            </div>
+            <ul class="nav-menu">
+                <li><a href="../index.html">Inicio</a></li> 
+                <li><a href="cursos.html">Cursos</a></li>
+                <li><a href="servicios.html" class="current">Servicios</a></li>
+                <li><a href="../index.html#nosotros">Nosotros</a></li>
+                <!-- Ya eliminaste la sección de contacto, así que no la volvemos a añadir aquí -->
+            </ul>
+        </nav>
+
+        <!-- Contenido del hero (título, párrafo, botones) -->
+        <div class="hero-content text-center">
+            <h1>Servicios de Casino para Eventos de Élite</h1>
+            <p>Transformamos tu evento en una experiencia de casino inolvidable con profesionales de primer nivel y equipos de calidad.</p>
+            <div class="hero-ctas">
+                <!-- El botón principal ahora abrirá el modal de cotización general -->
+                <button type="button" class="btn btn-primary" id="openGeneralQuoteModal">Solicita tu Presupuesto</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Sección de Mesas Disponibles (CONTENIDO ESTÁTICO REINSERTADO) -->
+        <section id="mesas-disponibles" class="section-light section-padded">
+            <div class="container">
+                <h2>Nuestras Mesas de Casino para tu Evento</h2>
+                <div class="mesas-grid">
+                    <div class="mesa-card">
+                        <img src="https://images.pexels.com/photos/7594187/pexels-photo-7594187.jpeg" alt="Mesa de Ruleta Francesa">
+                        <h3>Ruleta Francesa</h3>
+                        <p>Elegancia y emoción con las reglas clásicas de la ruleta europea. Perfecta para un ambiente sofisticado.</p>
+                        <button type="button" class="btn btn-primary open-quote-modal" data-table-name="Ruleta Francesa">Cotizar</button>
+                    </div>
+                    <div class="mesa-card">
+                        <img src="https://images.unsplash.com/photo-1618304925090-b68a8c744cbe?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Mesa de Blackjack">
+                        <h3>Blackjack o Dream 21</h3>
+                        <p>El clásico juego de cartas donde la estrategia y la suerte se unen. Ideal para entretener a todos los invitados.</p>
+                        <button type="button" class="btn btn-primary open-quote-modal" data-table-name="Blackjack">Cotizar</button>
+                    </div>
+                    <div class="mesa-card">
+                        <img src="https://images.pexels.com/photos/7594300/pexels-photo-7594300.jpeg" alt="Mesa de Dream 21">
+                        <h3>Poker Caribeño</h3>
+                        <p>Una emocionante variante del Blackjack con apuestas adicionales y oportunidades de ganar aún más grandes.</p>
+                        <button type="button" class="btn btn-primary open-quote-modal" data-table-name="Poker Caribeño">Cotizar</button>
+                    </div>
+                    <div class="mesa-card">
+                        <img src="https://www.livecasinocomparer.com/wp-content/uploads/2016/07/ultimate-texas-holdem.jpg" alt="Mesa de Ultimate Texas Hold'em">
+                        <h3>Ultimate Texas Hold'em</h3>
+                        <p>El popular Texas Hold'em contra la casa. Un juego dinámico y estratégico que mantiene a los jugadores en vilo.</p>
+                        <button type="button" class="btn btn-primary open-quote-modal" data-table-name="Ultimate Texas Hold'em">Cotizar</button>
+                    </div>
+                    <div class="mesa-card">
+                       <img src="https://images.unsplash.com/photo-1674645164141-00b6ef3047b2?q=80&w=694&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Mesa de Poker Texas Hold'em">
+                        <h3>Poker Texas Hold'em</h3>
+                        <p>El rey de los juegos de cartas. Ideal para torneos amistosos o simplemente para disfrutar con amigos y colegas.</p>
+                        <button type="button" class="btn btn-primary open-quote-modal" data-table-name="Poker Texas Hold'em">Cotizar</button>
+                    </div>
+                    <div class="mesa-card">
+                        <img src="https://tcsjohnhuxley.com/wp-content/uploads/2023/03/Craps-Gaming-Table-2.png" alt="Mesa de Craps">
+                        <h3>Craps</h3>
+                        <p>Ideal para el entretenimiento, diversión y compartir entre amigos. Un juego complejo y sofisticado pero a su vez, demasiado solicitado.</p>
+                        <button type="button" class="btn btn-primary" data-table-name="Craps">Próximamente</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Nueva Sección: Experiencia DealerClub -->
+        <section id="experiencia-dealerclub" class="section-dark section-padded">
+            <div class="container">
+                <h2>¿Por Qué Elegir Nuestros Servicios de Eventos?</h2>
+                <div class="experiencia-grid">
+                    <div class="experiencia-item">
+                        <i class="fas fa-gem"></i>
+                        <h4>Personal Calificado</h4>
+                        <p>Nuestros dealers son formados en nuestra propia escuela, garantizando profesionalismo y carisma en cada mesa.</p>
+                    </div>
+                    <div class="experiencia-item">
+                        <i class="fas fa-boxes"></i>
+                        <h4>Logística Completa</h4>
+                        <p>Nos encargamos del transporte, montaje y desmontaje de todo el equipo de casino en tu evento.</p>
+                    </div>
+                    <div class="experiencia-item">
+                        <i class="fas fa-chart-line"></i>
+                        <h4>Asesoramiento Personalizado</h4>
+                        <p>Te ayudamos a planificar la mejor configuración y dinámica de juegos para el éxito de tu celebración.</p>
+                    </div>
+                    <div class="experiencia-item">
+                        <i class="fas fa-trophy"></i>
+                        <h4>Experiencia Inolvidable</h4>
+                        <p>Creamos un ambiente de casino auténtico y divertido que tus invitados recordarán por siempre.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección de Dealers Destacados (CONTENIDO ESTÁTICO REINSERTADO) -->
+        <section id="dealers-destacados" class="section-light section-padded">
+            <div class="container">
+                <h2>Conoce a Nuestros Dealers Destacados</h2>
+                <p class="section-description">Nuestros profesionales son la clave para el éxito de tu evento. Su experiencia y carisma transforman cada partida en una experiencia inolvidable. Si deseas un toque extra de exclusividad, puedes solicitar a uno de nuestros talentos destacados para tu evento.</p>
+                <div class="dealers-grid">
+                    <div class="dealer-card">
+                        <img src="https://images.pexels.com/photos/10187019/pexels-photo-10187019.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="Dealer Destacado 1">
+                        <h3>Sofía Vargas</h3>
+                        <p>Especialidad: Blackjack, Ruleta</p>
+                        <button type="button" class="btn btn-primary open-quote-modal" data-dealer-name="Sofía Vargas">Solicitar a Sofía</button>
+                    </div>
+                    <div class="dealer-card">
+                        <img src="https://images.pexels.com/photos/161245/pexels-photo-161245.jpeg?_gl=1*10w6l7o*_ga*MTYzNzQ1NTkxNC4xNzUzNTcyNjg5*_ga_8JE65Q40S6*czE3NTQ1MTgzNDYkYzE1MjIzMTEwNiZ0NzgxMjc5NjgzJnMwJmI4ODQwMTI2N2Y1M2ZmMjJjZDA0YjY0ZDI1ZjY3MjYy" alt="Dealer Destacado 2">
+                        <h3>Marco Robles</h3>
+                        <p>Especialidad: Poker, Craps</p>
+                        <button type="button" class="btn btn-primary open-quote-modal" data-dealer-name="Marco Robles">Solicitar a Marco</button>
+                    </div>
+                    <div class="dealer-card">
+                        <img src="https://images.pexels.com/photos/3371891/pexels-photo-3371891.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="Dealer Destacado 3">
+                        <h3>Valentina Cruz</h3>
+                        <p>Especialidad: Baccarat, Dream 21</p>
+                        <button type="button" class="btn btn-primary open-quote-modal" data-dealer-name="Valentina Cruz">Solicitar a Valentina</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer: Consistente con el resto del sitio -->
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-info">
+                <h3>DealerClub</h3>
+                <p>Tu talento, es nuestro estandar.</p>
+            </div>
+            <div class="footer-contact">
+                <h3>Contacto</h3>
+                <p>WhatsApp: +51 936437502</p>
+                <p>Dirección: Calle Los Mirtos 145 / Independencia</p>
+            </div>
+            <div class="footer-social">
+                <h3>Síguenos</h3>
+                <a href="https://www.instagram.com/dealerclub.pe/" target="_blank" rel="noopener noreferrer">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" class="social-icon">
+                </a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 DealerClub. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Icono flotante de WhatsApp (AHORA CON ID PARA ABRIR MODAL) -->
+    <a href="#" class="whatsapp-float" id="openWhatsappPreChatModal">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- Modal de Cotización de Servicios -->
+    <div id="quoteModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeQuoteModalBtn">&times;</span>
+            <h2>Solicitar Cotización</h2>
+            <p id="modalQuoteFor"></p> 
+            <form id="quoteForm">
+                <div class="form-group">
+                    <label for="fullName">Nombre Completo:</label>
+                    <input type="text" id="fullName" name="fullName" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Correo Electrónico:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Teléfono (WhatsApp):</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="eventType">Tipo de Evento:</label>
+                    <select id="eventType" name="eventType" required>
+                        <option value="">Selecciona...</option>
+                        <option value="corporativo">Corporativo</option>
+                        <option value="privado">Privado</option>
+                        <option value="boda">Boda</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="eventDate">Fecha del Evento:</label>
+                    <input type="date" id="eventDate" name="eventDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="details">Detalles y mesas/dealers de interés:</label>
+                    <textarea id="details" name="details" rows="4"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" id="submitQuoteBtn">Enviar Cotización</button>
+                <div id="formMessage" class="form-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Nuevo Modal de Pre-interacción de WhatsApp -->
+    <div id="whatsappPreChatModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeWhatsappModalBtn">&times;</span>
+            <h2>Contactar por WhatsApp</h2>
+            <p>¿Prefieres una consulta rápida por WhatsApp o llenar el formulario completo?</p>
+            
+            <form id="whatsappPreChatForm">
+                <div class="form-group">
+                    <label for="whatsappName">Tu Nombre (opcional):</label>
+                    <input type="text" id="whatsappName" name="whatsappName">
+                </div>
+                <div class="form-group">
+                    <label for="whatsappMessage">Tu Mensaje (opcional):</label>
+                    <textarea id="whatsappMessage" name="whatsappMessage" rows="3" placeholder="Ej: 'Quisiera información sobre cursos.'"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" id="sendWhatsappBtn">Enviar Mensaje por WhatsApp</button>
+            </form>
+            
+            <p class="or-separator">O</p>
+
+            <button type="button" class="btn btn-secondary" id="goToQuoteFormBtn">Ir al Formulario de Cotización</button>
+            <div id="whatsappMessageStatus" class="form-message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE (mantener al final del body) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // 🚨 IMPORTANTE: Pega aquí TU configuración real de Firebase SDK (sin el operador ternario).
+        // Asegúrate de copiar el OBJETO COMPLETO desde tu Consola de Firebase -> Configuración del proyecto (⚙️) -> Tus apps -> "Firebase SDK snippet" -> Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
+            authDomain: "dealerclubpe.firebaseapp.com",
+            projectId: "dealerclubpe",
+            storageBucket: "dealerclubpe.firebasestorage.app",
+            messagingSenderId: "330568352415",
+            appId: "1:330568352415:web:9fcd7651698bfafac998aa",
+            measurementId: "G-PF3W9NDSDP"
+        };
+
+        const appIdForFirestorePath = 'default-app-id'; 
+        const initialAuthToken = null; 
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        window.firebaseApp = app;
+        window.firebaseDb = db;
+        window.firebaseAuth = auth;
+        window.firebaseAddDoc = addDoc; 
+        window.firebaseCollection = collection;
+        window.appId = appIdForFirestorePath;
+        window.initialAuthToken = initialAuthToken; 
+        window.signInAnonymously = signInAnonymously; 
+        window.signInWithCustomToken = signInWithCustomToken;
+    </script>
+
+    <!-- TU SCRIPT JS DE LÓGICA DE PÁGINA (debe ir DESPUÉS del script de Firebase) -->
+    <script type="module" src="../assets/js/servicios.js"></script>
+</body>
+</html>
