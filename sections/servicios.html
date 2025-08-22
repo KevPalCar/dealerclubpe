@@ -19,11 +19,11 @@
                 <a href="../index.html">DealerClub</a> 
             </div>
             <ul class="nav-menu">
-                <li><a href="../index.html">Inicio</a></li> 
+                <li><a href="../index.html#inicio">Inicio</a></li> 
                 <li><a href="cursos.html">Cursos</a></li>
                 <li><a href="servicios.html" class="current">Servicios</a></li>
-                <li><a href="nosotros.html">Nosotros</a></li>
-                <li><a href="sections/login.html" id="student-access-link">Iniciar Sesión</a></li>
+                <li><a href="nosotros.html">Nosotros</a></li> <!-- Ruta corregida -->
+                <li><a href="student_dashboard.html" id="student-access-link">Iniciar Sesión</a></li>
                 <!-- Ya eliminaste la sección de contacto, así que no la volvemos a añadir aquí -->
             </ul>
         </nav>
@@ -41,6 +41,8 @@
 
     <main>
         <!-- Sección de Mesas Disponibles (CONTENIDO ESTÁTICO REINSERTADO) -->
+        <!-- NOTA: Si estas mesas también se van a cargar de Firebase, esta sección necesitaría una estructura similar a Dealers.
+                   Por ahora, las mantengo estáticas según tu código provisto. -->
         <section id="mesas-disponibles" class="section-light section-padded">
             <div class="container">
                 <h2>Nuestras Mesas de Casino para tu Evento</h2>
@@ -114,29 +116,15 @@
             </div>
         </section>
 
-        <!-- Sección de Dealers Destacados (CONTENIDO ESTÁTICO REINSERTADO) -->
+        <!-- Sección de Dealers Destacados (AHORA DINÁMICA) -->
         <section id="dealers-destacados" class="section-light section-padded">
             <div class="container">
                 <h2>Conoce a Nuestros Dealers Destacados</h2>
                 <p class="section-description">Nuestros profesionales son la clave para el éxito de tu evento. Su experiencia y carisma transforman cada partida en una experiencia inolvidable. Si deseas un toque extra de exclusividad, puedes solicitar a uno de nuestros talentos destacados para tu evento.</p>
-                <div class="dealers-grid">
-                    <div class="dealer-card">
-                        <img src="https://images.pexels.com/photos/10187019/pexels-photo-10187019.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="Dealer Destacado 1">
-                        <h3>Sofía Vargas</h3>
-                        <p>Especialidad: Blackjack, Ruleta</p>
-                        <button type="button" class="btn btn-primary open-quote-modal" data-dealer-name="Sofía Vargas">Solicitar a Sofía</button>
-                    </div>
-                    <div class="dealer-card">
-                        <img src="https://images.pexels.com/photos/161245/pexels-photo-161245.jpeg?_gl=1*10w6l7o*_ga*MTYzNzQ1NTkxNC4xNzUzNTcyNjg5*_ga_8JE65Q40S6*czE3NTQ1MTgzNDYkYzE1MjIzMTEwNiZ0NzgxMjc5NjgzJnMwJmI4ODQwMTI2N2Y1M2ZmMjJjZDA0YjY0ZDI1ZjY3MjYy" alt="Dealer Destacado 2">
-                        <h3>Marco Robles</h3>
-                        <p>Especialidad: Poker, Craps</p>
-                        <button type="button" class="btn btn-primary open-quote-modal" data-dealer-name="Marco Robles">Solicitar a Marco</button>
-                    </div>
-                    <div class="dealer-card">
-                        <img src="https://images.pexels.com/photos/3371891/pexels-photo-3371891.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="Dealer Destacado 3">
-                        <h3>Valentina Cruz</h3>
-                        <p>Especialidad: Baccarat, Dream 21</p>
-                        <button type="button" class="btn btn-primary open-quote-modal" data-dealer-name="Valentina Cruz">Solicitar a Valentina</button>
+                <div id="dealers-grid-container" class="dealers-grid">
+                    <!-- Los dealers se cargarán dinámicamente aquí desde Firestore -->
+                    <div id="loading-dealers" style="text-align: center; color: #ffc107; font-size: 1.2em; padding: 50px;">
+                        Cargando dealers...
                     </div>
                 </div>
             </div>
@@ -160,6 +148,10 @@
                 <a href="https://www.instagram.com/dealerclub.pe/" target="_blank" rel="noopener noreferrer">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" class="social-icon">
                 </a>
+            </div>
+            <!-- Enlace discreto al panel de administración -->
+            <div class="footer-admin-link">
+                <a href="admin.html">Admin Panel</a>
             </div>
         </div>
         <div class="footer-bottom">
@@ -244,8 +236,10 @@
     <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE (mantener al final del body) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Añadir importación de onAuthStateChanged para el enlace de Mi Cuenta
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // Añadir importación de getDocs para cargar los dealers
+        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // 🚨 IMPORTANTE: Pega aquí TU configuración real de Firebase SDK (sin el operador ternario).
         // Asegúrate de copiar el OBJETO COMPLETO desde tu Consola de Firebase -> Configuración del proyecto (⚙️) -> Tus apps -> "Firebase SDK snippet" -> Config
@@ -271,12 +265,36 @@
         window.firebaseAuth = auth;
         window.firebaseAddDoc = addDoc; 
         window.firebaseCollection = collection;
+        window.firebaseGetDocs = getDocs; // Exportar getDocs
         window.appId = appIdForFirestorePath;
         window.initialAuthToken = initialAuthToken; 
         window.signInAnonymously = signInAnonymously; 
         window.signInWithCustomToken = signInWithCustomToken;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged; // Exportar onAuthStateChanged
     </script>
 
+    <!-- Script para el enlace de Mi Cuenta en la barra de navegación -->
+    <script type="module">
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        
+        // Asumiendo que `app` y `auth` ya están inicializados globalmente por el script anterior
+        const authInstance = window.firebaseAuth || getAuth(window.firebaseApp);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const studentAccessLink = document.getElementById('student-access-link');
+
+            onAuthStateChanged(authInstance, (user) => {
+                if (user) {
+                    studentAccessLink.textContent = 'Mi Dashboard';
+                    studentAccessLink.href = 'student_dashboard.html';
+                } else {
+                    studentAccessLink.textContent = 'Iniciar Sesión';
+                    studentAccessLink.href = 'login.html';
+                }
+            });
+        });
+    </script>
+    
     <!-- TU SCRIPT JS DE LÓGICA DE PÁGINA (debe ir DESPUÉS del script de Firebase) -->
     <script type="module" src="../assets/js/servicios.js"></script>
 </body>
