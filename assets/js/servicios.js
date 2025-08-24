@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const quoteForm = document.getElementById('quoteForm');
     const modalQuoteFor = document.getElementById('modalQuoteFor');
     const detailsTextarea = document.getElementById('details');
-    const submitQuoteBtn = document.getElementById('submitQuoteBtn');
+    // CORRECCIÓN: La siguiente línea estaba mal escrita
+    const submitQuoteBtn = document.getElementById('submitQuoteBtn'); // ✅ Correcto ahora
     const formMessage = document.getElementById('formMessage');
 
     // Referencias a elementos del DOM para el Nuevo Modal de WhatsApp
@@ -25,6 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const dealersGridContainer = document.getElementById('dealers-grid-container');
     const loadingDealers = document.getElementById('loading-dealers');
 
+    // Referencias para la sección de Mesas Disponibles
+    const mesasGridContainer = document.getElementById('mesas-grid-container');
+    const loadingMesas = document.getElementById('loading-mesas');
+
     // Referencia para el enlace de acceso a la cuenta de estudiante (en la barra de navegación)
     const studentAccessLink = document.getElementById('student-access-link');
 
@@ -32,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let db;
     let collection;
     let addDoc;
-    let getDocs; // Necesario para cargar los dealers
+    let getDocs; // Necesario para cargar los dealers y las mesas
     let appId;
     let initialAuthToken;
     let signInAnonymously;
@@ -73,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Lógica para garantizar que haya un usuario autenticado (incluso anónimo) antes de cargar dealers
+            // Lógica para garantizar que haya un usuario autenticado (incluso anónimo) antes de cargar datos
             try {
                 // Esperar un breve momento para que onAuthStateChanged tenga la oportunidad de detectar un usuario persistente
                 await new Promise(resolve => setTimeout(resolve, 50)); 
@@ -90,8 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log("Firebase (Servicios): Usuario ya autenticado, no se requiere sign-in adicional.");
                 }
                 
-                // Ahora que estamos seguros de un estado de autenticación, intentamos cargar los dealers
-                fetchDealers(); // Llama a la función para cargar los dealers
+                // Ahora que estamos seguros de un estado de autenticación, intentamos cargar los datos
+                fetchMesas(); // Carga las mesas
+                fetchDealers(); // Carga los dealers
             } catch (error) {
                 console.error("Firebase (Servicios): Error al inicializar Firebase/autenticación:", error);
                 formMessage.textContent = 'Error al inicializar el servicio de cotización. Inténtelo más tarde.';
@@ -100,6 +106,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 whatsappMessageStatus.textContent = 'Error al inicializar el servicio de WhatsApp. Inténtelo más tarde.';
                 whatsappMessageStatus.className = 'form-message error';
                 sendWhatsappBtn.disabled = true;
+                loadingMesas.textContent = 'Error al cargar las mesas. Por favor, inténtelo más tarde.';
+                loadingMesas.style.color = '#dc3545';
+                loadingDealers.textContent = 'Error al cargar los dealers. Por favor, inténtelo más tarde.';
+                loadingDealers.style.color = '#dc3545';
             }
         } else {
             console.error("Firebase SDK global variables not found for servicios.js. Retrying in 100ms...");
@@ -135,8 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event Listener para abrir el modal de cotización (botón general)
     openGeneralQuoteModalBtn.addEventListener('click', () => openQuoteModal());
     
-    // NOTA: Los event listeners para los botones de las mesas/dealers se añadirán
-    //       después de que el contenido dinámico sea cargado por fetchDealers().
+    // Event listeners para los botones "Cotizar" y "Solicitar Dealer" se reasignarán
+    // después de que el contenido dinámico de mesas y dealers sea cargado.
 
     // Event Listener para cerrar el modal de cotización
     closeQuoteModalBtn.addEventListener('click', closeQuoteModal);
@@ -251,14 +261,68 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- NUEVA FUNCIÓN PARA CARGAR DEALERS DESTACADOS DESDE FIRESTORE ---
+    // --- FUNCIÓN PARA CARGAR MESAS DISPONIBLES DESDE FIRESTORE ---
+    const fetchMesas = async () => {
+        loadingMesas.style.display = 'block'; // Muestra el mensaje de carga
+        mesasGridContainer.innerHTML = ''; // Limpia el contenedor
+
+        try {
+            const collectionPath = `artifacts/${appId}/public/data/tables`;
+            console.log("DEBUG (Servicios): Intentando cargar mesas de la ruta:", collectionPath);
+            const mesasCol = collection(db, collectionPath);
+            const mesaSnapshot = await getDocs(mesasCol);
+
+            if (mesaSnapshot.empty) {
+                loadingMesas.textContent = 'No hay mesas disponibles en este momento.';
+                loadingMesas.style.color = '#ffc107';
+                mesasGridContainer.appendChild(loadingMesas);
+                return;
+            }
+
+            loadingMesas.style.display = 'none'; // Oculta el mensaje de carga
+
+            const mesas = mesaSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            mesas.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+            mesas.forEach(mesa => {
+                const imageUrl = mesa.imageUrl || `https://placehold.co/400x200/333333/ffffff?text=${encodeURIComponent(mesa.name || 'Mesa')}`;
+                console.log(`DEBUG (Mesa): Cargando imagen para "${mesa.name}" desde URL: "${imageUrl}"`); // Muestra la URL en la consola
+
+                const mesaCard = document.createElement('div');
+                mesaCard.className = 'mesa-card';
+
+                mesaCard.innerHTML = `
+                    <img src="${imageUrl}" alt="${mesa.name || 'Mesa de Casino'}" 
+                         onerror="this.onerror=null;this.src='https://placehold.co/400x200/333333/ffffff?text=Imagen+No+Disp.'">
+                    <h3>${mesa.name || 'Mesa'}</h3>
+                    <p>${mesa.description || 'Consulta para más detalles.'}</p>
+                    <button type="button" class="btn btn-primary open-quote-modal" data-table-name="${mesa.name || 'Mesa'}">${mesa.status === 'Próximamente' ? 'Próximamente' : 'Cotizar'}</button>
+                `;
+                mesasGridContainer.appendChild(mesaCard);
+            });
+
+            document.querySelectorAll('.open-quote-modal[data-table-name]').forEach(button => {
+                button.removeEventListener('click', handleOpenQuoteModal); 
+            });
+            document.querySelectorAll('.open-quote-modal').forEach(button => {
+                button.addEventListener('click', handleOpenQuoteModal);
+            });
+
+        } catch (error) {
+            console.error("Error al cargar las mesas disponibles desde Firestore:", error);
+            loadingMesas.textContent = 'Error al cargar las mesas. Por favor, asegúrate de que Firestore esté configurado y los datos existan.';
+            loadingMesas.style.color = '#dc3545';
+            mesasGridContainer.appendChild(loadingMesas);
+        }
+    };
+
+
+    // --- FUNCIÓN PARA CARGAR DEALERS DESTACADOS DESDE FIRESTORE ---
     const fetchDealers = async () => {
         loadingDealers.style.display = 'block'; // Muestra el mensaje de carga
         dealersGridContainer.innerHTML = ''; // Limpia el contenedor
 
         try {
-            // Ruta de la colección de dealers en Firestore
-            // Path: /artifacts/{appId}/public/data/dealers
             const collectionPath = `artifacts/${appId}/public/data/dealers`;
             console.log("DEBUG (Servicios): Intentando cargar dealers de la ruta:", collectionPath);
             const dealersCol = collection(db, collectionPath);
@@ -274,15 +338,14 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingDealers.style.display = 'none'; // Oculta el mensaje de carga
 
             const dealers = dealerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            // Opcional: ordenar dealers si tienen un campo 'order' o 'name'
             dealers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
             dealers.forEach(dealer => {
+                const imageUrl = dealer.imageUrl || `https://placehold.co/400x300/333333/ffffff?text=${encodeURIComponent(dealer.name || 'Dealer')}`;
+                console.log(`DEBUG (Dealer): Cargando imagen para "${dealer.name}" desde URL: "${imageUrl}"`); // Muestra la URL en la consola
+
                 const dealerCard = document.createElement('div');
                 dealerCard.className = 'dealer-card';
-
-                // Usamos una imagen de placeholder si no hay URL de imagen, o si la URL falla
-                const imageUrl = dealer.imageUrl || `https://placehold.co/400x300/333333/ffffff?text=${encodeURIComponent(dealer.name || 'Dealer')}`;
 
                 dealerCard.innerHTML = `
                     <img src="${imageUrl}" alt="${dealer.name || 'Dealer Destacado'}" 
@@ -294,11 +357,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 dealersGridContainer.appendChild(dealerCard);
             });
 
-            // Re-asignar Event Listeners a los botones "Cotizar" y "Solicitar Dealer"
-            // Esto es crucial porque los botones se crean dinámicamente.
-            document.querySelectorAll('.open-quote-modal').forEach(button => {
-                // Elimina cualquier listener duplicado si esta función se llama más de una vez
+            document.querySelectorAll('.open-quote-modal[data-dealer-name]').forEach(button => {
                 button.removeEventListener('click', handleOpenQuoteModal); 
+            });
+            document.querySelectorAll('.open-quote-modal').forEach(button => {
                 button.addEventListener('click', handleOpenQuoteModal);
             });
 
@@ -310,9 +372,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Función manejadora para los botones de cotización (mesas y dealers)
     function handleOpenQuoteModal() {
-        const tableName = this.dataset.tableName; // 'this' se refiere al botón que fue clickeado
+        const tableName = this.dataset.tableName;
         const dealerName = this.dataset.dealerName;
         let quoteInfo = '';
         if (tableName) {

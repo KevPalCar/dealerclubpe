@@ -61,6 +61,7 @@
 .navbar .nav-menu {
     justify-content: flex-end;
     padding-right: 50px; /* Alineación del menú a la derecha */
+    gap: 30px; /* Ajuste para asegurar el espaciado del menú */
 }
 
 .navbar .logo a {
@@ -74,6 +75,7 @@
     list-style: none;
     margin: 0;
     padding: 0;
+    display: flex; /* Asegura el flex para el menú */
     gap: 30px;
 }
 
@@ -272,10 +274,32 @@ h2 {
 .dealer-card img {
     width: 150px; /* Tamaño de la imagen del dealer */
     height: 150px;
-    border-radius: 50%; /* Imágenes circulares */
     object-fit: cover;
-    border: 3px solid #ffc107; /* Borde dorado alrededor de la imagen */
+    
+    /* === NUEVOS ESTILOS PARA LA FORMA DE ESTRELLA === */
+    clip-path: polygon(
+        50% 0%, 
+        61% 35%, 
+        98% 35%, 
+        68% 57%, 
+        79% 91%, 
+        50% 70%, 
+        21% 91%, 
+        32% 57%, 
+        2% 35%, 
+        39% 35%
+    );
+    border: 3px solid #ffc107; /* Filo dorado */
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.7), /* Sombra dorada brillante */
+                0 0 5px rgba(255, 193, 7, 0.3); /* Sombra más suave */
+    transition: all 0.3s ease; /* Transición para efectos de hover */
     margin-bottom: 20px;
+}
+
+.dealer-card img:hover {
+    box-shadow: 0 0 20px rgba(255, 193, 7, 1), /* Más brillante al pasar el ratón */
+                0 0 8px rgba(255, 193, 7, 0.5);
+    transform: scale(1.03); /* Ligeramente más grande */
 }
 
 .dealer-card h3 {
@@ -601,7 +625,7 @@ h2 {
 @media (max-width: 768px) {
     .navbar {
         flex-direction: column;
-        align-items: center;
+        align-items: flex-start; /* Alinea los elementos a la izquierda por defecto */
         padding: 15px 20px;
     }
     .navbar .logo {
@@ -613,6 +637,20 @@ h2 {
         gap: 10px;
         padding-right: 0;
     }
+    .navbar ul.nav-menu {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        text-align: left; /* Alinea los elementos de la lista a la izquierda */
+    }
+    .navbar .nav-menu li {
+        width: 100%; /* Cada ítem del menú ocupa todo el ancho */
+    }
+    .navbar .nav-menu li a {
+        padding: 10px 0; /* Más espacio al hacer clic en móvil */
+        display: block; /* Para que el padding se aplique a toda el área */
+    }
+
     .hero-content h1 {
         font-size: 2em;
     }

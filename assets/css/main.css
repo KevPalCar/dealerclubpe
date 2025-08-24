@@ -39,6 +39,45 @@ a {
     color: inherit; /* Hereda el color del texto del padre */
 }
 
+/* Estilos para el Announce Bar (NUEVO) */
+.announce-bar {
+    display: flex; /* Para alinear el texto y el botón de cierre */
+    justify-content: center;
+    align-items: center;
+    background-color: #deba4e; /* Fondo amarillo/dorado */
+    color: #212121; /* Texto oscuro para contraste */
+    padding: 2px 5px;
+    font-size: 0.95em;
+    font-weight: 600;
+    text-align: center;
+    position: sticky; /* Se mantiene visible en la parte superior al hacer scroll */
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10000; /* Asegura que esté por encima de todos los demás elementos */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.announce-bar p {
+    margin: 0;
+    flex-grow: 1; /* Permite que el texto ocupe el espacio disponible */
+}
+
+.announce-bar button {
+    background: none;
+    border: none;
+    color: #212121;
+    font-size: 1.2em;
+    cursor: pointer;
+    margin-left: 15px;
+    transition: color 0.2s ease;
+}
+
+.announce-bar button:hover {
+    color: #000;
+}
+
+
 /* Estilos de botones generales (para usar en todo el sitio) */
 .btn {
     padding: 12px 24px;
@@ -105,5 +144,12 @@ a {
         bottom: 20px;
         right: 20px;
         font-size: 25px;
+    }
+    .announce-bar {
+        font-size: 0.8em;
+        padding: 8px 15px;
+    }
+    .announce-bar button {
+        font-size: 1em;
     }
 }

@@ -22,9 +22,12 @@
                 <li><a href="../index.html#inicio">Inicio</a></li> 
                 <li><a href="cursos.html">Cursos</a></li>
                 <li><a href="servicios.html" class="current">Servicios</a></li>
-                <li><a href="nosotros.html">Nosotros</a></li> <!-- Ruta corregida -->
+                <li><a href="nosotros.html">Nosotros</a></li>
                 <li><a href="student_dashboard.html" id="student-access-link">Iniciar Sesión</a></li>
-                <!-- Ya eliminaste la sección de contacto, así que no la volvemos a añadir aquí -->
+                <!-- El enlace del Admin Panel se ha movido al header, por lo que esta sección se elimina o se deja vacía si no hay otros elementos. -->
+                <!-- <div class="footer-admin-link">
+                    <a href="admin.html"><i class="fas fa-tools"></i> Admin Panel</a>
+                </div> -->
             </ul>
         </nav>
 
@@ -40,48 +43,14 @@
     </header>
 
     <main>
-        <!-- Sección de Mesas Disponibles (CONTENIDO ESTÁTICO REINSERTADO) -->
-        <!-- NOTA: Si estas mesas también se van a cargar de Firebase, esta sección necesitaría una estructura similar a Dealers.
-                   Por ahora, las mantengo estáticas según tu código provisto. -->
+        <!-- Sección de Mesas Disponibles (AHORA DINÁMICA) -->
         <section id="mesas-disponibles" class="section-light section-padded">
             <div class="container">
                 <h2>Nuestras Mesas de Casino para tu Evento</h2>
-                <div class="mesas-grid">
-                    <div class="mesa-card">
-                        <img src="https://images.pexels.com/photos/7594187/pexels-photo-7594187.jpeg" alt="Mesa de Ruleta Francesa">
-                        <h3>Ruleta Francesa</h3>
-                        <p>Elegancia y emoción con las reglas clásicas de la ruleta europea. Perfecta para un ambiente sofisticado.</p>
-                        <button type="button" class="btn btn-primary open-quote-modal" data-table-name="Ruleta Francesa">Cotizar</button>
-                    </div>
-                    <div class="mesa-card">
-                        <img src="https://images.unsplash.com/photo-1618304925090-b68a8c744cbe?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Mesa de Blackjack">
-                        <h3>Blackjack o Dream 21</h3>
-                        <p>El clásico juego de cartas donde la estrategia y la suerte se unen. Ideal para entretener a todos los invitados.</p>
-                        <button type="button" class="btn btn-primary open-quote-modal" data-table-name="Blackjack">Cotizar</button>
-                    </div>
-                    <div class="mesa-card">
-                        <img src="https://images.pexels.com/photos/7594300/pexels-photo-7594300.jpeg" alt="Mesa de Dream 21">
-                        <h3>Poker Caribeño</h3>
-                        <p>Una emocionante variante del Blackjack con apuestas adicionales y oportunidades de ganar aún más grandes.</p>
-                        <button type="button" class="btn btn-primary open-quote-modal" data-table-name="Poker Caribeño">Cotizar</button>
-                    </div>
-                    <div class="mesa-card">
-                        <img src="https://www.livecasinocomparer.com/wp-content/uploads/2016/07/ultimate-texas-holdem.jpg" alt="Mesa de Ultimate Texas Hold'em">
-                        <h3>Ultimate Texas Hold'em</h3>
-                        <p>El popular Texas Hold'em contra la casa. Un juego dinámico y estratégico que mantiene a los jugadores en vilo.</p>
-                        <button type="button" class="btn btn-primary open-quote-modal" data-table-name="Ultimate Texas Hold'em">Cotizar</button>
-                    </div>
-                    <div class="mesa-card">
-                       <img src="https://images.unsplash.com/photo-1674645164141-00b6ef3047b2?q=80&w=694&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Mesa de Poker Texas Hold'em">
-                        <h3>Poker Texas Hold'em</h3>
-                        <p>El rey de los juegos de cartas. Ideal para torneos amistosos o simplemente para disfrutar con amigos y colegas.</p>
-                        <button type="button" class="btn btn-primary open-quote-modal" data-table-name="Poker Texas Hold'em">Cotizar</button>
-                    </div>
-                    <div class="mesa-card">
-                        <img src="https://tcsjohnhuxley.com/wp-content/uploads/2023/03/Craps-Gaming-Table-2.png" alt="Mesa de Craps">
-                        <h3>Craps</h3>
-                        <p>Ideal para el entretenimiento, diversión y compartir entre amigos. Un juego complejo y sofisticado pero a su vez, demasiado solicitado.</p>
-                        <button type="button" class="btn btn-primary" data-table-name="Craps">Próximamente</button>
+                <div id="mesas-grid-container" class="mesas-grid">
+                    <!-- Las mesas se cargarán dinámicamente aquí desde Firestore -->
+                    <div id="loading-mesas" style="text-align: center; color: #ffc107; font-size: 1.2em; padding: 50px;">
+                        Cargando mesas disponibles...
                     </div>
                 </div>
             </div>
@@ -149,10 +118,10 @@
                     <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" class="social-icon">
                 </a>
             </div>
-            <!-- Enlace discreto al panel de administración -->
-            <div class="footer-admin-link">
-                <a href="admin.html">Admin Panel</a>
-            </div>
+            <!-- Enlace discreto al panel de administración (Se elimina de aquí porque va en el login) -->
+            <!-- <div class="footer-admin-link">
+                <a href="admin.html"><i class="fas fa-tools"></i> Admin Panel</a>
+            </div> -->
         </div>
         <div class="footer-bottom">
             <p>&copy; 2025 DealerClub. Todos los derechos reservados.</p>

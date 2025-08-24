@@ -9,21 +9,24 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 </head>
 <body>
+    <!-- ANNOUNCE BAR -->
+    <div id="announce-bar" class="announce-bar" style="display: none;">
+        <p id="announce-text"></p>
+        <button id="close-announce-bar"><i class="fas fa-times"></i></button>
+    </div>
 
     <header class="hero-section">
         <div class="navbar">
             <div class="logo">
-                <a href="index.html">DealerClub</a> <!-- Asegurarse que el logo siempre va al inicio -->
+                <a href="index.html">DealerClub</a>
             </div>
             <nav class="nav-menu">
                 <ul>
                     <li><a href="index.html#inicio">Inicio</a></li>
-                    <li><a href="sections/cursos.html">Cursos</a></li> <!-- Ruta corregida -->
-                    <li><a href="sections/servicios.html">Servicios</a></li> <!-- Ruta corregida -->
+                    <li><a href="sections/cursos.html">Cursos</a></li>
+                    <li><a href="sections/servicios.html">Servicios</a></li>
                     <li><a href="sections/nosotros.html">Nosotros</a></li>
-                    <!-- Nuevo enlace para el acceso de estudiantes/usuarios -->
                     <li><a href="sections/login.html" id="student-access-link">Iniciar Sesión</a></li>
-                    
                 </ul>
             </nav>
         </div>
@@ -32,8 +35,8 @@
             <h1><strong>DealerClub:</strong> Donde la Pasión por el Juego se Profesionaliza. Tu Talento, Nuestro Estándar.</h1>
             <p>Formamos a la élite de croupiers y proveemos talento "A1" para casinos en el mundo, cruceros y eventos exclusivos en Lima.</p>
             <div class="hero-buttons">
-                <a href="sections/cursos.html" class="btn btn-primary">Empieza tu formacion hoy</a> <!-- Ruta corregida -->
-                <a href="sections/servicios.html" class="btn btn-secondary">Contrata nuestro servicio</a> <!-- Ruta corregida -->
+                <a href="sections/cursos.html" class="btn btn-primary">Empieza tu formacion hoy</a>
+                <a href="sections/servicios.html" class="btn btn-secondary">Contrata nuestro servicio</a>
             </div>
         </div>
     </header>
@@ -144,12 +147,15 @@
         <i class="fab fa-whatsapp"></i>
     </a>
 
-    <!-- Script de inicialización de Firebase para el enlace de Mi Cuenta -->
+    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE (CONSOLIDADO PARA ADMIN LINK Y ANNOUNCE BAR) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        
-        const firebaseConfig = {
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Estas variables se usarán para la inicialización y rutas de Firestore
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
             authDomain: "dealerclubpe.firebaseapp.com",
             projectId: "dealerclubpe",
@@ -158,28 +164,75 @@
             appId: "1:330568352415:web:9fcd7651698bfafac998aa",
             measurementId: "G-PF3W9NDSDP"
         };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
 
+        // Inicialización de Firebase
         const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Exportar a la ventana para que otros scripts puedan usarlos si es necesario
-        window.firebaseAuth = auth;
-        window.firebaseOnAuthStateChanged = onAuthStateChanged;
+        // Autenticación inicial para el frontend
+        async function authenticateFirebaseForFrontend() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    console.log("Frontend: Signed in with custom token.");
+                } else {
+                    await signInAnonymously(auth);
+                    console.log("Frontend: Signed in anonymously.");
+                }
+            } catch (error) {
+                console.error("Frontend: Firebase authentication error:", error);
+            }
+        }
+        authenticateFirebaseForFrontend(); // Ejecutar autenticación al cargar el módulo
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Lógica para el enlace del Dashboard de Estudiante
             const studentAccessLink = document.getElementById('student-access-link');
-
-            // Escuchar cambios en el estado de autenticación
             onAuthStateChanged(auth, (user) => {
                 if (user) {
-                    // Usuario está logueado
                     studentAccessLink.textContent = 'Mi Dashboard';
                     studentAccessLink.href = 'sections/student_dashboard.html';
                 } else {
-                    // Usuario NO está logueado
                     studentAccessLink.textContent = 'Iniciar Sesión';
                     studentAccessLink.href = 'sections/login.html';
                 }
+            });
+
+            // Lógica para el Announce Bar
+            const announceBar = document.getElementById('announce-bar');
+            const announceTextElement = document.getElementById('announce-text');
+            const closeAnnounceBarBtn = document.getElementById('close-announce-bar');
+
+            // Asegurarse de que db y appId estén disponibles antes de intentar onSnapshot
+            if (db && appId) {
+                const announceDocRef = doc(db, `/artifacts/${appId}/public/data/config/announceBar`);
+
+                onSnapshot(announceDocRef, (docSnapshot) => {
+                    if (docSnapshot.exists()) {
+                        const data = docSnapshot.data();
+                        if (data.status === 'active' && data.text) {
+                            announceTextElement.textContent = data.text;
+                            announceBar.style.display = 'flex';
+                        } else {
+                            announceBar.style.display = 'none';
+                        }
+                    } else {
+                        announceBar.style.display = 'none';
+                        console.log("Documento 'announceBar' no encontrado en Firestore.");
+                    }
+                }, (error) => {
+                    console.error("Error al escuchar el announce bar desde Firestore:", error);
+                    announceBar.style.display = 'none';
+                });
+            } else {
+                 console.error("Firebase Firestore no está completamente inicializado para el announce bar en index.html.");
+                 announceBar.style.display = 'none';
+            }
+
+            closeAnnounceBarBtn.addEventListener('click', () => {
+                announceBar.style.display = 'none';
             });
         });
     </script>

@@ -4,184 +4,374 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administración - DealerClub</title>
-    
-    <!-- Enlaces a tus hojas de estilo (rutas CORRECTAS) -->
+    <!-- Enlaces a tus hojas de estilo personalizadas -->
     <link rel="stylesheet" href="../assets/css/main.css">
-    <link rel="stylesheet" href="../assets/css/admin.css"> 
-    
-    <!-- NOTA: Las importaciones de fuentes y Font Awesome ya están en main.css -->
+    <link rel="stylesheet" href="../assets/css/admin.css">
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <header class="admin-header">
-        <div class="logo">
-            <a href="../index.html">DealerClub Admin</a>
-        </div>
-        <nav class="admin-nav" id="admin-nav-menu" style="display: none;">
-            <ul>
-                <li><a href="#" id="show-quotes-btn" class="current">Cotizaciones</a></li>
-                <li><a href="#" id="show-courses-btn">Cursos</a></li>
-            </ul>
-        </nav>
-    </header>
+    <div class="admin-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>DealerClub Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#" id="nav-courses" class="active"><i class="fas fa-book"></i> Cursos</a></li>
+                    <li><a href="#" id="nav-enrollments"><i class="fas fa-users"></i> Inscripciones</a></li>
+                    <li><a href="#" id="nav-services"><i class="fas fa-cogs"></i> Servicios</a></li>
+                    <li><a href="#" id="nav-dealers"><i class="fas fa-star"></i> Dealers Destacados</a></li>
+                    <li><a href="#" id="nav-requests"><i class="fas fa-clipboard-list"></i> Solicitudes</a></li>
+                    <li><a href="#" id="nav-announcements"><i class="fas fa-bullhorn"></i> Anuncios</a></li> <!-- Nuevo -->
+                    <li><a href="#" id="admin-logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a></li>
+                </ul>
+            </nav>
+        </aside>
 
-    <main class="admin-main">
-        <section id="login-section" class="login-container">
-            <h2>Acceso al Panel de Administración</h2>
-            <form id="login-form" class="login-form">
-                <div class="form-group">
-                    <label for="password">Contraseña:</label>
-                    <input type="password" id="password" required>
+        <main class="admin-content">
+            <header class="admin-header">
+                <h1 id="admin-main-title">Gestión de Cursos</h1>
+                <div class="user-info" id="admin-user-info">
+                    <span>Bienvenido, Admin</span>
+                    <i class="fas fa-user-circle"></i>
                 </div>
-                <button type="submit" class="btn btn-primary">Ingresar</button>
-                <div id="login-message" class="message"></div>
-            </form>
-        </section>
+            </header>
 
-        <!-- Sección de Gestión de Cotizaciones -->
-        <section id="quotes-dashboard-section" class="dashboard-container">
-            <h2>Solicitudes de Cotización Recientes</h2>
-            <div id="global-table-message" class="message" style="display: none;"></div>
-            <div id="loading-quotes" class="loading-message">Cargando solicitudes...</div>
-            <div class="table-container">
-                <table id="quotes-table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Nombre</th>
-                            <th>Email</th>
-                            <th>Teléfono</th>
-                            <th>Tipo de Evento</th>
-                            <th>Fecha Evento</th>
-                            <th>Detalles</th>
-                            <th>Contexto</th>
-                            <th>Estado</th> 
-                            <th>Acciones</th> 
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Las filas de las cotizaciones se cargarán aquí dinámicamente -->
-                    </tbody>
-                </table>
-            </div>
-            <div id="no-quotes-message" class="no-data-message" style="display: none;">
-                No hay solicitudes de cotización en este momento.
-            </div>
-        </section>
+            <!-- Sección de Gestión de Cursos -->
+            <section id="courses-management" class="content-section active">
+                <div class="section-header">
+                    <h2>Listado de Cursos</h2>
+                    <button class="btn btn-primary" id="add-course-btn"><i class="fas fa-plus"></i> Añadir Nuevo Curso</button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Orden</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Precio</th>
+                                <th>Horario</th>
+                                <th>Duración</th>
+                                <th>Status</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courses-table-body">
+                            <tr>
+                                <td colspan="8" class="loading-message">Cargando cursos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="no-courses-message" class="info-message" style="display: none;">No hay cursos disponibles para administrar.</div>
+            </section>
 
-        <!-- Sección de Gestión de Cursos -->
-        <section id="courses-management-section" class="dashboard-container" style="display: none;">
-            <h2>Gestión de Cursos</h2>
-            <button id="add-course-btn" class="btn btn-primary add-item-btn">Añadir Nuevo Curso</button>
-            <div id="global-course-message" class="message" style="display: none;"></div>
-            <div id="loading-courses" class="loading-message">Cargando cursos...</div>
-            <div class="table-container">
-                <table id="courses-table">
-                    <thead>
-                        <tr>
-                            <th>Orden</th>
-                            <th>Nombre</th>
-                            <th>Descripción</th>
-                            <th>Precio</th>
-                            <th>Horario</th>
-                            <th>Duración</th>
-                            <th>Juegos Incluidos</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Las filas de los cursos se cargarán aquí dinámicamente -->
-                    </tbody>
-                </table>
-            </div>
-            <div id="no-courses-message" class="no-data-message" style="display: none;">
-                No hay cursos definidos en este momento.
-            </div>
-        </section>
-    </main>
+            <!-- Sección de Gestión de Inscripciones -->
+            <section id="enrollments-management" class="content-section">
+                <div class="section-header">
+                    <h2>Listado de Inscripciones</h2>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Curso</th>
+                                <th>Nombre Completo</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th>Comentarios</th>
+                                <th>Fecha de Inscripción</th>
+                                <th>Status</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="enrollments-table-body">
+                            <tr>
+                                <td colspan="8" class="loading-message">Cargando inscripciones...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="no-enrollments-message" class="info-message" style="display: none;">No hay inscripciones disponibles.</div>
+            </section>
 
-    <footer class="admin-footer">
-        <p>&copy; 2025 DealerClub Admin. Todos los derechos reservados.</p>
-    </footer>
+            <!-- Sección de Gestión de Servicios -->
+            <section id="services-management" class="content-section">
+                <div class="section-header">
+                    <h2>Listado de Servicios</h2>
+                    <button class="btn btn-primary" id="add-service-btn"><i class="fas fa-plus"></i> Añadir Nuevo Servicio</button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Orden</th>
+                                <th>Nombre del Servicio</th>
+                                <th>Descripción</th>
+                                <th>Precio</th>
+                                <th>Status</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="services-table-body">
+                            <tr>
+                                <td colspan="6" class="loading-message">Cargando servicios...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="no-services-message" class="info-message" style="display: none;">No hay servicios disponibles para administrar.</div>
+            </section>
+
+            <!-- Sección de Gestión de Dealers Destacados -->
+            <section id="dealers-management" class="content-section">
+                <div class="section-header">
+                    <h2>Listado de Dealers Destacados</h2>
+                    <button class="btn btn-primary" id="add-dealer-btn"><i class="fas fa-plus"></i> Añadir Nuevo Dealer</button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Orden</th>
+                                <th>Nombre</th>
+                                <th>Especialidad</th>
+                                <th>Experiencia</th>
+                                <th>Biografía</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dealers-table-body">
+                            <tr>
+                                <td colspan="6" class="loading-message">Cargando dealers...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="no-dealers-message" class="info-message" style="display: none;">No hay dealers destacados disponibles.</div>
+            </section>
+
+            <!-- Sección de Gestión de Solicitudes -->
+            <section id="requests-management" class="content-section">
+                <div class="section-header">
+                    <h2>Listado de Solicitudes</h2>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID Solicitud</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Asunto</th>
+                                <th>Mensaje</th>
+                                <th>Fecha</th>
+                                <th>Status</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requests-table-body">
+                            <tr>
+                                <td colspan="8" class="loading-message">Cargando solicitudes...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="no-requests-message" class="info-message" style="display: none;">No hay solicitudes disponibles.</div>
+            </section>
+
+            <!-- Sección de Gestión de Anuncios (Nuevo) -->
+            <section id="announcements-management" class="content-section">
+                <div class="section-header">
+                    <h2>Gestión de Anuncios</h2>
+                </div>
+                <div class="admin-form-card">
+                    <h3>Anuncio en la Barra Superior</h3>
+                    <form id="announceBarForm">
+                        <div class="form-group">
+                            <label for="announceText">Texto del Anuncio:</label>
+                            <input type="text" id="announceText" placeholder="Ej: ¡Inicio de Clases: 15 de Septiembre!" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="announceStatus">Estado del Anuncio:</label>
+                            <select id="announceStatus" required>
+                                <option value="active">Activo</option>
+                                <option value="inactive">Inactivo</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="saveAnnounceBtn">Guardar Anuncio</button>
+                        <div id="announceFormMessage" class="form-message"></div>
+                    </form>
+                </div>
+            </section>
+
+        </main>
+    </div>
 
     <!-- Modal para Añadir/Editar Curso -->
     <div id="courseModal" class="modal">
         <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2 id="courseModalTitle">Añadir Nuevo Curso</h2>
+            <span class="close-button" id="closeCourseModalBtn">&times;</span>
+            <h2><span id="modal-title-action">Añadir</span> Curso</h2>
             <form id="courseForm">
-                <input type="hidden" id="courseId" name="courseId"> <!-- Para edición -->
-                <div class="form-group">
-                    <label for="courseOrder">Orden:</label>
-                    <input type="number" id="courseOrder" name="order" required>
-                </div>
+                <input type="hidden" id="courseId">
                 <div class="form-group">
                     <label for="courseName">Nombre del Curso:</label>
-                    <input type="text" id="courseName" name="name" required>
+                    <input type="text" id="courseName" required>
+                </div>
+                <div class="form-group">
+                    <label for="courseOrder">Orden de Visualización:</label>
+                    <input type="number" id="courseOrder" value="0" required>
                 </div>
                 <div class="form-group">
                     <label for="courseDescription">Descripción:</label>
-                    <textarea id="courseDescription" name="description" rows="3"></textarea>
+                    <textarea id="courseDescription" rows="3" required></textarea>
                 </div>
                 <div class="form-group">
                     <label for="coursePrice">Precio:</label>
-                    <input type="text" id="coursePrice" name="price" required>
+                    <input type="text" id="coursePrice" placeholder="Ej: S/ 4,500" required>
                 </div>
                 <div class="form-group">
                     <label for="courseSchedule">Horario:</label>
-                    <input type="text" id="courseSchedule" name="schedule">
+                    <input type="text" id="courseSchedule" placeholder="Ej: Lunes a Viernes (3pm - 7pm)" required>
                 </div>
                 <div class="form-group">
                     <label for="courseDuration">Duración:</label>
-                    <input type="text" id="courseDuration" name="duration">
+                    <input type="text" id="courseDuration" placeholder="Ej: 200-240 horas (12 semanas)" required>
                 </div>
                 <div class="form-group">
                     <label for="courseGames">Juegos Incluidos (separados por coma):</label>
-                    <input type="text" id="courseGames" name="gamesIncluded">
-                    <small>(Ej: Blackjack, Ruleta Europea, Poker Caribeño)</small>
+                    <input type="text" id="courseGames" placeholder="Ej: Blackjack, Ruleta Europea">
+                </div>
+                <div class="form-group">
+                    <label for="courseStatus">Estado:</label>
+                    <select id="courseStatus" required>
+                        <option value="Abierto">Abierto</option>
+                        <option value="En Progreso">En Progreso</option>
+                        <option value="Próximamente">Próximamente</option>
+                        <option value="Cerrado">Cerrado</option>
+                    </select>
                 </div>
                 <button type="submit" class="btn btn-primary" id="saveCourseBtn">Guardar Curso</button>
-                <div id="courseFormMessage" class="message"></div>
+                <div id="courseFormMessage" class="form-message"></div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal para Añadir/Editar Dealer -->
+    <div id="dealerModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeDealerModalBtn">&times;</span>
+            <h2><span id="dealer-modal-title-action">Añadir</span> Dealer</h2>
+            <form id="dealerForm">
+                <input type="hidden" id="dealerId">
+                <div class="form-group">
+                    <label for="dealerName">Nombre del Dealer:</label>
+                    <input type="text" id="dealerName" required>
+                </div>
+                <div class="form-group">
+                    <label for="dealerOrder">Orden de Visualización:</label>
+                    <input type="number" id="dealerOrder" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="dealerSpecialty">Especialidad:</label>
+                    <input type="text" id="dealerSpecialty" placeholder="Ej: Blackjack, Poker" required>
+                </div>
+                <div class="form-group">
+                    <label for="dealerExperience">Años de Experiencia:</label>
+                    <input type="number" id="dealerExperience" required>
+                </div>
+                <div class="form-group">
+                    <label for="dealerBio">Biografía:</label>
+                    <textarea id="dealerBio" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="dealerImageUrl">URL Imagen de Perfil:</label>
+                    <input type="text" id="dealerImageUrl" placeholder="https://example.com/image.jpg">
+                </div>
+                <button type="submit" class="btn btn-primary" id="saveDealerBtn">Guardar Dealer</button>
+                <div id="dealerFormMessage" class="form-message"></div>
             </form>
         </div>
     </div>
 
-    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE (mantener al final del body) -->
+
+    <!-- Confirmación Modal -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeConfirmationModalBtn">&times;</span>
+            <h3>Confirmar Acción</h3>
+            <p id="confirmationMessage"></p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancelConfirmBtn">Cancelar</button>
+                <button class="btn btn-danger" id="confirmActionBtn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, updateDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; // Importar addDoc y deleteDoc
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, addDoc, setDoc, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 🚨 IMPORTANTE: Pega aquí TU configuración real de Firebase SDK.
+        // Estas variables se usarán para la inicialización y rutas de Firestore
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-  apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY",
-  authDomain: "dealerclubpe.firebaseapp.com",
-  projectId: "dealerclubpe",
-  storageBucket: "dealerclubpe.firebasestorage.app",
-  messagingSenderId: "330568352415",
-  appId: "1:330568352415:web:9fcd7651698bfafac998aa",
-  measurementId: "G-PF3W9NDSDP"
-};
+            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", // Reemplaza con tu API Key real
+            authDomain: "dealerclubpe.firebaseapp.com", // Reemplaza con tu Auth Domain real
+            projectId: "dealerclubpe", // Reemplaza con tu Project ID real
+            storageBucket: "dealerclubpe.firebasestorage.app", // Reemplaza con tu Storage Bucket real
+            messagingSenderId: "330568352415", // Reemplaza con tu Messaging Sender ID real
+            appId: "1:330568352415:web:9fcd7651698bfafac998aa", // Reemplaza con tu App ID real
+            measurementId: "G-PF3W9NDSDP" // Reemplaza con tu Measurement ID real
+        };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
 
-        const appIdForFirestorePath = 'default-app-id'; 
-        const initialAuthToken = null; 
-
+        // Inicialización de Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
+        // Autenticación inicial
+        async function authenticateFirebaseForAdmin() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                    console.log("Admin.js: Signed in with custom token.");
+                } else {
+                    // Si no hay token inicial, podría ser un entorno de desarrollo local
+                    // o una página donde se requiere login. Para un ADMIN, necesitarías
+                    // un login robusto. Aquí solo permitimos anónimo por simplicidad
+                    // en Canvas, pero DEBERÍAS tener un sistema de autenticación de admin real.
+                    await signInAnonymously(auth);
+                    console.warn("Admin.js: Signed in anonymously. For production, implement proper admin authentication.");
+                }
+            } catch (error) {
+                console.error("Admin.js: Firebase authentication error:", error);
+                // Redirigir a login si la autenticación falla, o mostrar mensaje
+                window.location.href = 'login.html'; // Redirige a una página de login
+            }
+        }
+        authenticateFirebaseForAdmin();
+
+        // Exportar instancias y funciones para el script de lógica principal
         window.firebaseApp = app;
         window.firebaseDb = db;
         window.firebaseAuth = auth;
         window.firebaseGetDocs = getDocs; 
         window.firebaseCollection = collection;
-        window.firebaseDoc = doc; 
-        window.firebaseUpdateDoc = updateDoc; 
-        window.firebaseAddDoc = addDoc; // Exportar addDoc
-        window.firebaseDeleteDoc = deleteDoc; // Exportar deleteDoc
-        window.appId = appIdForFirestorePath;
-        window.initialAuthToken = initialAuthToken; 
-        window.signInAnonymously = signInAnonymously; 
-        window.signInWithCustomToken = signInWithCustomToken;
+        window.firebaseAddDoc = addDoc; 
+        window.firebaseSetDoc = setDoc;
+        window.firebaseDoc = doc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseDeleteDoc = deleteDoc;
+        window.firebaseOnSnapshot = onSnapshot;
+        window.firebaseSignOut = signOut;
+        window.appId = appId; 
+        window.firebaseOnAuthStateChanged = onAuthStateChanged;
     </script>
     
     <!-- TU SCRIPT JS DE LÓGICA DE PÁGINA (debe ir DESPUÉS del script de Firebase) -->
