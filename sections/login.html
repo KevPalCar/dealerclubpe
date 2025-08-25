@@ -5,7 +5,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - DealerClub</title>
     <link rel="stylesheet" href="../assets/css/main.css">
-    <link rel="stylesheet" href="../assets/css/auth.css"> <!-- Nuevo CSS para autenticación -->
+    <link rel="stylesheet" href="../assets/css/auth.css"> <!-- CSS para autenticación -->
+    <!-- Font Awesome para iconos si es necesario -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Estilos básicos para el modal de recuperación de contraseña */
+        .modal {
+            display: none; /* Oculto por defecto */
+            position: fixed; /* Permanece en su lugar */
+            z-index: 1000; /* Se sitúa encima de todo */
+            left: 0;
+            top: 0;
+            width: 100%; /* Ancho completo */
+            height: 100%; /* Alto completo */
+            overflow: auto; /* Habilita scroll si es necesario */
+            background-color: rgba(0,0,0,0.7); /* Fondo semi-transparente */
+            justify-content: center; /* Centrar horizontalmente */
+            align-items: center; /* Centrar verticalmente */
+        }
+
+        .modal-content {
+            background-color: #2a2a2a; /* Color de fondo oscuro */
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #555;
+            width: 80%; /* Podría ser un valor fijo o responsivo */
+            max-width: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+            position: relative;
+            color: #e0e0e0; /* Color de texto claro */
+        }
+
+        .close-button {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-content h2 {
+            color: #ffcc00; /* Amarillo */
+            margin-bottom: 20px;
+        }
+
+        .modal-content .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #e0e0e0;
+        }
+
+        .modal-content .form-group input[type="email"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: #fff;
+        }
+
+        .modal-content .btn-primary {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ffcc00; /* Amarillo */
+            color: #1a1a1a; /* Texto oscuro para contraste */
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .modal-content .btn-primary:hover {
+            background-color: #e6b800; /* Amarillo más oscuro al pasar el ratón */
+        }
+
+        .modal-content .message.success {
+            color: #4CAF50; /* Verde para éxito */
+        }
+        .modal-content .message.error {
+            color: #f44336; /* Rojo para error */
+        }
+        .modal-content .message.loading {
+            color: #00bcd4; /* Azul para cargando */
+        }
+    </style>
 </head>
 <body>
     <header class="auth-header">
@@ -20,15 +115,16 @@
             <form id="login-form" class="auth-form">
                 <div class="form-group">
                     <label for="loginEmail">Correo Electrónico:</label>
-                    <input type="email" id="loginEmail" required>
+                    <input type="email" id="loginEmail" placeholder="tu@ejemplo.com" required>
                 </div>
                 <div class="form-group">
                     <label for="loginPassword">Contraseña:</label>
-                    <input type="password" id="loginPassword" required>
+                    <input type="password" id="loginPassword" placeholder="Tu contraseña" required>
                 </div>
                 <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
                 <div id="login-message" class="message"></div>
                 <p class="auth-link">¿No tienes cuenta? <a href="register.html">Regístrate aquí</a></p>
+                <p class="auth-link mt-4"><a href="#" id="forgot-password-link">¿Olvidaste tu contraseña?</a></p>
             </form>
         </section>
     </main>
@@ -37,12 +133,33 @@
         <p>&copy; 2025 DealerClub. Todos los derechos reservados.</p>
     </footer>
 
-    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE -->
+    <!-- Modal de Recuperación de Contraseña -->
+    <div id="resetPasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeResetPasswordModalBtn">&times;</span>
+            <h2 class="text-xl font-bold text-center">Restablecer Contraseña</h2>
+            <form id="reset-password-form">
+                <div class="form-group">
+                    <label for="resetEmail">Ingresa tu correo electrónico:</label>
+                    <input type="email" id="resetEmail" placeholder="tu@ejemplo.com" required>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    Enviar Enlace de Restablecimiento
+                </button>
+                <div id="reset-message" class="message mt-4 text-center"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE Y LÓGICA DE AUTENTICACIÓN -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        
-        const firebaseConfig = {
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Estas variables se usarán para la inicialización y rutas de Firestore
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
             authDomain: "dealerclubpe.firebaseapp.com",
             projectId: "dealerclubpe",
@@ -51,13 +168,163 @@
             appId: "1:330568352415:web:9fcd7651698bfafac998aa",
             measurementId: "G-PF3W9NDSDP"
         };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
 
+        // Inicialización de Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
-        window.firebaseAuth = auth;
-        window.firebaseSignInWithEmailAndPassword = signInWithEmailAndPassword;
+        // --- Lógica del Login ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('login-form');
+            const loginEmailInput = document.getElementById('loginEmail');
+            const loginPasswordInput = document.getElementById('loginPassword');
+            const loginMessage = document.getElementById('login-message');
+            const forgotPasswordLink = document.getElementById('forgot-password-link');
+
+            // Modal y elementos de Recuperación de Contraseña
+            const resetPasswordModal = document.getElementById('resetPasswordModal');
+            const closeResetPasswordModalBtn = document.getElementById('closeResetPasswordModalBtn');
+            const resetPasswordForm = document.getElementById('reset-password-form');
+            const resetEmailInput = document.getElementById('resetEmail');
+            const resetMessage = document.getElementById('reset-message');
+
+            const showMessage = (element, message, type) => {
+                element.textContent = message;
+                element.className = `message ${type}`; // 'loading', 'success', 'error'
+            };
+
+            const openModal = (modalElement) => {
+                modalElement.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            };
+
+            const closeModal = (modalElement) => {
+                modalElement.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            };
+
+            // --- Verificación de Sesión Activa y Redirección al cargar login.html ---
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    showMessage(loginMessage, 'Sesión activa. Redirigiendo...', 'loading');
+                    const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
+                    try {
+                        const userRoleSnap = await getDoc(userRoleRef);
+                        if (userRoleSnap.exists()) {
+                            const role = userRoleSnap.data().role;
+                            if (role === 'admin') {
+                                window.location.href = 'admin.html';
+                            } else if (role === 'student') {
+                                window.location.href = 'student_dashboard.html';
+                            } else {
+                                console.warn("Login.html: Rol de usuario desconocido. Cerrando sesión.");
+                                await signOut(auth);
+                                showMessage(loginMessage, 'Rol de usuario desconocido. Por favor, inicia sesión de nuevo.', 'error');
+                            }
+                        } else {
+                            console.warn("Login.html: Documento de rol no encontrado. Cerrando sesión.");
+                            await signOut(auth);
+                            showMessage(loginMessage, 'No se pudo verificar tu rol. Por favor, inicia sesión de nuevo.', 'error');
+                        }
+                    } catch (error) {
+                        console.error("Login.html: Error al verificar el rol del usuario:", error);
+                        await signOut(auth);
+                        showMessage(loginMessage, `Error de autenticación: ${error.message}`, 'error');
+                    }
+                } else {
+                    console.log("Login.html: No hay usuario autenticado.");
+                    showMessage(loginMessage, '', ''); // Limpiar mensaje si no hay sesión
+                }
+            });
+
+            // --- Manejo del Formulario de Login ---
+            loginForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const email = loginEmailInput.value;
+                const password = loginPasswordInput.value;
+                showMessage(loginMessage, 'Iniciando sesión...', 'loading');
+
+                try {
+                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+
+                    // Después de un inicio de sesión exitoso, verificar el rol
+                    const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
+                    const userRoleSnap = await getDoc(userRoleRef);
+
+                    if (userRoleSnap.exists()) {
+                        const role = userRoleSnap.data().role;
+                        if (role === 'admin') {
+                            showMessage(loginMessage, 'Inicio de sesión exitoso como Administrador. Redirigiendo...', 'success');
+                            window.location.href = 'admin.html';
+                        } else if (role === 'student') {
+                            showMessage(loginMessage, 'Inicio de sesión exitoso como Estudiante. Redirigiendo...', 'success');
+                            window.location.href = 'student_dashboard.html';
+                        } else {
+                            // Si el rol es desconocido, cerrar sesión y mostrar error
+                            console.warn("Rol de usuario desconocido después del login. Cerrando sesión.");
+                            await signOut(auth);
+                            showMessage(loginMessage, 'Rol de usuario desconocido. Por favor, contacta a soporte.', 'error');
+                        }
+                    } else {
+                        // Si no hay un documento de rol, cerrar sesión y mostrar error
+                        console.warn("Documento de rol no encontrado después del login. Cerrando sesión.");
+                        await signOut(auth);
+                        showMessage(loginMessage, 'No se pudo verificar tu rol. Por favor, contacta a soporte.', 'error');
+                    }
+                } catch (error) {
+                    console.error("Error de inicio de sesión:", error);
+                    let errorMessage = 'Error al iniciar sesión. Verifica tus credenciales.';
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                        errorMessage = 'Correo electrónico o contraseña incorrectos.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMessage = 'Formato de correo electrónico inválido.';
+                    } else if (error.code === 'auth/too-many-requests') {
+                        errorMessage = 'Demasiados intentos fallidos. Inténtalo de nuevo más tarde.';
+                    }
+                    showMessage(loginMessage, errorMessage, 'error');
+                }
+            });
+
+            // --- Manejo del enlace "¿Olvidaste tu contraseña?" ---
+            forgotPasswordLink.addEventListener('click', (event) => {
+                event.preventDefault();
+                resetEmailInput.value = ''; // Limpiar campo
+                showMessage(resetMessage, '', ''); // Limpiar mensaje
+                openModal(resetPasswordModal);
+            });
+
+            // --- Manejo del formulario de Recuperación de Contraseña ---
+            resetPasswordForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const email = resetEmailInput.value;
+                showMessage(resetMessage, 'Enviando enlace de restablecimiento...', 'loading');
+
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    showMessage(resetMessage, `Se ha enviado un enlace para restablecer tu contraseña a ${email}. Revisa tu bandeja de entrada.`, 'success');
+                    setTimeout(() => closeModal(resetPasswordModal), 3000); // Cerrar modal después de 3 segundos
+                } catch (error) {
+                    console.error("Error al enviar el correo de restablecimiento:", error);
+                    let errorMessage = 'Error al enviar el enlace de restablecimiento.';
+                    if (error.code === 'auth/user-not-found') {
+                        errorMessage = 'No se encontró una cuenta con ese correo electrónico.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMessage = 'El formato del correo electrónico es inválido.';
+                    }
+                    showMessage(resetMessage, errorMessage, 'error');
+                }
+            });
+
+            // --- Cierre del Modal de Recuperación de Contraseña ---
+            closeResetPasswordModalBtn.addEventListener('click', () => closeModal(resetPasswordModal));
+            // Cerrar modal si se hace clic fuera de él
+            window.addEventListener('click', (event) => {
+                if (event.target === resetPasswordModal) closeModal(resetPasswordModal);
+            });
+        });
     </script>
-    <script type="module" src="../assets/js/login.js"></script> <!-- Nuevo JS para login -->
 </body>
 </html>

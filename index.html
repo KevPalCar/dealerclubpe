@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/index.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <!-- Font Awesome para iconos, si aún no está en main.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <!-- ANNOUNCE BAR -->
@@ -118,10 +120,7 @@
                     <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" class="social-icon">
                 </a>
             </div>
-            <!-- Enlace discreto al panel de administración -->
-            <div class="footer-admin-link">
-                <a href="sections/admin.html">Admin Panel</a>
-            </div>
+            <!-- ELIMINADO: Enlace discreto al panel de administración -->
         </div>
         <div class="footer-bottom">
             <p>&copy; 2025 DealerClub. Todos los derechos reservados.</p>
@@ -147,11 +146,11 @@
         <i class="fab fa-whatsapp"></i>
     </a>
 
-    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE (CONSOLIDADO PARA ADMIN LINK Y ANNOUNCE BAR) -->
+    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE Y LÓGICA DEL ANNOUNCE BAR/HEADER LINK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Estas variables se usarán para la inicialización y rutas de Firestore
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -164,6 +163,8 @@
             appId: "1:330568352415:web:9fcd7651698bfafac998aa",
             measurementId: "G-PF3W9NDSDP"
         };
+        // initialAuthToken no se usará directamente para autenticación en index.html
+        // Ya que index.html es una página pública que no inicia sesión automáticamente.
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
 
         // Inicialización de Firebase
@@ -171,30 +172,45 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Autenticación inicial para el frontend
-        async function authenticateFirebaseForFrontend() {
-            try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                    console.log("Frontend: Signed in with custom token.");
-                } else {
-                    await signInAnonymously(auth);
-                    console.log("Frontend: Signed in anonymously.");
-                }
-            } catch (error) {
-                console.error("Frontend: Firebase authentication error:", error);
-            }
-        }
-        authenticateFirebaseForFrontend(); // Ejecutar autenticación al cargar el módulo
-
         document.addEventListener('DOMContentLoaded', () => {
-            // Lógica para el enlace del Dashboard de Estudiante
+            // Lógica para el enlace del Dashboard de Estudiante en el HEADER
             const studentAccessLink = document.getElementById('student-access-link');
-            onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    studentAccessLink.textContent = 'Mi Dashboard';
-                    studentAccessLink.href = 'sections/student_dashboard.html';
+                    // Si el usuario está logueado, verifica su rol para actualizar el enlace
+                    const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
+                    try {
+                        const userRoleSnap = await getDoc(userRoleRef);
+                        if (userRoleSnap.exists()) {
+                            const role = userRoleSnap.data().role;
+                            if (role === 'admin') {
+                                studentAccessLink.textContent = 'Panel Admin';
+                                studentAccessLink.href = 'sections/admin.html';
+                            } else if (role === 'student') {
+                                studentAccessLink.textContent = 'Mi Dashboard';
+                                studentAccessLink.href = 'sections/student_dashboard.html';
+                            } else {
+                                // Rol desconocido, tratar como no logueado y cerrar sesión
+                                studentAccessLink.textContent = 'Iniciar Sesión';
+                                studentAccessLink.href = 'sections/login.html';
+                                console.warn("Index.html: Rol de usuario desconocido. Cerrando sesión.");
+                                await signOut(auth); 
+                            }
+                        } else {
+                            // Documento de rol no encontrado, tratar como no logueado y cerrar sesión
+                            studentAccessLink.textContent = 'Iniciar Sesión';
+                            studentAccessLink.href = 'sections/login.html';
+                            console.warn("Index.html: Documento de rol no encontrado. Cerrando sesión.");
+                            await signOut(auth); 
+                        }
+                    } catch (error) {
+                        console.error("Index.html: Error al obtener el rol del usuario:", error);
+                        studentAccessLink.textContent = 'Iniciar Sesión';
+                        studentAccessLink.href = 'sections/login.html';
+                        await signOut(auth); 
+                    }
                 } else {
+                    // No hay usuario logueado
                     studentAccessLink.textContent = 'Iniciar Sesión';
                     studentAccessLink.href = 'sections/login.html';
                 }
@@ -220,14 +236,14 @@
                         }
                     } else {
                         announceBar.style.display = 'none';
-                        console.log("Documento 'announceBar' no encontrado en Firestore.");
+                        console.log("Index.html: Documento 'announceBar' no encontrado en Firestore.");
                     }
                 }, (error) => {
-                    console.error("Error al escuchar el announce bar desde Firestore:", error);
+                    console.error("Index.html: Error al escuchar el announce bar desde Firestore:", error);
                     announceBar.style.display = 'none';
                 });
             } else {
-                 console.error("Firebase Firestore no está completamente inicializado para el announce bar en index.html.");
+                 console.error("Index.html: Firebase Firestore no está completamente inicializado para el announce bar.");
                  announceBar.style.display = 'none';
             }
 

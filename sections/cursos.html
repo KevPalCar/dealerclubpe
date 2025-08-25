@@ -10,8 +10,16 @@
     <link rel="stylesheet" href="../assets/css/cursos.css"> 
     
     <!-- NOTA IMPORTANTE: Las importaciones de fuentes y Font Awesome DEBEN estar en tu archivo assets/css/main.css. -->
+    <!-- Font Awesome para iconos (si aún no está en main.css) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
+    <!-- ANNOUNCE BAR -->
+    <div id="announce-bar" class="announce-bar" style="display: none;">
+        <p id="announce-text"></p>
+        <button id="close-announce-bar"><i class="fas fa-times"></i></button>
+    </div>
+
     <!-- HEADER: Este será el contenedor principal con la imagen de fondo que abarca todo.
           Contiene la barra de navegación y el contenido principal del hero. -->
     <header class="hero-section"> 
@@ -25,7 +33,7 @@
                 <li><a href="servicios.html">Servicios</a></li>
                 <li><a href="nosotros.html">Nosotros</a></li>
                 <!-- Nuevo enlace al dashboard de estudiante / login -->
-                <li><a href="student_dashboard.html" id="student-access-link">Iniciar Sesión</a></li>
+                <li><a href="login.html" id="student-access-link">Iniciar Sesión</a></li>
             </ul>
         </nav>
 
@@ -50,6 +58,9 @@
                     <div id="loading-courses" style="text-align: center; color: #ffc107; font-size: 1.2em; padding: 50px;">
                         Cargando cursos...
                     </div>
+                </div>
+                <div id="no-courses-message" class="info-message" style="display: none; text-align: center; color: #ffc107; font-size: 1.2em; padding: 50px;">
+                    No hay cursos disponibles en este momento.
                 </div>
             </div>
         </section>
@@ -102,10 +113,7 @@
                     <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" class="social-icon">
                 </a>
             </div>
-            <!-- Enlace discreto al panel de administración -->
-            <div class="footer-admin-link">
-                <a href="admin.html">Admin Panel</a>
-            </div>
+            <!-- ELIMINADO: Enlace discreto al panel de administración -->
         </div>
         <div class="footer-bottom">
             <p>&copy; 2025 DealerClub. Todos los derechos reservados.</p>
@@ -124,6 +132,7 @@
             <h2>Inscripción al Curso</h2>
             <p id="enrollCourseName"></p> <!-- Para mostrar el nombre del curso seleccionado -->
             <form id="enrollmentForm">
+                <input type="hidden" id="enrollCourseId" name="courseId">
                 <div class="form-group">
                     <label for="enrollFullName">Nombre Completo:</label>
                     <input type="text" id="enrollFullName" name="fullName" required>
@@ -146,14 +155,15 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE (mantener al final del body) -->
+    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE Y LÓGICA DE LA PÁGINA (mantener al final del body) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"; // Importar onAuthStateChanged
-        import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const appId = 'default-app-id'; // Usamos 'default-app-id' para entornos locales
-        const firebaseConfig = {
+        // Usar las variables globales del entorno Canvas, con fallbacks para desarrollo local
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; 
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
             apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", // Reemplaza con tu API Key real
             authDomain: "dealerclubpe.firebaseapp.com", // Reemplaza con tu Auth Domain real
             projectId: "dealerclubpe", // Reemplaza con tu Project ID real
@@ -162,26 +172,239 @@
             appId: "1:330568352415:web:9fcd7651698bfafac998aa", // Reemplaza con tu App ID real
             measurementId: "G-PF3W9NDSDP" // Reemplaza con tu Measurement ID real
         };
-        const initialAuthToken = null; // Para entornos locales
+        // initialAuthToken no se usará directamente para login en esta página, pero lo mantenemos para consistencia
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
-        window.firebaseApp = app;
-        window.firebaseDb = db;
-        window.firebaseAuth = auth;
-        window.firebaseGetDocs = getDocs; 
-        window.firebaseCollection = collection;
-        window.firebaseAddDoc = addDoc; 
-        window.appId = appId; 
-        window.initialAuthToken = initialAuthToken; 
-        window.signInAnonymously = signInAnonymously; 
-        window.signInWithCustomToken = signInWithCustomToken;
-        window.firebaseOnAuthStateChanged = onAuthStateChanged; // Exportar onAuthStateChanged
+        document.addEventListener('DOMContentLoaded', () => {
+            const studentAccessLink = document.getElementById('student-access-link');
+            const coursesGridContainer = document.getElementById('courses-grid-container');
+            const loadingCoursesMessage = document.getElementById('loading-courses');
+            const noCoursesMessage = document.getElementById('no-courses-message');
+
+            const enrollCourseModal = document.getElementById('enrollCourseModal');
+            const closeEnrollModalBtn = document.getElementById('closeEnrollModalBtn');
+            const enrollCourseName = document.getElementById('enrollCourseName');
+            const enrollmentForm = document.getElementById('enrollmentForm');
+            const enrollCourseId = document.getElementById('enrollCourseId');
+            const enrollFullName = document.getElementById('enrollFullName');
+            const enrollEmail = document.getElementById('enrollEmail');
+            const enrollPhone = document.getElementById('enrollPhone');
+            const enrollComments = document.getElementById('enrollComments');
+            const enrollFormMessage = document.getElementById('enrollFormMessage');
+
+            const announceBar = document.getElementById('announce-bar');
+            const announceTextElement = document.getElementById('announce-text');
+            const closeAnnounceBarBtn = document.getElementById('close-announce-bar');
+
+            let selectedCourseId = null; // Para almacenar el ID del curso al que el usuario se está inscribiendo
+
+            const showFormMessage = (messageElement, message, type) => {
+                messageElement.textContent = message;
+                messageElement.className = `form-message ${type}`; // 'success', 'error', 'loading'
+                setTimeout(() => messageElement.textContent = '', 3000); // Limpiar mensaje después de 3 segundos
+            };
+
+            const openModal = (modalElement) => {
+                modalElement.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            };
+
+            const closeModal = (modalElement) => {
+                modalElement.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            };
+
+            // --- Listener para el estado de autenticación (Header Link) ---
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    // Si el usuario está logueado, verifica su rol
+                    const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
+                    try {
+                        const userRoleSnap = await getDoc(userRoleRef);
+                        if (userRoleSnap.exists()) {
+                            const role = userRoleSnap.data().role;
+                            if (role === 'admin') {
+                                studentAccessLink.textContent = 'Panel Admin';
+                                studentAccessLink.href = 'admin.html'; // Ruta relativa
+                            } else if (role === 'student') {
+                                studentAccessLink.textContent = 'Mi Dashboard';
+                                studentAccessLink.href = 'student_dashboard.html'; // Ruta relativa
+                            } else {
+                                studentAccessLink.textContent = 'Iniciar Sesión';
+                                studentAccessLink.href = 'login.html';
+                                console.warn("Cursos.html: Rol de usuario desconocido. Cerrando sesión.");
+                                await signOut(auth); // Cerrar sesión si el rol es desconocido
+                            }
+                        } else {
+                            // No se encontró el documento de rol, tratar como no logueado o rol desconocido
+                            studentAccessLink.textContent = 'Iniciar Sesión';
+                            studentAccessLink.href = 'login.html';
+                            console.warn("Cursos.html: Documento de rol no encontrado. Cerrando sesión.");
+                            await signOut(auth); // Cerrar sesión
+                        }
+                    } catch (error) {
+                        console.error("Cursos.html: Error al obtener el rol del usuario:", error);
+                        studentAccessLink.textContent = 'Iniciar Sesión';
+                        studentAccessLink.href = 'login.html';
+                        await signOut(auth); // Cerrar sesión en caso de error
+                    }
+                } else {
+                    // No hay usuario logueado
+                    studentAccessLink.textContent = 'Iniciar Sesión';
+                    studentAccessLink.href = 'login.html';
+                }
+            });
+
+            // --- Lógica para cargar cursos dinámicamente ---
+            const loadCourses = () => {
+                if (!db || !appId) {
+                    console.error("Cursos.html: Firebase Firestore no está inicializado.");
+                    loadingCoursesMessage.style.display = 'none';
+                    noCoursesMessage.textContent = 'Error: No se pudo cargar la base de datos de cursos.';
+                    noCoursesMessage.style.display = 'block';
+                    return;
+                }
+
+                const coursesCollectionRef = collection(db, `/artifacts/${appId}/public/data/courses`);
+                
+                // Usar onSnapshot para actualizaciones en tiempo real
+                onSnapshot(coursesCollectionRef, (querySnapshot) => {
+                    coursesGridContainer.innerHTML = ''; // Limpiar contenido previo
+                    loadingCoursesMessage.style.display = 'none'; // Ocultar mensaje de carga
+
+                    if (querySnapshot.empty) {
+                        noCoursesMessage.style.display = 'block';
+                        return;
+                    }
+                    noCoursesMessage.style.display = 'none';
+
+                    const courses = [];
+                    querySnapshot.docs.forEach(doc => {
+                        courses.push({ id: doc.id, ...doc.data() });
+                    });
+
+                    // Ordenar cursos por el campo 'order'
+                    courses.sort((a, b) => (a.order || 999) - (b.order || 999));
+
+                    courses.forEach(course => {
+                        const courseCard = document.createElement('div');
+                        courseCard.className = 'paquete-card';
+                        
+                        // Generar la clase de estado dinámica
+                        const statusClass = course.status ? `status-${course.status.toLowerCase().replace(/\s/g, '-')}` : 'status-default';
+
+                        courseCard.innerHTML = `
+                            <span class="course-status ${statusClass}">${course.status || 'N/A'}</span>
+                            <h3>${course.name || 'Curso Sin Nombre'}</h3>
+                            <p>${course.description || 'Descripción no disponible.'}</p>
+                            <p class="price">${course.price || 'N/A'}</p>
+                            <ul>
+                                <li><strong>Horario:</strong> ${course.schedule || 'N/A'}</li>
+                                <li><strong>Duración:</strong> ${course.duration || 'N/A'}</li>
+                                <li><strong>Juegos:</strong> ${Array.isArray(course.gamesIncluded) ? course.gamesIncluded.join(', ') : (course.gamesIncluded || 'N/A')}</li>
+                            </ul>
+                            <button class="btn btn-primary enroll-btn" data-course-id="${course.id}" data-course-name="${course.name}">Inscribirse</button>
+                        `;
+                        coursesGridContainer.appendChild(courseCard);
+                    });
+
+                    // Añadir event listeners a los botones de inscripción
+                    document.querySelectorAll('.enroll-btn').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            selectedCourseId = event.target.dataset.courseId;
+                            const courseName = event.target.dataset.courseName;
+                            enrollCourseName.textContent = `Curso: ${courseName}`;
+                            enrollCourseId.value = selectedCourseId; // Guardar el ID en un campo oculto del formulario
+                            enrollmentForm.reset(); // Limpiar formulario
+                            showFormMessage(enrollFormMessage, '', ''); // Limpiar mensajes anteriores
+                            openModal(enrollCourseModal);
+                        });
+                    });
+
+                }, (error) => {
+                    console.error("Cursos.html: Error al cargar cursos:", error);
+                    loadingCoursesMessage.style.display = 'none';
+                    noCoursesMessage.textContent = `Error al cargar los cursos: ${error.message}`;
+                    noCoursesMessage.style.display = 'block';
+                });
+            };
+
+            // --- Lógica del Modal de Inscripción ---
+            closeEnrollModalBtn.addEventListener('click', () => closeModal(enrollCourseModal));
+
+            window.addEventListener('click', (event) => {
+                if (event.target === enrollCourseModal) {
+                    closeModal(enrollCourseModal);
+                }
+            });
+
+            enrollmentForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                showFormMessage(enrollFormMessage, 'Enviando inscripción...', 'loading');
+
+                const enrollmentData = {
+                    courseId: enrollCourseId.value,
+                    courseName: enrollCourseName.textContent.replace('Curso: ', ''), // Obtener nombre limpio
+                    fullName: enrollFullName.value,
+                    email: enrollEmail.value,
+                    phone: enrollPhone.value,
+                    comments: enrollComments.value,
+                    timestamp: new Date(),
+                    status: 'Pendiente' // Estado inicial de la inscripción
+                };
+
+                try {
+                    if (!db || !appId) {
+                        throw new Error("Firebase Firestore no está inicializado.");
+                    }
+                    const enrollmentsCollectionRef = collection(db, `/artifacts/${appId}/public/data/course_enrollments`);
+                    await addDoc(enrollmentsCollectionRef, enrollmentData);
+                    showFormMessage(enrollFormMessage, 'Inscripción enviada con éxito. ¡Pronto nos pondremos en contacto!', 'success');
+                    enrollmentForm.reset();
+                    setTimeout(() => closeModal(enrollCourseModal), 2000); // Cerrar modal después de 2 segundos
+                } catch (error) {
+                    console.error("Cursos.html: Error al enviar la inscripción:", error);
+                    showFormMessage(enrollFormMessage, `Error al enviar la inscripción: ${error.message}`, 'error');
+                }
+            });
+
+            // --- Lógica para el Announce Bar ---
+            if (db && appId) {
+                const announceDocRef = doc(db, `/artifacts/${appId}/public/data/config/announceBar`);
+
+                onSnapshot(announceDocRef, (docSnapshot) => {
+                    if (docSnapshot.exists()) {
+                        const data = docSnapshot.data();
+                        if (data.status === 'active' && data.text) {
+                            announceTextElement.textContent = data.text;
+                            announceBar.style.display = 'flex';
+                        } else {
+                            announceBar.style.display = 'none';
+                        }
+                    } else {
+                        announceBar.style.display = 'none';
+                        console.log("Cursos.html: Documento 'announceBar' no encontrado en Firestore.");
+                    }
+                }, (error) => {
+                    console.error("Cursos.html: Error al escuchar el announce bar desde Firestore:", error);
+                    announceBar.style.display = 'none';
+                });
+            } else {
+                console.error("Cursos.html: Firebase Firestore no está completamente inicializado para el announce bar.");
+                announceBar.style.display = 'none';
+            }
+
+            closeAnnounceBarBtn.addEventListener('click', () => {
+                announceBar.style.display = 'none';
+            });
+
+            // Cargar los cursos al inicio
+            loadCourses();
+        });
     </script>
-    
-    <!-- TU SCRIPT JS DE LÓGICA DE PÁGINA (debe ir DESPUÉS del script de Firebase) -->
-    <script type="module" src="../assets/js/cursos.js"></script>
 </body>
 </html>

@@ -41,7 +41,7 @@
     display: flex;
     justify-content: center; /* Centra el contenido de la navbar */
     align-items: center;
-    padding: 20px 0; /* Ajustamos padding para que no interfiera con el ancho */
+    padding: 10px 0; /* Ajustamos padding para que no interfiera con el ancho */
     box-sizing: border-box;
     z-index: 2;
 }
