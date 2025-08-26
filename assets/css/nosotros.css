@@ -39,7 +39,7 @@
     display: flex;
     justify-content: center; /* Centra el contenedor interno de la navbar */
     align-items: center;
-    padding: 20px 0; /* Padding superior/inferior, el padding lateral se manejará internamente */
+    padding: 20px 50px; /* Padding superior/inferior, el padding lateral se manejará internamente */
     box-sizing: border-box;
     z-index: 2; /* Asegura que esté por encima del overlay y el contenido del hero */
 }

@@ -1,26 +1,24 @@
 /* Estilos específicos para la página de Cursos */
 
-/* HERO SECTION (el HEADER): Ahora abarca todo el ancho y la altura con la imagen de fondo */
-.hero-section { /* Esta clase ahora está en el <header> */
+/* HEADER/HERO SECTION */
+.hero-section {
     position: relative;
-    width: 99vw; /* Ocupa el 100% del ancho del viewport */
-    height: 60vh; /* Ajusta esta altura para controlar cuánto de la imagen se muestra */
+    width: 99vw;
+    height: 60vh;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start; /* Alinea la navbar arriba, el contenido central */
+    justify-content: flex-start;
     align-items: center;
     background: url('https://images.pexels.com/photos/3279695/pexels-photo-3279695.jpeg?_gl=1*1ktr04i*_ga*MTYzNzQ1NTkxNC4xNzUzNTcyNjg5*_ga_8JE65Q40S6*czE3NTQ1MTc0MzMkbzYkZzEkdDE3NTQ1MTc1MDgkajUyJGwwJGgw') no-repeat center center/cover;
-    background-attachment: fixed; /* Opcional: Para efecto parallax */
+    background-attachment: fixed;
     color: #fff;
     text-align: center;
     overflow: hidden;
-    /* Aseguramos que el header no tenga ningún margen o padding que lo restrinja */
     margin: 0;
     padding: 0;
-    left: 0; /* Asegura que empieza desde el borde izquierdo del viewport */
+    left: 0;
 }
 
-/* Overlay para la imagen de fondo del hero */
 .hero-section::before {
     content: '';
     position: absolute;
@@ -29,40 +27,37 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
-    z-index: 0; /* Detrás del contenido de la navbar y el hero-content */
+    z-index: 0;
 }
 
-/* Estilos de la barra de navegación */
 .navbar {
-    position: absolute; /* Para que la navbar flote sobre la imagen */
+    position: absolute;
     top: 0;
     left: 0;
-    width: 100%; /* La navbar debe estirarse al 100% del ancho del header */
+    width: 100%;
     display: flex;
-    justify-content: center; /* Centra el contenido de la navbar */
+    justify-content: center;
     align-items: center;
-    padding: 10px 0; /* Ajustamos padding para que no interfiera con el ancho */
+    padding: 20px 50px;
     box-sizing: border-box;
     z-index: 2;
 }
 
-/* Contenedor interno para el logo y el menú de navegación para controlar el ancho */
 .navbar .logo, .navbar .nav-menu {
-    max-width: 1200px; /* Ancho máximo para el contenido real de la navbar */
-    flex-basis: 50%; /* Divide el espacio entre logo y menú */
+    max-width: 1200px;
+    flex-basis: 50%;
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Espacio entre logo y menú */
+    justify-content: space-between;
 }
 .navbar .logo {
     justify-content: flex-start;
-    padding-left: 50px; /* Alineación del logo a la izquierda */
+    padding-left: 50px;
 }
 .navbar .nav-menu {
     justify-content: flex-end;
-    padding-right: 50px; /* Alineación del menú a la derecha */
+    padding-right: 50px;
 }
-
 
 .navbar .logo a {
     font-size: 24px;
@@ -71,7 +66,7 @@
     text-decoration: none;
 }
 
-.navbar ul.nav-menu { /* Apuntamos directamente a ul.nav-menu */
+.navbar ul.nav-menu {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -92,13 +87,12 @@
     color: #ffc107;
 }
 
-/* Contenido del hero (título, párrafo, botones) */
 .hero-content {
     position: relative;
     z-index: 1;
     max-width: 800px;
     padding: 20px;
-    margin-top: 100px; /* Ajusta este valor para bajar el texto y evitar que la navbar lo tapa */
+    margin-top: 100px;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -118,11 +112,8 @@
 }
 
 /* Estilos de las secciones de contenido */
-/* APLICACIÓN DE ESTILOS MÁS DINÁMICOS/ATRACTIVOS AQUÍ */
-.section-dark { /* Usado por #paquetes-formacion */
-    /* Fondo con un sutil degradado lineal para un toque más dinámico */
+.section-dark {
     background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
-    /* Sombra sutil para darle más profundidad a la sección */
     box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
@@ -153,102 +144,103 @@ h2 {
 .paquete-card {
     background-color: #212121;
     border-radius: 10px;
-    padding: 30px;
+    padding: 35px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    text-align: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Transición para el hover */
-    position: relative; /* Esencial para posicionar el status */
-    padding-top: 50px; /* Incrementamos el padding superior para el status */
+    text-align: center; /* ALINEACIÓN CENTRADA PARA TODO EL CONTENIDO */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
 }
 
 .paquete-card:hover {
-    transform: translateY(-10px); /* Pequeño levantamiento al pasar el ratón */
-    box-shadow: 0 8px 25px rgba(255, 193, 7, 0.2); /* Sombra más fuerte al pasar el ratón */
+    transform: translateY(-10px);
+    box-shadow: 0 8px 25px rgba(255, 193, 7, 0.2);
 }
 
-.paquete-card h3 {
-    font-size: 1.8em;
-    color: #ffc107;
-    margin-bottom: 10px;
+/* Nuevo contenedor para agrupar los elementos y controlar su espaciado */
+.card-content-wrapper {
+    flex-grow: 1; /* Permite que este contenedor empuje el botón hacia abajo */
+    display: flex;
+    flex-direction: column;
 }
 
-.paquete-card .price {
-    font-size: 2.5em;
-    font-weight: bold;
-    color: #ffc107;
-    margin: 15px 0;
-}
-
-.paquete-card ul {
-    list-style: none;
-    padding: 0;
-    text-align: left;
-    margin: 20px 0;
-}
-
-.paquete-card ul li {
-    margin-bottom: 5px;
-    color: #ccc;
-}
-.paquete-card p {
-    color: #ccc;
-}
-.paquete-card .btn-primary {
-    margin-top: auto;
-}
-
-
-/* --- ESTILOS PARA EL STATUS DEL CURSO (NUEVO Y SUTIL) --- */
+/* Estilos para los elementos dentro de la tarjeta */
 .course-status {
     position: absolute;
-    top: 15px; /* Ajustado para que no cubra el título */
-    right: 15px; /* Distancia desde la parte derecha de la tarjeta */
-    padding: 5px 12px;
-    border-radius: 20px; /* Forma de píldora */
-    font-size: 0.75em; /* Más pequeño y sutil */
+    top: 10px;
+    right: 15px;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 0.75em;
     font-weight: 600;
     text-transform: uppercase;
     color: #fff;
-    background-color: rgba(0, 0, 0, 0.7); /* Fondo oscuro semitransparente por defecto */
-    backdrop-filter: blur(2px); /* Efecto de desenfoque suave */
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(2px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    z-index: 10; /* Asegura que esté por encima de otros elementos */
-    white-space: nowrap; /* Evita que el texto se rompa en varias líneas */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3); /* Sombra muy sutil para destacar */
+    z-index: 10;
+    white-space: nowrap;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+.course-status.status-abierto { background-color: #45e30b; color: #212121; border-color: #45e30b; }
+.course-status.status-cerrado { background-color: #dc3545; border-color: #dc3545; }
+.course-status.status-en-progreso { background-color: #007bff; border-color: #007bff; }
+.course-status.status-próximamente { background-color: rgba(0, 0, 0, 0.4); color: #fff; border-color: rgba(255, 255, 255, 0.2); }
+.course-status.status-default { background-color: #6c757d; border-color: #6c757d; }
+
+.course-title {
+    font-size: 1.8em;
+    color: #ffc107;
+    margin-top: 0;
+    margin-bottom: 10px; 
+    line-height: 1.3;
 }
 
-/* Colores específicos para cada estado */
-.course-status.status-abierto {
-    background-color: #45e30b; /* Amarillo para Abierto */
-    color: #212121; /* Texto oscuro para contraste */
-    border-color: #45e30b;
+.course-description {
+    color: #ccc;
+    margin-top: 0;
+    margin-bottom: 15px; 
+    line-height: 1.6;
 }
 
-.course-status.status-cerrado {
-    background-color: #dc3545; /* Rojo para Cerrado */
-    border-color: #dc3545;
+.price {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #ffc107;
+    margin-top: 0; 
+    margin-bottom: 25px; 
+    line-height: 1;
 }
 
-.course-status.status-en-progreso {
-    background-color: #007bff; /* Celeste para En Progreso */
-    border-color: #007bff;
+/* Lista de detalles: Horario y Juegos Incluidos */
+.course-details {
+    list-style: none;
+    padding: 0;
+    text-align: center; /* ALINEACIÓN CENTRADA PARA LA LISTA */
+    margin: 0; 
 }
 
-.course-status.status-próximamente {
-    background-color: rgba(0, 0, 0, 0.4); /* Semitransparente para Próximamente */
-    color: #fff; /* Texto blanco para que se lea */
-    border-color: rgba(255, 255, 255, 0.2); /* Borde sutil blanco */
+.course-details li {
+    margin-bottom: 5px; 
+    color: #ccc;
+    line-height: 1.4; 
 }
 
-.course-status.status-default {
-    background-color: #6c757d; /* Gris para desconocido/default */
-    border-color: #6c757d;
+.course-duration {
+    margin-top: 15px; 
+    margin-bottom: 25px; 
+    color: #ccc;
+    font-weight: normal; 
 }
 
-/* Estilos para las secciones con imagen de fondo (ej: Consideraciones Adicionales) */
+.enroll-btn {
+    margin-top: auto; /* Empuja el botón al final de la tarjeta */
+    width: 100%;
+}
+
+
+/* --- SECCION ADICIONALES --- */
 .full-screen-section {
     min-height: 50vh;
     display: flex;
@@ -260,19 +252,17 @@ h2 {
 }
 
 .with-bg-image {
-    background: url('https://images.pexels.com/photos/161245/pexels-photo-161245.jpeg?_gl=1*10w6l7o*_ga*MTYzNzQ1NTkxNC4xNzUzNTcyNjg5*_ga_8JE65Q40S6*czE3NTQ1MTgzNDYkYzE1MjIzMTEwNiZ0NzgxMjc5NjgzJnMwJmI4ODQwMTI2N2Y1M2ZmMjJjZDA0YjY0ZDI1ZjY3MjYy') no-repeat center center/cover;
+    background: url('https://images.pexels.com/photos/161245/pexels-photo-161245.jpeg?_gl=1*10w6l7o*_ga*MTYzNzQ1NTkxNC4xNzUzNTcyNjg5*_ga_8JE65Q40S6*czE3NTQxNTM0NjUkamcwNzU5OTI0MTU3JnA0JmMwNTM2MTg5NzY5JnA0') no-repeat center center/cover;
     background-attachment: fixed;
 }
 
-/* Contenedor del contenido dentro de las secciones con imagen de fondo */
 .content-wrapper {
-    /* Fondo ligeramente más oscuro y con sombra más pronunciada */
     padding: 40px;
     border-radius: 10px;
     max-width: 900px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7); /* Sombra más fuerte y difusa */
-    border: 1px solid rgba(255, 193, 7, 0.2); /* Borde sutil dorado */
-    backdrop-filter: blur(3px); /* Efecto de desenfoque en el fondo del contenedor */
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 193, 7, 0.2);
+    backdrop-filter: blur(3px);
 }
 
 .section-title {
@@ -282,7 +272,7 @@ h2 {
     font-family: 'Playfair Display', serif;
 }
 
-.consideraciones-grid { /* Solo mantenemos esta, ya que plan-grid fue eliminada */
+.consideraciones-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
@@ -295,12 +285,12 @@ h2 {
     border-radius: 8px;
     text-align: left;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Transición para el hover */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .consideracion-item:hover {
-    transform: translateY(-5px); /* Pequeño levantamiento al pasar el ratón */
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5); /* Sombra más fuerte al pasar el ratón */
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
 }
 
 .consideracion-item h4 {
@@ -317,7 +307,7 @@ h2 {
     text-align: center;
 }
 
-/* Footer (estilos que ya habíamos acordado, para que lo uses en todas las páginas) */
+/* FOOTER */
 .main-footer {
     background-color: #0d0d0d;
     color: #fff;
@@ -370,17 +360,17 @@ h2 {
     color: #ccc;
 }
 
-/* MODAL DE INSCRIPCIÓN A CURSOS (NUEVO) */
+/* MODAL DE INSCRIPCIÓN */
 .modal {
-    display: none; /* Oculto por defecto */
-    position: fixed; /* Posición fija para cubrir toda la pantalla */
-    z-index: 10000; /* Alto z-index para que esté por encima de todo */
+    display: none;
+    position: fixed;
+    z-index: 10000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto; /* Habilita scroll si el contenido es demasiado largo */
-    background-color: rgba(0,0,0,0.7); /* Fondo oscuro semi-transparente */
+    overflow: auto;
+    background-color: rgba(0,0,0,0.7);
     justify-content: center;
     align-items: center;
     padding: 20px;
@@ -388,12 +378,12 @@ h2 {
 }
 
 .modal-content {
-    background-color: #1a1a1a; /* Fondo oscuro del modal */
+    background-color: #1a1a1a;
     margin: auto;
     padding: 30px;
     border-radius: 10px;
     width: 90%;
-    max-width: 500px; /* Ancho máximo para el modal de inscripción */
+    max-width: 500px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     position: relative;
     color: #f0f0f0;
@@ -429,7 +419,7 @@ h2 {
     margin-bottom: 20px;
 }
 
-.modal-content p#enrollCourseName { /* Para el nombre del curso en el modal */
+.modal-content p#enrollCourseName {
     text-align: center;
     color: #ccc;
     margin-bottom: 20px;
@@ -460,7 +450,7 @@ h2 {
     background-color: #2a2a2a;
     color: #f0f0f0;
     font-size: 1em;
-    box-sizing: border-box; /* Incluye padding y border en el width */
+    box-sizing: border-box;
 }
 
 .form-group input[type="text"]:focus,
@@ -473,7 +463,7 @@ h2 {
 }
 
 .form-group textarea {
-    resize: vertical; /* Permite redimensionar verticalmente */
+    resize: vertical;
 }
 
 #submitEnrollmentBtn {
@@ -489,24 +479,12 @@ h2 {
     border-radius: 5px;
     margin-top: 15px;
     font-weight: bold;
-    color: #f0f0f0; /* Color de texto por defecto */
+    color: #f0f0f0;
 }
 
-.form-message.success {
-    background-color: #28a745; /* Verde para éxito */
-    color: #fff;
-}
-
-.form-message.error {
-    background-color: #dc3545; /* Rojo para error */
-    color: #fff;
-}
-
-.form-message.loading {
-    background-color: #ffc107; /* Dorado para carga */
-    color: #000;
-}
-
+.form-message.success { background-color: #28a745; color: #fff; }
+.form-message.error { background-color: #dc3545; color: #fff; }
+.form-message.loading { background-color: #ffc107; color: #000; }
 
 /* Media Query para móvil */
 @media (max-width: 768px) {
@@ -515,40 +493,15 @@ h2 {
         align-items: center;
         padding: 15px 20px;
     }
-    .navbar .logo {
-        margin-bottom: 15px;
-    }
-    .navbar .nav-menu ul {
-        flex-direction: column;
-        gap: 10px;
-    }
-    .hero-content h1 {
-        font-size: 2em;
-    }
-    .footer-container {
-        text-align: center;
-    }
-    .footer-info, .footer-contact, .footer-social {
-        min-width: unset;
-        width: 100%;
-        margin-bottom: 20px;
-    }
-    .paquete-grid, .consideraciones-grid {
-        grid-template-columns: 1fr;
-    }
-    .modal-content { /* Ajustes para el modal en móvil */
-        width: 95%;
-        padding: 20px;
-    }
-    .close-button {
-        font-size: 24px;
-        top: 5px;
-        right: 15px;
-    }
-    .modal-content h2 {
-        font-size: 1.8em;
-    }
-    .form-group label, .form-group input, .form-group textarea, #submitEnrollmentBtn {
-        font-size: 0.9em;
-    }
+    .navbar .logo { margin-bottom: 15px; }
+    .navbar .nav-menu ul { flex-direction: column; gap: 10px; }
+    .hero-content h1 { font-size: 2em; }
+    .footer-container { text-align: center; }
+    .footer-info, .footer-contact, .footer-social { min-width: unset; width: 100%; margin-bottom: 20px; }
+    .paquete-grid, .consideraciones-grid { grid-template-columns: 1fr; }
+    .modal-content { width: 95%; padding: 20px; }
+    .close-button { font-size: 24px; top: 5px; right: 15px; }
+    .modal-content h2 { font-size: 1.8em; }
+    .form-group label, .form-group input, .form-group textarea, #submitEnrollmentBtn { font-size: 0.9em; }
 }
+

@@ -5,12 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cursos - DealerClub</title>
     
-    <!-- Enlaces a tus hojas de estilo personalizadas (Rutas CORRECTAS) -->
+    <!-- Enlaces a tus hojas de estilo personalizadas -->
     <link rel="stylesheet" href="../assets/css/main.css">
     <link rel="stylesheet" href="../assets/css/cursos.css"> 
     
-    <!-- NOTA IMPORTANTE: Las importaciones de fuentes y Font Awesome DEBEN estar en tu archivo assets/css/main.css. -->
-    <!-- Font Awesome para iconos (si aún no está en main.css) -->
+    <!-- Font Awesome para iconos (asegurarse de que esté en main.css o aquí) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
@@ -20,24 +19,23 @@
         <button id="close-announce-bar"><i class="fas fa-times"></i></button>
     </div>
 
-    <!-- HEADER: Este será el contenedor principal con la imagen de fondo que abarca todo.
-          Contiene la barra de navegación y el contenido principal del hero. -->
+    <!-- HEADER: Contenedor principal con imagen de fondo -->
     <header class="hero-section"> 
         <nav class="navbar">
             <div class="logo">
-                <a href="../index.html">DealerClub</a> <!-- Ruta para volver a la página de inicio -->
+                <a href="../index.html">DealerClub</a>
             </div>
             <ul class="nav-menu">
                 <li><a href="../index.html">Inicio</a></li> 
                 <li><a href="cursos.html" class="current">Cursos</a></li>
                 <li><a href="servicios.html">Servicios</a></li>
                 <li><a href="nosotros.html">Nosotros</a></li>
-                <!-- Nuevo enlace al dashboard de estudiante / login -->
+                <!-- Enlace al dashboard de estudiante / login -->
                 <li><a href="login.html" id="student-access-link">Iniciar Sesión</a></li>
             </ul>
         </nav>
 
-        <!-- Contenido del hero (título, párrafo, botones) -->
+        <!-- Contenido del hero -->
         <div class="hero-content text-center">
             <h1>Conviértete en un Dealer de Élite</h1>
             <p>Nuestros programas de formación te guiarán desde lo básico hasta la maestría en el arte del juego. ¡Tu carrera empieza aquí!</p>
@@ -65,7 +63,7 @@
             </div>
         </section>
         
-        <!-- Sección de Consideraciones Adicionales (con imagen de fondo) -->
+        <!-- Sección de Consideraciones Adicionales -->
         <section class="full-screen-section content-section with-bg-image" id="consideraciones-adicionales">
             <div class="content-wrapper">
                 <h2 class="section-title">Consideraciones Adicionales</h2>
@@ -95,7 +93,7 @@
         </section>
     </main>
 
-    <!-- Footer: Consistente con el resto del sitio -->
+    <!-- Footer -->
     <footer class="main-footer">
         <div class="footer-container">
             <div class="footer-info">
@@ -113,24 +111,23 @@
                     <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" class="social-icon">
                 </a>
             </div>
-            <!-- ELIMINADO: Enlace discreto al panel de administración -->
         </div>
         <div class="footer-bottom">
             <p>&copy; 2025 DealerClub. Todos los derechos reservados.</p>
         </div>
     </footer>
 
-    <!-- Icono flotante de WhatsApp (asegúrate de que este esté en todas tus páginas) -->
+    <!-- Icono flotante de WhatsApp -->
     <a href="https://wa.me/51936437502?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20m%C3%A1s%20informaci%C3%B3n." class="whatsapp-float" target="_blank">
         <i class="fab fa-whatsapp"></i>
     </a>
 
-    <!-- Nuevo Modal de Inscripción a Cursos -->
+    <!-- Modal de Inscripción a Cursos -->
     <div id="enrollCourseModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeEnrollModalBtn">&times;</span>
             <h2>Inscripción al Curso</h2>
-            <p id="enrollCourseName"></p> <!-- Para mostrar el nombre del curso seleccionado -->
+            <p id="enrollCourseName"></p>
             <form id="enrollmentForm">
                 <input type="hidden" id="enrollCourseId" name="courseId">
                 <div class="form-group">
@@ -155,7 +152,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE Y LÓGICA DE LA PÁGINA (mantener al final del body) -->
+    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE Y LÓGICA DE LA PÁGINA -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -172,8 +169,7 @@
             appId: "1:330568352415:web:9fcd7651698bfafac998aa", // Reemplaza con tu App ID real
             measurementId: "G-PF3W9NDSDP" // Reemplaza con tu Measurement ID real
         };
-        // initialAuthToken no se usará directamente para login en esta página, pero lo mantenemos para consistencia
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? initialAuthToken : null; 
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -194,18 +190,17 @@
             const enrollEmail = document.getElementById('enrollEmail');
             const enrollPhone = document.getElementById('enrollPhone');
             const enrollComments = document.getElementById('enrollComments');
-            const enrollFormMessage = document.getElementById('enrollFormMessage');
-
+            
             const announceBar = document.getElementById('announce-bar');
             const announceTextElement = document.getElementById('announce-text');
             const closeAnnounceBarBtn = document.getElementById('close-announce-bar');
 
-            let selectedCourseId = null; // Para almacenar el ID del curso al que el usuario se está inscribiendo
+            let selectedCourseId = null;
 
             const showFormMessage = (messageElement, message, type) => {
                 messageElement.textContent = message;
-                messageElement.className = `form-message ${type}`; // 'success', 'error', 'loading'
-                setTimeout(() => messageElement.textContent = '', 3000); // Limpiar mensaje después de 3 segundos
+                messageElement.className = `form-message ${type}`;
+                setTimeout(() => messageElement.textContent = '', 3000);
             };
 
             const openModal = (modalElement) => {
@@ -218,10 +213,8 @@
                 document.body.style.overflow = 'auto';
             };
 
-            // --- Listener para el estado de autenticación (Header Link) ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    // Si el usuario está logueado, verifica su rol
                     const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
                     try {
                         const userRoleSnap = await getDoc(userRoleRef);
@@ -229,37 +222,35 @@
                             const role = userRoleSnap.data().role;
                             if (role === 'admin') {
                                 studentAccessLink.textContent = 'Panel Admin';
-                                studentAccessLink.href = 'admin.html'; // Ruta relativa
+                                studentAccessLink.href = 'admin.html';
                             } else if (role === 'student') {
                                 studentAccessLink.textContent = 'Mi Dashboard';
-                                studentAccessLink.href = 'student_dashboard.html'; // Ruta relativa
+                                studentAccessLink.href = 'student_dashboard.html';
                             } else {
                                 studentAccessLink.textContent = 'Iniciar Sesión';
                                 studentAccessLink.href = 'login.html';
                                 console.warn("Cursos.html: Rol de usuario desconocido. Cerrando sesión.");
-                                await signOut(auth); // Cerrar sesión si el rol es desconocido
+                                await signOut(auth);
                             }
                         } else {
-                            // No se encontró el documento de rol, tratar como no logueado o rol desconocido
                             studentAccessLink.textContent = 'Iniciar Sesión';
                             studentAccessLink.href = 'login.html';
                             console.warn("Cursos.html: Documento de rol no encontrado. Cerrando sesión.");
-                            await signOut(auth); // Cerrar sesión
+                            await signOut(auth);
                         }
                     } catch (error) {
                         console.error("Cursos.html: Error al obtener el rol del usuario:", error);
                         studentAccessLink.textContent = 'Iniciar Sesión';
                         studentAccessLink.href = 'login.html';
-                        await signOut(auth); // Cerrar sesión en caso de error
+                        await signOut(auth);
                     }
                 } else {
-                    // No hay usuario logueado
                     studentAccessLink.textContent = 'Iniciar Sesión';
                     studentAccessLink.href = 'login.html';
                 }
             });
 
-            // --- Lógica para cargar cursos dinámicamente ---
+            // Lógica para cargar cursos dinámicamente
             const loadCourses = () => {
                 if (!db || !appId) {
                     console.error("Cursos.html: Firebase Firestore no está inicializado.");
@@ -271,10 +262,9 @@
 
                 const coursesCollectionRef = collection(db, `/artifacts/${appId}/public/data/courses`);
                 
-                // Usar onSnapshot para actualizaciones en tiempo real
                 onSnapshot(coursesCollectionRef, (querySnapshot) => {
-                    coursesGridContainer.innerHTML = ''; // Limpiar contenido previo
-                    loadingCoursesMessage.style.display = 'none'; // Ocultar mensaje de carga
+                    coursesGridContainer.innerHTML = '';
+                    loadingCoursesMessage.style.display = 'none';
 
                     if (querySnapshot.empty) {
                         noCoursesMessage.style.display = 'block';
@@ -287,27 +277,32 @@
                         courses.push({ id: doc.id, ...doc.data() });
                     });
 
-                    // Ordenar cursos por el campo 'order'
                     courses.sort((a, b) => (a.order || 999) - (b.order || 999));
 
                     courses.forEach(course => {
                         const courseCard = document.createElement('div');
                         courseCard.className = 'paquete-card';
                         
-                        // Generar la clase de estado dinámica
                         const statusClass = course.status ? `status-${course.status.toLowerCase().replace(/\s/g, '-')}` : 'status-default';
+
+                        const gamesIncludedHtml = Array.isArray(course.gamesIncluded) 
+                            ? course.gamesIncluded.map(game => `<li>${game}</li>`).join('') 
+                            : (course.gamesIncluded ? `<li>${course.gamesIncluded}</li>` : '');
 
                         courseCard.innerHTML = `
                             <span class="course-status ${statusClass}">${course.status || 'N/A'}</span>
-                            <h3>${course.name || 'Curso Sin Nombre'}</h3>
-                            <p>${course.description || 'Descripción no disponible.'}</p>
-                            <p class="price">${course.price || 'N/A'}</p>
-                            <ul>
-                                <li><strong>Horario:</strong> ${course.schedule || 'N/A'}</li>
-                                <li><strong>Duración:</strong> ${course.duration || 'N/A'}</li>
-                                <li><strong>Juegos:</strong> ${Array.isArray(course.gamesIncluded) ? course.gamesIncluded.join(', ') : (course.gamesIncluded || 'N/A')}</li>
-                            </ul>
-                            <button class="btn btn-primary enroll-btn" data-course-id="${course.id}" data-course-name="${course.name}">Inscribirse</button>
+                            <div class="card-content-wrapper">
+                                <h3 class="course-title">${course.name || 'Curso Sin Nombre'}</h3>
+                                <p class="course-description">${course.description || 'Descripción no disponible.'}</p>
+                                <p class="price">${course.price || 'N/A'}</p>
+                                <ul class="course-details">
+                                    <li><strong>Horario:</strong> ${course.schedule || 'N/A'}</li>
+                                    <li><strong>Juegos Incluidos:</strong></li>
+                                    <ol>${gamesIncludedHtml}</ol>
+                                </ul>
+                                <p class="course-duration"><strong>Duración Estimada:</strong> ${course.duration || 'N/A'}</p>
+                            </div>
+                            <button class="btn btn-primary enroll-btn" data-course-id="${course.id}" data-course-name="${course.name}">¡Inscribete ahora!</button>
                         `;
                         coursesGridContainer.appendChild(courseCard);
                     });
@@ -318,9 +313,9 @@
                             selectedCourseId = event.target.dataset.courseId;
                             const courseName = event.target.dataset.courseName;
                             enrollCourseName.textContent = `Curso: ${courseName}`;
-                            enrollCourseId.value = selectedCourseId; // Guardar el ID en un campo oculto del formulario
-                            enrollmentForm.reset(); // Limpiar formulario
-                            showFormMessage(enrollFormMessage, '', ''); // Limpiar mensajes anteriores
+                            enrollCourseId.value = selectedCourseId;
+                            enrollmentForm.reset();
+                            showFormMessage(enrollFormMessage, '', '');
                             openModal(enrollCourseModal);
                         });
                     });
@@ -333,7 +328,7 @@
                 });
             };
 
-            // --- Lógica del Modal de Inscripción ---
+            // Lógica del Modal de Inscripción
             closeEnrollModalBtn.addEventListener('click', () => closeModal(enrollCourseModal));
 
             window.addEventListener('click', (event) => {
@@ -348,13 +343,13 @@
 
                 const enrollmentData = {
                     courseId: enrollCourseId.value,
-                    courseName: enrollCourseName.textContent.replace('Curso: ', ''), // Obtener nombre limpio
+                    courseName: enrollCourseName.textContent.replace('Curso: ', ''),
                     fullName: enrollFullName.value,
                     email: enrollEmail.value,
                     phone: enrollPhone.value,
                     comments: enrollComments.value,
                     timestamp: new Date(),
-                    status: 'Pendiente' // Estado inicial de la inscripción
+                    status: 'Pendiente'
                 };
 
                 try {
@@ -365,14 +360,14 @@
                     await addDoc(enrollmentsCollectionRef, enrollmentData);
                     showFormMessage(enrollFormMessage, 'Inscripción enviada con éxito. ¡Pronto nos pondremos en contacto!', 'success');
                     enrollmentForm.reset();
-                    setTimeout(() => closeModal(enrollCourseModal), 2000); // Cerrar modal después de 2 segundos
+                    setTimeout(() => closeModal(enrollCourseModal), 2000);
                 } catch (error) {
                     console.error("Cursos.html: Error al enviar la inscripción:", error);
                     showFormMessage(enrollFormMessage, `Error al enviar la inscripción: ${error.message}`, 'error');
                 }
             });
 
-            // --- Lógica para el Announce Bar ---
+            // Lógica para el Announce Bar
             if (db && appId) {
                 const announceDocRef = doc(db, `/artifacts/${appId}/public/data/config/announceBar`);
 
