@@ -788,3 +788,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initializeFirebaseAndAdmin(); // Inicia la inicialización de Firebase y la carga de datos del admin
 });
+
+
+
+"BUG AL CERRAR SESION, DANDO CLICK ATRAS, VUELVES A ESTAR EN SESION"
