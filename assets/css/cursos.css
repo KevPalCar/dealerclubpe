@@ -505,3 +505,85 @@ h2 {
     .form-group label, .form-group input, .form-group textarea, #submitEnrollmentBtn { font-size: 0.9em; }
 }
 
+/* =============================================
+   CORRECCIONES RESPONSIVE (SOLUCIÓN CURSOS)
+   Pegar al final de assets/css/cursos.css
+   ============================================= */
+
+@media (max-width: 768px) {
+    /* 1. ARREGLO DEL HERO Y NAVBAR (Vertical Apilado y Transparente) */
+    .hero-section {
+        width: 100%; 
+        min-height: 50vh; 
+    }
+
+    .navbar {
+        position: relative; /* CRUCIAL: Lo saca de la posición absoluta/flotante */
+        background-color: transparent !important; /* Asegura que no haya fondo negro */
+        flex-direction: column; /* Lo hace vertical */
+        justify-content: center; 
+        align-items: center; /* Centra todo */
+        padding: 15px 10px;
+        height: auto;
+    }
+
+    .navbar .logo, 
+    .navbar .nav-menu {
+        padding-left: 0;
+        padding-right: 0;
+        flex-basis: auto; 
+        width: 100%;
+        justify-content: center; /* Centra el logo y el menú */
+        text-align: center;
+    }
+    
+    .navbar .logo a {
+        font-size: 1.5em; /* Tamaño del logo */
+    }
+
+    .navbar ul.nav-menu {
+        flex-direction: row; /* Mantiene los enlaces en fila, pero centrados */
+        flex-wrap: wrap; /* Permite que los enlaces se envuelvan si no caben */
+        gap: 8px; /* Espacio reducido entre enlaces */
+        margin-top: 15px; /* Espacio entre el logo y los enlaces */
+        justify-content: center;
+    }
+    
+    .navbar .nav-menu li a {
+        padding: 5px 8px; 
+        font-size: 0.85em; 
+        white-space: nowrap;
+    }
+
+    /* Ajuste de textos del Hero */
+    .hero-content {
+        margin-top: 20px; /* Acercamos el Hero content al menú */
+        padding: 0 10px;
+    }
+
+    .hero-content h1 {
+        font-size: 2.2em; 
+    }
+    
+    h2 {
+        font-size: 1.8em;
+    }
+
+    .section-padded {
+        padding: 40px 15px;
+    }
+
+    /* APILAMIENTO DE SECCIONES INTERNAS */
+    .destacados-grid, 
+    .testimonials-grid, 
+    .contacto-form-container {
+        grid-template-columns: 1fr;
+    }
+
+    /* APILAMIENTO DEL FOOTER */
+    .footer-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+}
