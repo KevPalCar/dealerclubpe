@@ -3,7 +3,7 @@
 /* HEADER/HERO SECTION */
 .hero-section {
     position: relative;
-    width: 99vw;
+    width: 100%;
     height: 60vh;
     display: flex;
     flex-direction: column;
@@ -43,17 +43,20 @@
     z-index: 2;
 }
 
-.navbar .logo, .navbar .nav-menu {
+.navbar .logo,
+.navbar .nav-menu {
     max-width: 1200px;
     flex-basis: 50%;
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
+
 .navbar .logo {
     justify-content: flex-start;
     padding-left: 50px;
 }
+
 .navbar .nav-menu {
     justify-content: flex-end;
     padding-right: 50px;
@@ -106,6 +109,7 @@
     font-family: 'Playfair Display', serif;
     color: #ffc107;
 }
+
 .hero-content p {
     font-size: 1.1em;
     margin-bottom: 30px;
@@ -148,7 +152,8 @@ h2 {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
     display: flex;
     flex-direction: column;
-    text-align: center; /* ALINEACIÓN CENTRADA PARA TODO EL CONTENIDO */
+    text-align: center;
+    /* ALINEACIÓN CENTRADA PARA TODO EL CONTENIDO */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     position: relative;
 }
@@ -160,7 +165,8 @@ h2 {
 
 /* Nuevo contenedor para agrupar los elementos y controlar su espaciado */
 .card-content-wrapper {
-    flex-grow: 1; /* Permite que este contenedor empuje el botón hacia abajo */
+    flex-grow: 1;
+    /* Permite que este contenedor empuje el botón hacia abajo */
     display: flex;
     flex-direction: column;
 }
@@ -181,26 +187,48 @@ h2 {
     border: 1px solid rgba(255, 255, 255, 0.1);
     z-index: 10;
     white-space: nowrap;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
-.course-status.status-abierto { background-color: #45e30b; color: #212121; border-color: #45e30b; }
-.course-status.status-cerrado { background-color: #dc3545; border-color: #dc3545; }
-.course-status.status-en-progreso { background-color: #007bff; border-color: #007bff; }
-.course-status.status-próximamente { background-color: rgba(0, 0, 0, 0.4); color: #fff; border-color: rgba(255, 255, 255, 0.2); }
-.course-status.status-default { background-color: #6c757d; border-color: #6c757d; }
+
+.course-status.status-abierto {
+    background-color: #45e30b;
+    color: #212121;
+    border-color: #45e30b;
+}
+
+.course-status.status-cerrado {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.course-status.status-en-progreso {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.course-status.status-próximamente {
+    background-color: rgba(0, 0, 0, 0.4);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.course-status.status-default {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
 
 .course-title {
     font-size: 1.8em;
     color: #ffc107;
     margin-top: 0;
-    margin-bottom: 10px; 
+    margin-bottom: 10px;
     line-height: 1.3;
 }
 
 .course-description {
     color: #ccc;
     margin-top: 0;
-    margin-bottom: 15px; 
+    margin-bottom: 15px;
     line-height: 1.6;
 }
 
@@ -208,8 +236,8 @@ h2 {
     font-size: 2.5em;
     font-weight: bold;
     color: #ffc107;
-    margin-top: 0; 
-    margin-bottom: 25px; 
+    margin-top: 0;
+    margin-bottom: 25px;
     line-height: 1;
 }
 
@@ -217,25 +245,27 @@ h2 {
 .course-details {
     list-style: none;
     padding: 0;
-    text-align: center; /* ALINEACIÓN CENTRADA PARA LA LISTA */
-    margin: 0; 
+    text-align: center;
+    /* ALINEACIÓN CENTRADA PARA LA LISTA */
+    margin: 0;
 }
 
 .course-details li {
-    margin-bottom: 5px; 
+    margin-bottom: 5px;
     color: #ccc;
-    line-height: 1.4; 
+    line-height: 1.4;
 }
 
 .course-duration {
-    margin-top: 15px; 
-    margin-bottom: 25px; 
+    margin-top: 15px;
+    margin-bottom: 25px;
     color: #ccc;
-    font-weight: normal; 
+    font-weight: normal;
 }
 
 .enroll-btn {
-    margin-top: auto; /* Empuja el botón al final de la tarjeta */
+    margin-top: auto;
+    /* Empuja el botón al final de la tarjeta */
     width: 100%;
 }
 
@@ -327,12 +357,16 @@ h2 {
     text-align: left;
 }
 
-.footer-info, .footer-contact, .footer-social {
+.footer-info,
+.footer-contact,
+.footer-social {
     flex: 1;
     min-width: 200px;
 }
 
-.footer-info h3, .footer-contact h3, .footer-social h3 {
+.footer-info h3,
+.footer-contact h3,
+.footer-social h3 {
     color: #ffc107;
     font-weight: 700;
     margin-bottom: 15px;
@@ -370,7 +404,7 @@ h2 {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0,0,0,0.7);
+    background-color: rgba(0, 0, 0, 0.7);
     justify-content: center;
     align-items: center;
     padding: 20px;
@@ -384,7 +418,7 @@ h2 {
     border-radius: 10px;
     width: 90%;
     max-width: 500px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     position: relative;
     color: #f0f0f0;
     animation-name: animatetop;
@@ -392,8 +426,15 @@ h2 {
 }
 
 @keyframes animatetop {
-    from {top: -300px; opacity: 0}
-    to {top: 0; opacity: 1}
+    from {
+        top: -300px;
+        opacity: 0
+    }
+
+    to {
+        top: 0;
+        opacity: 1
+    }
 }
 
 .close-button {
@@ -482,9 +523,20 @@ h2 {
     color: #f0f0f0;
 }
 
-.form-message.success { background-color: #28a745; color: #fff; }
-.form-message.error { background-color: #dc3545; color: #fff; }
-.form-message.loading { background-color: #ffc107; color: #000; }
+.form-message.success {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.form-message.error {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.form-message.loading {
+    background-color: #ffc107;
+    color: #000;
+}
 
 /* Media Query para móvil */
 @media (max-width: 768px) {
@@ -493,16 +545,58 @@ h2 {
         align-items: center;
         padding: 15px 20px;
     }
-    .navbar .logo { margin-bottom: 15px; }
-    .navbar .nav-menu ul { flex-direction: column; gap: 10px; }
-    .hero-content h1 { font-size: 2em; }
-    .footer-container { text-align: center; }
-    .footer-info, .footer-contact, .footer-social { min-width: unset; width: 100%; margin-bottom: 20px; }
-    .paquete-grid, .consideraciones-grid { grid-template-columns: 1fr; }
-    .modal-content { width: 95%; padding: 20px; }
-    .close-button { font-size: 24px; top: 5px; right: 15px; }
-    .modal-content h2 { font-size: 1.8em; }
-    .form-group label, .form-group input, .form-group textarea, #submitEnrollmentBtn { font-size: 0.9em; }
+
+    .navbar .logo {
+        margin-bottom: 15px;
+    }
+
+    .navbar .nav-menu ul {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .hero-content h1 {
+        font-size: 2em;
+    }
+
+    .footer-container {
+        text-align: center;
+    }
+
+    .footer-info,
+    .footer-contact,
+    .footer-social {
+        min-width: unset;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .paquete-grid,
+    .consideraciones-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .close-button {
+        font-size: 24px;
+        top: 5px;
+        right: 15px;
+    }
+
+    .modal-content h2 {
+        font-size: 1.8em;
+    }
+
+    .form-group label,
+    .form-group input,
+    .form-group textarea,
+    #submitEnrollmentBtn {
+        font-size: 0.9em;
+    }
 }
 
 /* =============================================
@@ -511,60 +605,72 @@ h2 {
    ============================================= */
 
 @media (max-width: 768px) {
+
     /* 1. ARREGLO DEL HERO Y NAVBAR (Vertical Apilado y Transparente) */
     .hero-section {
-        width: 100%; 
-        min-height: 50vh; 
+        width: 100%;
+        min-height: 50vh;
     }
 
     .navbar {
-        position: relative; /* CRUCIAL: Lo saca de la posición absoluta/flotante */
-        background-color: transparent !important; /* Asegura que no haya fondo negro */
-        flex-direction: column; /* Lo hace vertical */
-        justify-content: center; 
-        align-items: center; /* Centra todo */
+        position: relative;
+        /* CRUCIAL: Lo saca de la posición absoluta/flotante */
+        background-color: transparent !important;
+        /* Asegura que no haya fondo negro */
+        flex-direction: column;
+        /* Lo hace vertical */
+        justify-content: center;
+        align-items: center;
+        /* Centra todo */
         padding: 15px 10px;
         height: auto;
     }
 
-    .navbar .logo, 
+    .navbar .logo,
     .navbar .nav-menu {
         padding-left: 0;
         padding-right: 0;
-        flex-basis: auto; 
+        flex-basis: auto;
         width: 100%;
-        justify-content: center; /* Centra el logo y el menú */
+        justify-content: center;
+        /* Centra el logo y el menú */
         text-align: center;
     }
-    
+
     .navbar .logo a {
-        font-size: 1.5em; /* Tamaño del logo */
+        font-size: 1.5em;
+        /* Tamaño del logo */
     }
 
     .navbar ul.nav-menu {
-        flex-direction: row; /* Mantiene los enlaces en fila, pero centrados */
-        flex-wrap: wrap; /* Permite que los enlaces se envuelvan si no caben */
-        gap: 8px; /* Espacio reducido entre enlaces */
-        margin-top: 15px; /* Espacio entre el logo y los enlaces */
+        flex-direction: row;
+        /* Mantiene los enlaces en fila, pero centrados */
+        flex-wrap: wrap;
+        /* Permite que los enlaces se envuelvan si no caben */
+        gap: 8px;
+        /* Espacio reducido entre enlaces */
+        margin-top: 15px;
+        /* Espacio entre el logo y los enlaces */
         justify-content: center;
     }
-    
+
     .navbar .nav-menu li a {
-        padding: 5px 8px; 
-        font-size: 0.85em; 
+        padding: 5px 8px;
+        font-size: 0.85em;
         white-space: nowrap;
     }
 
     /* Ajuste de textos del Hero */
     .hero-content {
-        margin-top: 20px; /* Acercamos el Hero content al menú */
+        margin-top: 20px;
+        /* Acercamos el Hero content al menú */
         padding: 0 10px;
     }
 
     .hero-content h1 {
-        font-size: 2.2em; 
+        font-size: 2.2em;
     }
-    
+
     h2 {
         font-size: 1.8em;
     }
@@ -574,8 +680,8 @@ h2 {
     }
 
     /* APILAMIENTO DE SECCIONES INTERNAS */
-    .destacados-grid, 
-    .testimonials-grid, 
+    .destacados-grid,
+    .testimonials-grid,
     .contacto-form-container {
         grid-template-columns: 1fr;
     }
