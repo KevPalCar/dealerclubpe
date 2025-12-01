@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,34 +8,48 @@
     <link rel="stylesheet" href="../assets/css/main.css">
     <link rel="stylesheet" href="../assets/css/auth.css"> <!-- CSS para autenticación -->
     <!-- Font Awesome para iconos si es necesario -->
+    <link rel="shortcut icon" href="../assets/images/favicon_pokerchips.png" type="image/x-icon">
+    <link rel="icon" href="../assets/images/favicon_pokerchips.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Estilos básicos para el modal de recuperación de contraseña */
         .modal {
-            display: none; /* Oculto por defecto */
-            position: fixed; /* Permanece en su lugar */
-            z-index: 1000; /* Se sitúa encima de todo */
+            display: none;
+            /* Oculto por defecto */
+            position: fixed;
+            /* Permanece en su lugar */
+            z-index: 1000;
+            /* Se sitúa encima de todo */
             left: 0;
             top: 0;
-            width: 100%; /* Ancho completo */
-            height: 100%; /* Alto completo */
-            overflow: auto; /* Habilita scroll si es necesario */
-            background-color: rgba(0,0,0,0.7); /* Fondo semi-transparente */
-            justify-content: center; /* Centrar horizontalmente */
-            align-items: center; /* Centrar verticalmente */
+            width: 100%;
+            /* Ancho completo */
+            height: 100%;
+            /* Alto completo */
+            overflow: auto;
+            /* Habilita scroll si es necesario */
+            background-color: rgba(0, 0, 0, 0.7);
+            /* Fondo semi-transparente */
+            justify-content: center;
+            /* Centrar horizontalmente */
+            align-items: center;
+            /* Centrar verticalmente */
         }
 
         .modal-content {
-            background-color: #2a2a2a; /* Color de fondo oscuro */
+            background-color: #2a2a2a;
+            /* Color de fondo oscuro */
             margin: auto;
             padding: 30px;
             border: 1px solid #555;
-            width: 80%; /* Podría ser un valor fijo o responsivo */
+            width: 80%;
+            /* Podría ser un valor fijo o responsivo */
             max-width: 500px;
             border-radius: 10px;
-            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
             position: relative;
-            color: #e0e0e0; /* Color de texto claro */
+            color: #e0e0e0;
+            /* Color de texto claro */
         }
 
         .close-button {
@@ -55,7 +70,8 @@
         }
 
         .modal-content h2 {
-            color: #ffcc00; /* Amarillo */
+            color: #ffcc00;
+            /* Amarillo */
             margin-bottom: 20px;
         }
 
@@ -80,28 +96,37 @@
             padding: 12px;
             border: none;
             border-radius: 5px;
-            background-color: #ffcc00; /* Amarillo */
-            color: #1a1a1a; /* Texto oscuro para contraste */
+            background-color: #ffcc00;
+            /* Amarillo */
+            color: #1a1a1a;
+            /* Texto oscuro para contraste */
             font-size: 16px;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
 
         .modal-content .btn-primary:hover {
-            background-color: #e6b800; /* Amarillo más oscuro al pasar el ratón */
+            background-color: #e6b800;
+            /* Amarillo más oscuro al pasar el ratón */
         }
 
         .modal-content .message.success {
-            color: #4CAF50; /* Verde para éxito */
+            color: #4CAF50;
+            /* Verde para éxito */
         }
+
         .modal-content .message.error {
-            color: #f44336; /* Rojo para error */
+            color: #f44336;
+            /* Rojo para error */
         }
+
         .modal-content .message.loading {
-            color: #00bcd4; /* Azul para cargando */
+            color: #00bcd4;
+            /* Azul para cargando */
         }
     </style>
 </head>
+
 <body>
     <header class="auth-header">
         <div class="logo">
@@ -160,7 +185,7 @@
         // Estas variables se usarán para la inicialización y rutas de Firestore
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
+            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY",
             authDomain: "dealerclubpe.firebaseapp.com",
             projectId: "dealerclubpe",
             storageBucket: "dealerclubpe.firebasestorage.app",
@@ -168,7 +193,7 @@
             appId: "1:330568352415:web:9fcd7651698bfafac998aa",
             measurementId: "G-PF3W9NDSDP"
         };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // Inicialización de Firebase
         const app = initializeApp(firebaseConfig);
@@ -327,4 +352,5 @@
         });
     </script>
 </body>
+
 </html>

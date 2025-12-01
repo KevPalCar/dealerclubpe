@@ -1,31 +1,33 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="../assets/images/favicon_pokerchips.png" type="image/x-icon">
     <link rel="icon" href="../assets/images/favicon_pokerchips.png" type="image/png">
     <title>Servicios - DealerClub</title>
-    
+    <link rel="canonical" href="https://dealerclubpe.com/sections/servicios">
     <!-- Enlaces a tus hojas de estilo (rutas CORRECTAS) -->
     <link rel="stylesheet" href="../assets/css/main.css">
-    <link rel="stylesheet" href="../assets/css/servicios.css"> 
-    
+    <link rel="stylesheet" href="../assets/css/servicios.css">
+
     <!-- NOTA: Las importaciones de fuentes y Font Awesome ya están en main.css -->
 </head>
+
 <body>
     <!-- HEADER: Contenedor principal con la imagen de fondo para el hero -->
-    <header class="hero-section"> 
+    <header class="hero-section">
         <nav class="navbar">
             <div class="logo">
-                <a href="../index.html">DealerClub</a> 
+                <a href="/">DealerClub</a>
             </div>
             <ul class="nav-menu">
-                <li><a href="../index.html#inicio">Inicio</a></li> 
-                <li><a href="cursos.html">Cursos</a></li>
-                <li><a href="servicios.html" class="current">Servicios</a></li>
-                <li><a href="nosotros.html">Nosotros</a></li>
-                <li><a href="student_dashboard.html" id="student-access-link">Iniciar Sesión</a></li>
+                <li><a href="/sections/inicio">Inicio</a></li>
+                <li><a href="/sections/cursos">Cursos</a></li>
+                <li><a href="/sections/servicios" class="current">Servicios</a></li>
+                <li><a href="/sections/nosotros">Nosotros</a></li>
+                <li><a href="/sections/login" id="student-access-link">Iniciar Sesión</a></li>
                 <!-- El enlace del Admin Panel se ha movido al header, por lo que esta sección se elimina o se deja vacía si no hay otros elementos. -->
                 <!-- <div class="footer-admin-link">
                     <a href="admin.html"><i class="fas fa-tools"></i> Admin Panel</a>
@@ -36,10 +38,12 @@
         <!-- Contenido del hero (título, párrafo, botones) -->
         <div class="hero-content text-center">
             <h1>Servicios de Casino Élite para Eventos</h1>
-            <p>Transformamos tu evento en una experiencia de casino inolvidable con profesionales de primer nivel y equipos de calidad.</p>
+            <p>Transformamos tu evento en una experiencia de casino inolvidable con profesionales de primer nivel y
+                equipos de calidad.</p>
             <div class="hero-ctas">
                 <!-- El botón principal ahora abrirá el modal de cotización general -->
-                <button type="button" class="btn btn-primary" id="openGeneralQuoteModal">Solicita tu Presupuesto</button>
+                <button type="button" class="btn btn-primary" id="openGeneralQuoteModal">Solicita tu
+                    Presupuesto</button>
             </div>
         </div>
     </header>
@@ -51,7 +55,8 @@
                 <h2>Nuestras Mesas de Casino para tu Evento</h2>
                 <div id="mesas-grid-container" class="mesas-grid">
                     <!-- Las mesas se cargarán dinámicamente aquí desde Firestore -->
-                    <div id="loading-mesas" style="text-align: center; color: #ffc107; font-size: 1.2em; padding: 50px;">
+                    <div id="loading-mesas"
+                        style="text-align: center; color: #ffc107; font-size: 1.2em; padding: 50px;">
                         Cargando mesas disponibles...
                     </div>
                 </div>
@@ -66,22 +71,26 @@
                     <div class="experiencia-item">
                         <i class="fas fa-gem"></i>
                         <h4>Personal Calificado</h4>
-                        <p>Nuestros dealers son formados en nuestra propia escuela, garantizando profesionalismo y carisma en cada mesa.</p>
+                        <p>Nuestros dealers son formados en nuestra propia escuela, garantizando profesionalismo y
+                            carisma en cada mesa.</p>
                     </div>
                     <div class="experiencia-item">
                         <i class="fas fa-boxes"></i>
                         <h4>Logística Completa</h4>
-                        <p>Nos encargamos del transporte, montaje y desmontaje de todo el equipo de casino en tu evento.</p>
+                        <p>Nos encargamos del transporte, montaje y desmontaje de todo el equipo de casino en tu evento.
+                        </p>
                     </div>
                     <div class="experiencia-item">
                         <i class="fas fa-chart-line"></i>
                         <h4>Asesoramiento Personalizado</h4>
-                        <p>Te ayudamos a planificar la mejor configuración y dinámica de juegos para el éxito de tu celebración.</p>
+                        <p>Te ayudamos a planificar la mejor configuración y dinámica de juegos para el éxito de tu
+                            celebración.</p>
                     </div>
                     <div class="experiencia-item">
                         <i class="fas fa-trophy"></i>
                         <h4>Experiencia Inolvidable</h4>
-                        <p>Creamos un ambiente de casino auténtico y divertido que tus invitados recordarán por siempre.</p>
+                        <p>Creamos un ambiente de casino auténtico y divertido que tus invitados recordarán por siempre.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -91,10 +100,13 @@
         <section id="dealers-destacados" class="section-light section-padded">
             <div class="container">
                 <h2>Conoce a Nuestros Dealers Destacados</h2>
-                <p class="section-description">Nuestros profesionales son la clave para el éxito de tu evento. Su experiencia y carisma transforman cada partida en una experiencia inolvidable. Si deseas un toque extra de exclusividad, puedes solicitar a uno de nuestros talentos destacados para tu evento.</p>
+                <p class="section-description">Nuestros profesionales son la clave para el éxito de tu evento. Su
+                    experiencia y carisma transforman cada partida en una experiencia inolvidable. Si deseas un toque
+                    extra de exclusividad, puedes solicitar a uno de nuestros talentos destacados para tu evento.</p>
                 <div id="dealers-grid-container" class="dealers-grid">
                     <!-- Los dealers se cargarán dinámicamente aquí desde Firestore -->
-                    <div id="loading-dealers" style="text-align: center; color: #ffc107; font-size: 1.2em; padding: 50px;">
+                    <div id="loading-dealers"
+                        style="text-align: center; color: #ffc107; font-size: 1.2em; padding: 50px;">
                         Cargando dealers...
                     </div>
                 </div>
@@ -107,17 +119,18 @@
         <div class="footer-container">
             <div class="footer-info">
                 <h3>DealerClub</h3>
-                <p>Tu talento, es nuestro estandar.</p>
+                <p>Tu talento, nuestro estandar.</p>
             </div>
             <div class="footer-contact">
                 <h3>Contacto</h3>
                 <p>WhatsApp: +51 936437502</p>
-                <p>Dirección: Calle Los Mirtos 145 / Independencia</p>
+                <p>Dirección: Los Alhelíes 610 / El Agustino</p>
             </div>
             <div class="footer-social">
                 <h3>Síguenos</h3>
                 <a href="https://www.instagram.com/dealerclub.pe/" target="_blank" rel="noopener noreferrer">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" class="social-icon">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram"
+                        class="social-icon">
                 </a>
             </div>
             <!-- Enlace discreto al panel de administración (Se elimina de aquí porque va en el login) -->
@@ -140,7 +153,7 @@
         <div class="modal-content">
             <span class="close-button" id="closeQuoteModalBtn">&times;</span>
             <h2>Solicitar Cotización</h2>
-            <p id="modalQuoteFor"></p> 
+            <p id="modalQuoteFor"></p>
             <form id="quoteForm">
                 <div class="form-group">
                     <label for="fullName">Nombre Completo:</label>
@@ -184,7 +197,7 @@
             <span class="close-button" id="closeWhatsappModalBtn">&times;</span>
             <h2>Contactar por WhatsApp</h2>
             <p>¿Prefieres una consulta rápida por WhatsApp o llenar el formulario completo?</p>
-            
+
             <form id="whatsappPreChatForm">
                 <div class="form-group">
                     <label for="whatsappName">Tu Nombre (opcional):</label>
@@ -192,14 +205,16 @@
                 </div>
                 <div class="form-group">
                     <label for="whatsappMessage">Tu Mensaje (opcional):</label>
-                    <textarea id="whatsappMessage" name="whatsappMessage" rows="3" placeholder="Ej: 'Quisiera información sobre cursos.'"></textarea>
+                    <textarea id="whatsappMessage" name="whatsappMessage" rows="3"
+                        placeholder="Ej: 'Quisiera información sobre cursos.'"></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary" id="sendWhatsappBtn">Enviar Mensaje por WhatsApp</button>
             </form>
-            
+
             <p class="or-separator">O</p>
 
-            <button type="button" class="btn btn-secondary" id="goToQuoteFormBtn">Ir al Formulario de Cotización</button>
+            <button type="button" class="btn btn-secondary" id="goToQuoteFormBtn">Ir al Formulario de
+                Cotización</button>
             <div id="whatsappMessageStatus" class="form-message" style="display: none;"></div>
         </div>
     </div>
@@ -215,7 +230,7 @@
         // 🚨 IMPORTANTE: Pega aquí TU configuración real de Firebase SDK (sin el operador ternario).
         // Asegúrate de copiar el OBJETO COMPLETO desde tu Consola de Firebase -> Configuración del proyecto (⚙️) -> Tus apps -> "Firebase SDK snippet" -> Config
         const firebaseConfig = {
-            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
+            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY",
             authDomain: "dealerclubpe.firebaseapp.com",
             projectId: "dealerclubpe",
             storageBucket: "dealerclubpe.firebasestorage.app",
@@ -224,8 +239,8 @@
             measurementId: "G-PF3W9NDSDP"
         };
 
-        const appIdForFirestorePath = 'default-app-id'; 
-        const initialAuthToken = null; 
+        const appIdForFirestorePath = 'default-app-id';
+        const initialAuthToken = null;
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -234,12 +249,12 @@
         window.firebaseApp = app;
         window.firebaseDb = db;
         window.firebaseAuth = auth;
-        window.firebaseAddDoc = addDoc; 
+        window.firebaseAddDoc = addDoc;
         window.firebaseCollection = collection;
         window.firebaseGetDocs = getDocs; // Exportar getDocs
         window.appId = appIdForFirestorePath;
-        window.initialAuthToken = initialAuthToken; 
-        window.signInAnonymously = signInAnonymously; 
+        window.initialAuthToken = initialAuthToken;
+        window.signInAnonymously = signInAnonymously;
         window.signInWithCustomToken = signInWithCustomToken;
         window.firebaseOnAuthStateChanged = onAuthStateChanged; // Exportar onAuthStateChanged
     </script>
@@ -247,7 +262,7 @@
     <!-- Script para el enlace de Mi Cuenta en la barra de navegación -->
     <script type="module">
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        
+
         // Asumiendo que `app` y `auth` ya están inicializados globalmente por el script anterior
         const authInstance = window.firebaseAuth || getAuth(window.firebaseApp);
 
@@ -265,8 +280,9 @@
             });
         });
     </script>
-    
+
     <!-- TU SCRIPT JS DE LÓGICA DE PÁGINA (debe ir DESPUÉS del script de Firebase) -->
     <script type="module" src="../assets/js/servicios.js"></script>
 </body>
+
 </html>

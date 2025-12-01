@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Estudiante - DealerClub</title>
+    <link rel="shortcut icon" href="../assets/images/favicon_pokerchips.png" type="image/x-icon">
+    <link rel="icon" href="../assets/images/favicon_pokerchips.png" type="image/png">
     <link rel="stylesheet" href="../assets/css/main.css">
     <link rel="stylesheet" href="../assets/css/student_dashboard.css">
     <!-- Font Awesome para iconos si es necesario -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
+
 <body>
     <header class="dashboard-header">
         <div class="logo">
@@ -19,7 +23,8 @@
                 <li><a href="#" id="dashboard-link" class="current">Mi Dashboard</a></li>
                 <li><a href="#" id="logout-btn">Cerrar Sesión</a></li>
                 <!-- El enlace de Admin Panel se manejará con lógica JavaScript -->
-                <li id="admin-panel-link-container" style="display: none;"><a href="admin.html" class="admin-link" title="Panel de Administración"><i class="fas fa-user-circle"></i></a></li>
+                <li id="admin-panel-link-container" style="display: none;"><a href="admin.html" class="admin-link"
+                        title="Panel de Administración"><i class="fas fa-user-circle"></i></a></li>
             </ul>
         </nav>
     </header>
@@ -63,7 +68,7 @@
         // Estas variables se usarán para la inicialización y rutas de Firestore
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
+            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY",
             authDomain: "dealerclubpe.firebaseapp.com",
             projectId: "dealerclubpe",
             storageBucket: "dealerclubpe.firebasestorage.app",
@@ -71,7 +76,7 @@
             appId: "1:330568352415:web:9fcd7651698bfafac998aa",
             measurementId: "G-PF3W9NDSDP"
         };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // Inicialización de Firebase
         const app = initializeApp(firebaseConfig);
@@ -101,7 +106,7 @@
                 if (user) {
                     currentUserId = user.uid;
                     showAuthStatus('Sesión activa. Verificando rol...', 'loading');
-                    
+
                     const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
                     try {
                         const userRoleSnap = await getDoc(userRoleRef);
@@ -206,4 +211,5 @@
         });
     </script>
 </body>
+
 </html>
