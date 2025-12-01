@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let docRef;
     let getDoc;
     let collection;
-    let queryFn;
-    let whereFn;
+    let queryFn; 
+    let whereFn; 
     let getDocs;
     let appId;
 
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
             window.firebaseDb && window.firebaseDoc && window.firebaseGetDoc &&
             window.firebaseCollection && window.firebaseQuery && window.firebaseWhere && window.firebaseGetDocs &&
             window.appId) {
-
+            
             auth = window.firebaseAuth;
             onAuthStateChanged = window.firebaseOnAuthStateChanged;
             signOut = window.firebaseSignOut;
@@ -41,38 +41,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    // 1. Verificar si es usuario anónimo (invitado)
-                    if (user.isAnonymous) {
-                        console.warn("Acceso denegado: Usuario anónimo intentando acceder al dashboard.");
-                        await signOut(auth); // Cerrar la sesión anónima
-                        window.location.href = 'login.html';
-                        return;
-                    }
-
-                    // Usuario está logueado y no es anónimo
+                    // Usuario está logueado
                     authStatusMessage.textContent = `Sesión iniciada como: ${user.email}`;
                     authStatusMessage.className = 'message success';
-
+                    
                     // Cargar nombre completo del usuario desde Firestore
                     const userDocRef = docRef(db, `artifacts/${appId}/users`, user.uid);
-                    try {
-                        const userDocSnap = await getDoc(userDocRef);
-                        if (userDocSnap.exists()) {
-                            const userData = userDocSnap.data();
-                            welcomeMessage.textContent = `¡Bienvenido/a, ${userData.fullName || user.email}!`;
-                            // Cargar cursos inscritos por el usuario
-                            fetchEnrolledCourses(user.uid);
-                        } else {
-                            // 2. Verificar si el perfil existe en la base de datos
-                            console.warn("Perfil de usuario no encontrado en Firestore para UID:", user.uid);
-                            alert("Error: No se encontró tu perfil de estudiante. Contacta al soporte.");
-                            await signOut(auth);
-                            window.location.href = 'login.html';
-                        }
-                    } catch (error) {
-                        console.error("Error al verificar perfil:", error);
-                        authStatusMessage.textContent = 'Error de conexión. Inténtalo de nuevo.';
+                    const userDocSnap = await getDoc(userDocRef);
+                    if (userDocSnap.exists()) {
+                        const userData = userDocSnap.data();
+                        welcomeMessage.textContent = `¡Bienvenido/a, ${userData.fullName || user.email}!`;
+                        // También puedes usar userData para rellenar otros datos del perfil si los añades
+                    } else {
+                        welcomeMessage.textContent = `¡Bienvenido/a, ${user.email}!`;
+                        console.warn("Perfil de usuario no encontrado en Firestore para UID:", user.uid);
                     }
+
+                    // Cargar cursos inscritos por el usuario
+                    fetchEnrolledCourses(user.uid);
 
                 } else {
                     // Usuario NO está logueado
@@ -99,10 +85,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Ruta a la colección de inscripciones de cursos
             const enrollmentsColRef = collection(db, `artifacts/${appId}/public/data/course_enrollments`);
-
+            
             // Crear una consulta para filtrar las inscripciones por el ID de usuario
             const q = queryFn(enrollmentsColRef, whereFn("enrolledByUid", "==", userId));
-
+            
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
@@ -120,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Formatear la fecha si existe
                 const timestamp = enrollment.timestamp;
-                const formattedDate = timestamp && timestamp.toDate ? timestamp.toDate().toLocaleDateString('es-ES', {
-                    year: 'numeric', month: 'long', day: 'numeric'
+                const formattedDate = timestamp && timestamp.toDate ? timestamp.toDate().toLocaleDateString('es-ES', { 
+                    year: 'numeric', month: 'long', day: 'numeric' 
                 }) : 'N/A';
 
                 courseItem.innerHTML = `

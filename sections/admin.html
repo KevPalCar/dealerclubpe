@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,12 +7,9 @@
     <!-- Enlaces a tus hojas de estilo personalizadas -->
     <link rel="stylesheet" href="../assets/css/main.css">
     <link rel="stylesheet" href="../assets/css/admin.css">
-    <link rel="shortcut icon" href="../assets/images/favicon_pokerchips.png" type="image/x-icon">
-    <link rel="icon" href="../assets/images/favicon_pokerchips.png" type="image/png">
     <!-- Font Awesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-
 <body>
     <div class="admin-wrapper">
         <aside class="sidebar">
@@ -46,8 +42,7 @@
             <section id="courses-management" class="content-section active">
                 <div class="section-header">
                     <h2>Listado de Cursos</h2>
-                    <button class="btn btn-primary" id="add-course-btn"><i class="fas fa-plus"></i> Añadir Nuevo
-                        Curso</button>
+                    <button class="btn btn-primary" id="add-course-btn"><i class="fas fa-plus"></i> Añadir Nuevo Curso</button>
                 </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
@@ -70,8 +65,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div id="no-courses-message" class="info-message" style="display: none;">No hay cursos disponibles para
-                    administrar.</div>
+                <div id="no-courses-message" class="info-message" style="display: none;">No hay cursos disponibles para administrar.</div>
             </section>
 
             <!-- Sección de Gestión de Inscripciones -->
@@ -100,16 +94,14 @@
                         </tbody>
                     </table>
                 </div>
-                <div id="no-enrollments-message" class="info-message" style="display: none;">No hay inscripciones
-                    disponibles.</div>
+                <div id="no-enrollments-message" class="info-message" style="display: none;">No hay inscripciones disponibles.</div>
             </section>
 
             <!-- Sección de Gestión de Servicios -->
             <section id="services-management" class="content-section">
                 <div class="section-header">
                     <h2>Listado de Servicios</h2>
-                    <button class="btn btn-primary" id="add-service-btn"><i class="fas fa-plus"></i> Añadir Nuevo
-                        Servicio</button>
+                    <button class="btn btn-primary" id="add-service-btn"><i class="fas fa-plus"></i> Añadir Nuevo Servicio</button>
                 </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
@@ -130,16 +122,14 @@
                         </tbody>
                     </table>
                 </div>
-                <div id="no-services-message" class="info-message" style="display: none;">No hay servicios disponibles
-                    para administrar.</div>
+                <div id="no-services-message" class="info-message" style="display: none;">No hay servicios disponibles para administrar.</div>
             </section>
 
             <!-- Sección de Gestión de Dealers Destacados -->
             <section id="dealers-management" class="content-section">
                 <div class="section-header">
                     <h2>Listado de Dealers Destacados</h2>
-                    <button class="btn btn-primary" id="add-dealer-btn"><i class="fas fa-plus"></i> Añadir Nuevo
-                        Dealer</button>
+                    <button class="btn btn-primary" id="add-dealer-btn"><i class="fas fa-plus"></i> Añadir Nuevo Dealer</button>
                 </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
@@ -160,8 +150,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div id="no-dealers-message" class="info-message" style="display: none;">No hay dealers destacados
-                    disponibles.</div>
+                <div id="no-dealers-message" class="info-message" style="display: none;">No hay dealers destacados disponibles.</div>
             </section>
 
             <!-- Sección de Gestión de Solicitudes -->
@@ -190,8 +179,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div id="no-requests-message" class="info-message" style="display: none;">No hay solicitudes
-                    disponibles.</div>
+                <div id="no-requests-message" class="info-message" style="display: none;">No hay solicitudes disponibles.</div>
             </section>
 
             <!-- Sección de Gestión de Anuncios (Nuevo) -->
@@ -204,8 +192,7 @@
                     <form id="announceBarForm">
                         <div class="form-group">
                             <label for="announceText">Texto del Anuncio:</label>
-                            <input type="text" id="announceText" placeholder="Ej: ¡Inicio de Clases: 15 de Septiembre!"
-                                required>
+                            <input type="text" id="announceText" placeholder="Ej: ¡Inicio de Clases: 15 de Septiembre!" required>
                         </div>
                         <div class="form-group">
                             <label for="announceStatus">Estado del Anuncio:</label>
@@ -272,7 +259,7 @@
             </form>
         </div>
     </div>
-
+    
     <!-- Modal para Añadir/Editar Dealer -->
     <div id="dealerModal" class="modal">
         <div class="modal-content">
@@ -332,7 +319,7 @@
         // Estas variables se usarán para la inicialización y rutas de Firestore
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY",
+            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
             authDomain: "dealerclubpe.firebaseapp.com",
             projectId: "dealerclubpe",
             storageBucket: "dealerclubpe.firebasestorage.app",
@@ -340,7 +327,7 @@
             appId: "1:330568352415:web:9fcd7651698bfafac998aa",
             measurementId: "G-PF3W9NDSDP"
         };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
 
         // Inicialización de Firebase
         const app = initializeApp(firebaseConfig);
@@ -449,7 +436,7 @@
                 if (user) {
                     currentUserId = user.uid;
                     adminUserInfo.innerHTML = `<span>Cargando rol...</span><i class="fas fa-user-circle"></i>`;
-
+                    
                     const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
                     try {
                         const userRoleSnap = await getDoc(userRoleRef);
@@ -738,7 +725,7 @@
                             </td>
                         `;
                     });
-                    document.querySelectorAll('#enrollments-table-body .btn-delete').forEach(button => {
+                     document.querySelectorAll('#enrollments-table-body .btn-delete').forEach(button => {
                         button.addEventListener('click', (event) => {
                             const id = event.target.dataset.id;
                             openConfirmationModal('¿Estás seguro de que quieres eliminar esta inscripción?', () => deleteItem('course_enrollments', id));
@@ -851,7 +838,7 @@
                             </td>
                         `;
                     });
-                    document.querySelectorAll('#dealers-table-body .btn-edit').forEach(button => {
+                     document.querySelectorAll('#dealers-table-body .btn-edit').forEach(button => {
                         button.addEventListener('click', (event) => {
                             const id = event.target.dataset.id;
                             openEditDealerModal(id, dealers);
@@ -868,7 +855,7 @@
                     dealersTableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error al cargar dealers: ${error.message}</td></tr>`;
                 });
             };
-
+            
             addDealerBtn.addEventListener('click', () => {
                 dealerForm.reset();
                 dealerIdInput.value = '';
@@ -1108,5 +1095,4 @@
         });
     </script>
 </body>
-
 </html>
