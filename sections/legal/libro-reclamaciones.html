@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Libro de Reclamaciones - DealerClub</title>
+    <link rel="stylesheet" href="../../assets/css/main.css">
+    <style>
+        body { background-color: #0c0c0c; color: #b0b0b0; }
+        .legal-container { max-width: 800px; margin: 50px auto; padding: 40px; background: #161616; border-radius: 8px; }
+        h1 { color: #ffffff; border-bottom: 2px solid #ffc107; }
+        h2 { color: #ffffff; font-size: 1.2rem; margin-top: 30px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        
+        .claims-form input, .claims-form select, .claims-form textarea {
+            width: 100%; padding: 12px; margin: 10px 0;
+            background: #0c0c0c; border: 1px solid #333;
+            color: #fff; border-radius: 4px;
+        }
+        .claims-form button {
+            background-color: #ffc107; color: white; padding: 15px 30px;
+            border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 20px;
+        }
+        .claims-form button:hover { background-color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="legal-container">
+        <h1>Libro de Reclamaciones Virtual</h1>
+        <p>DEALERCLUB E.I.R.L. | RUC: [TU_RUC]</p>
+        
+        <form action="enviar_reclamo.php" method="POST" class="claims-form">
+            <h2>1. Identificación del Consumidor</h2>
+            <input type="text" name="nombre" placeholder="Nombre completo" required>
+            <input type="text" name="dni" placeholder="DNI / CE" required>
+            <input type="email" name="correo" placeholder="Correo electrónico" required>
+
+            <h2>2. Detalle del Servicio</h2>
+            <select name="tipo_bien">
+                <option value="servicio">Servicio (Capacitación)</option>
+            </select>
+            <textarea name="descripcion" placeholder="¿Qué curso contrató?"></textarea>
+
+            <h2>3. Reclamo o Queja</h2>
+            <textarea name="detalle" rows="5" placeholder="Detalle su malestar aquí..." required></textarea>
+
+            <button type="submit">Enviar Hoja de Reclamación</button>
+        </form>
+    </div>
+</body>
+</html>

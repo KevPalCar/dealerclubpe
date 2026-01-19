@@ -263,57 +263,138 @@
 }
 
 /* Estilos para el Footer */
+/* Footer Estilo Pchujoy */
 .main-footer {
-    background-color: #0d0d0d;
-    color: #fff;
-    padding: 40px 20px;
-    font-size: 14px;
-    border-top: 1px solid #ffc107;
+    background-color: #0c0c0c; /* Color oscuro similar al ejemplo */
+    color: #ffffff;
+    padding: 60px 40px 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.footer-container {
+.footer-top {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-around;
-    align-items: flex-start;
-    gap: 30px;
-    max-width: 1200px;
+    justify-content: space-between;
+    align-items: flex-start; /* Alinea todas las columnas al tope */
+    max-width: 1400px;
     margin: 0 auto;
-    text-align: left;
+    gap: 20px;
 }
 
-.footer-info,
-.footer-contact,
-.footer-social {
+.footer-brand h2 {
+    font-size: 1.5rem; /* Tamaño ligeramente ajustado */
+    font-weight: 800;
+    margin: 0;
+    padding-top: 0px; /* Ajuste manual para nivelar con los iconos de al lado */
+    color: #ffc107;
+    line-height: 1;
+}
+
+.footer-brand span {
+    color: #ffc107; /* O el color que prefieras para 'Club' */
+}
+
+/* Columnas y Separadores */
+.footer-section {
     flex: 1;
     min-width: 200px;
+    padding-left: 20px;
+    border-left: 1px solid #333; /* El separador vertical del ejemplo */
 }
 
-.footer-info h3,
-.footer-contact h3,
-.footer-social h3 {
+.footer-brand {
+    flex: 0.5;
+    min-width: 150px;
+}
+
+.section-title {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     color: #ffc107;
-    font-weight: 700;
+}
+
+.footer-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-section ul li, .footer-section p {
+    font-size: 0.9rem;
+    color: #b0b0b0;
+    margin-bottom: 8px;
+}
+
+.footer-section a {
+    color: #b0b0b0;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.footer-section a:hover {
+    color: #fff;
+}
+
+/* Iconos de Redes */
+.social-links {
+    display: flex;
+    gap: 15px;
+}
+
+.social-links img {
+    width: 24px;
+    height: 24px;
+    filter: grayscale(100%) invert(1); /* Para que sean blancos como el estilo */
+    transition: filter 0.3s;
+}
+
+.social-links img:hover {
+    filter: none; /* Recuperan color al pasar el mouse */
+}
+
+/* Cuadro Libro de Reclamaciones */
+.claims-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.claims-header p {
+    margin: 2px 0;
+    font-size: 0.8rem;
+}
+
+.book-icon {
+    width: 40px;
+    height: auto;
+}
+
+/* Footer Bottom */
+.footer-bottom {
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 1px solid #222;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.footer-bottom p {
+    font-size: 0.75rem;
+    color: #666;
     margin-bottom: 15px;
 }
 
-.footer-contact p {
-    margin: 5px 0;
+.bottom-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: bold;
 }
-
-.social-icon {
-    width: 30px;
-    height: 30px;
-    margin-right: 15px;
-}
-
-.footer-bottom {
-    text-align: center;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
 
 @media (max-width: 768px) {
 
