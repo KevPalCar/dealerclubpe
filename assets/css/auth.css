@@ -1,5 +1,6 @@
-/* Estilos comunes para las páginas de autenticación (Registro y Login) */
-
+/* =========================================
+   1. ESTILOS GENERALES (Registro y Login)
+   ========================================= */
 body {
     background-color: #0d0d0d;
     color: #f0f0f0;
@@ -7,23 +8,32 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    margin: 0;
 }
 
+/* =========================================
+   2. HEADER AUTENTICACIÓN
+   ========================================= */
 .auth-header {
     background-color: #1a1a1a;
     padding: 20px;
     border-bottom: 2px solid #ffc107;
     text-align: center;
+    display: flex;
+    justify-content: center;
 }
 
-.auth-header .logo a {
-    font-family: 'Playfair Display', serif;
-    font-size: 28px;
-    color: #ffc107;
-    text-decoration: none;
-    font-weight: bold;
+/* Estandarización del Logo a 80px */
+.auth-header .logo img {
+    height: 100px; 
+    width: auto;
+    object-fit: contain;
+    display: block;
 }
 
+/* =========================================
+   3. CONTENEDOR PRINCIPAL
+   ========================================= */
 .auth-main {
     flex-grow: 1;
     display: flex;
@@ -49,16 +59,21 @@ body {
     font-size: 2.2em;
 }
 
+/* =========================================
+   4. FORMULARIOS
+   ========================================= */
 .auth-form {
     padding: 10px;
 }
 
-.auth-form .form-group {
+.auth-form .form-group,
+.modal-content .form-group {
     margin-bottom: 20px;
     text-align: left;
 }
 
-.auth-form label {
+.auth-form label,
+.modal-content .form-group label {
     display: block;
     margin-bottom: 8px;
     color: #ccc;
@@ -67,7 +82,8 @@ body {
 
 .auth-form input[type="email"],
 .auth-form input[type="password"],
-.auth-form input[type="text"] {
+.auth-form input[type="text"],
+.modal-content .form-group input[type="email"] {
     width: 100%;
     padding: 12px;
     border: 1px solid #444;
@@ -78,7 +94,8 @@ body {
     box-sizing: border-box;
 }
 
-.auth-form input:focus {
+.auth-form input:focus,
+.modal-content .form-group input:focus {
     outline: none;
     border-color: #ffc107;
     box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
@@ -91,13 +108,29 @@ body {
     font-size: 0.85em;
 }
 
-.auth-form .btn-primary {
+.auth-form .btn-primary,
+.modal-content .btn-primary {
     width: 100%;
     padding: 12px;
     font-size: 1.1em;
     margin-top: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #ffc107;
+    color: #1a1a1a;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
+.auth-form .btn-primary:hover,
+.modal-content .btn-primary:hover {
+    background-color: #e6b800;
+}
+
+/* =========================================
+   5. MENSAJES DE ESTADO
+   ========================================= */
 .message {
     margin-top: 15px;
     padding: 10px;
@@ -107,19 +140,11 @@ body {
     text-align: center;
 }
 
-.message.error {
-    background-color: #dc3545;
-    color: #fff;
-}
-.message.success {
-    background-color: #28a745;
-    color: #fff;
-}
-.message.loading {
-    background-color: #ffc107;
-    color: #000;
-}
+.message.error { background-color: #dc3545; color: #fff; }
+.message.success { background-color: #28a745; color: #fff; }
+.message.loading { background-color: #ffc107; color: #000; }
 
+/* Enlaces extra (Registro, Olvidé Contraseña) */
 .auth-link {
     margin-top: 20px;
     font-size: 0.95em;
@@ -130,10 +155,11 @@ body {
     text-decoration: none;
     font-weight: bold;
 }
-.auth-link a:hover {
-    text-decoration: underline;
-}
+.auth-link a:hover { text-decoration: underline; }
 
+/* =========================================
+   6. FOOTER AUTENTICACIÓN
+   ========================================= */
 .auth-footer {
     text-align: center;
     padding: 20px;
@@ -142,15 +168,48 @@ body {
     border-top: 1px solid rgba(255, 193, 7, 0.1);
 }
 
-/* Media Queries */
-@media (max-width: 768px) {
-    .auth-container {
-        padding: 20px;
-    }
-    .auth-container h2 {
-        font-size: 1.8em;
-    }
-    .auth-form input, .auth-form .btn-primary {
-        font-size: 0.95em;
-    }
+/* =========================================
+   7. MODAL (RECUPERAR CONTRASEÑA)
+   ========================================= */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1000; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.7); 
+    justify-content: center; 
+    align-items: center; 
+}
+
+.modal-content {
+    background-color: #2a2a2a; 
+    margin: auto;
+    padding: 30px;
+    border: 1px solid #555;
+    width: 80%; 
+    max-width: 500px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+    position: relative;
+    color: #e0e0e0; 
+    text-align: center;
+}
+
+.modal-content h2 {
+    color: #ffc107;
+    margin-bottom: 20px;
+    font-family: 'Playfair Display', serif;
+}
+
+.close-button {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
 }

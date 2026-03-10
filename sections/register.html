@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - DealerClub</title>
     <link rel="stylesheet" href="../assets/css/main.css">
-    <link rel="stylesheet" href="../assets/css/auth.css"> <!-- Nuevo CSS para autenticación -->
+    <link rel="stylesheet" href="../assets/css/auth.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <header class="auth-header">
         <div class="logo">
-            <a href="../index.html">DealerClub</a>
+            <a href="../index.html"><img src="../assets/images/isotipo_principal.png" alt="DealerClub Logo"></a>
         </div>
     </header>
 
@@ -19,17 +19,17 @@
             <h2>Regístrate como Estudiante</h2>
             <form id="register-form" class="auth-form">
                 <div class="form-group">
+                    <label for="registerFullName">Nombre Completo:</label>
+                    <input type="text" id="registerFullName" placeholder="Ej: Juan Pérez" required>
+                </div>
+                <div class="form-group">
                     <label for="registerEmail">Correo Electrónico:</label>
-                    <input type="email" id="registerEmail" required>
+                    <input type="email" id="registerEmail" placeholder="tu@ejemplo.com" required>
                 </div>
                 <div class="form-group">
                     <label for="registerPassword">Contraseña:</label>
-                    <input type="password" id="registerPassword" required>
+                    <input type="password" id="registerPassword" placeholder="Crea tu contraseña" required>
                     <small>Mínimo 6 caracteres.</small>
-                </div>
-                <div class="form-group">
-                    <label for="registerFullName">Nombre Completo:</label>
-                    <input type="text" id="registerFullName" required>
                 </div>
                 <button type="submit" class="btn btn-primary">Crear Cuenta</button>
                 <div id="register-message" class="message"></div>
@@ -42,12 +42,12 @@
         <p>&copy; 2025 DealerClub. Todos los derechos reservados.</p>
     </footer>
 
-    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = {
             apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
             authDomain: "dealerclubpe.firebaseapp.com",
@@ -57,20 +57,101 @@
             appId: "1:330568352415:web:9fcd7651698bfafac998aa",
             measurementId: "G-PF3W9NDSDP"
         };
-        const appIdForFirestorePath = 'default-app-id';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        window.firebaseAuth = auth;
-        window.firebaseCreateUserWithEmailAndPassword = createUserWithEmailAndPassword;
-        window.firebaseDb = db;
-        window.firebaseCollection = collection;
-        window.firebaseDoc = doc;
-        window.firebaseSetDoc = setDoc;
-        window.appId = appIdForFirestorePath;
+        document.addEventListener('DOMContentLoaded', () => {
+            const registerForm = document.getElementById('register-form');
+            const fullNameInput = document.getElementById('registerFullName');
+            const emailInput = document.getElementById('registerEmail');
+            const passwordInput = document.getElementById('registerPassword');
+            const registerMessage = document.getElementById('register-message');
+
+            const showMessage = (element, message, type) => {
+                element.textContent = message;
+                element.className = `message ${type}`; 
+            };
+
+            // --- Verificación de Sesión Activa (Con fix para Anónimos) ---
+            onAuthStateChanged(auth, async (user) => {
+                if (user && !user.isAnonymous) {
+                    showMessage(registerMessage, 'Sesión activa. Redirigiendo...', 'loading');
+                    const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
+                    try {
+                        const userRoleSnap = await getDoc(userRoleRef);
+                        if (userRoleSnap.exists()) {
+                            const role = userRoleSnap.data().role;
+                            if (role === 'admin') {
+                                window.location.href = 'admin.html';
+                            } else if (role === 'student') {
+                                window.location.href = 'student_dashboard.html';
+                            } else {
+                                await signOut(auth);
+                                showMessage(registerMessage, 'Rol de usuario desconocido.', 'error');
+                            }
+                        } else {
+                            await signOut(auth);
+                        }
+                    } catch (error) {
+                        await signOut(auth);
+                    }
+                } else {
+                    showMessage(registerMessage, '', ''); // Limpiar si no hay sesión
+                }
+            });
+
+            // --- Manejo del Formulario de Registro ---
+            registerForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const fullName = fullNameInput.value;
+                const email = emailInput.value;
+                const password = passwordInput.value;
+
+                if (password.length < 6) {
+                    showMessage(registerMessage, 'La contraseña debe tener al menos 6 caracteres.', 'error');
+                    return;
+                }
+
+                showMessage(registerMessage, 'Creando cuenta...', 'loading');
+
+                try {
+                    // 1. Crear el usuario en Firebase Auth
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+
+                    // 2. Asignarle el rol de "estudiante" en Firestore por defecto
+                    const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
+                    await setDoc(userRoleRef, {
+                        role: 'student',
+                        email: email,
+                        fullName: fullName,
+                        createdAt: new Date()
+                    });
+
+                    // 3. Éxito y redirección
+                    showMessage(registerMessage, '¡Cuenta creada con éxito! Redirigiendo...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'student_dashboard.html';
+                    }, 1500);
+
+                } catch (error) {
+                    console.error("Error al registrar:", error);
+                    let errorMessage = 'Error al crear la cuenta. Inténtalo de nuevo.';
+                    
+                    if (error.code === 'auth/email-already-in-use') {
+                        errorMessage = 'Este correo ya está registrado. Por favor, inicia sesión.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMessage = 'El formato del correo es inválido.';
+                    } else if (error.code === 'auth/weak-password') {
+                        errorMessage = 'La contraseña es demasiado débil.';
+                    }
+                    
+                    showMessage(registerMessage, errorMessage, 'error');
+                }
+            });
+        });
     </script>
-    <script type="module" src="../assets/js/register.js"></script> <!-- Nuevo JS para registro -->
 </body>
 </html>

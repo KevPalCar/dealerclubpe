@@ -1,16 +1,15 @@
-/* Estilos específicos para la página de Servicios */
-
-/* HERO SECTION (el HEADER): Contenedor principal con la imagen de fondo para el hero */
+/* =========================================
+   1. HERO SECTION & FONDO
+   ========================================= */
 .hero-section {
     position: relative;
     width: 100%;
     height: 60vh;
-    /* Altura del hero de servicios */
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    /* Imagen de fondo representativa para servicios de eventos */
+    /* Imagen específica de Servicios */
     background: url('https://acehighcasinorentals.com/wp-content/uploads/2018/06/ace-high-casino-dealers-at-newport-fundraiser.jpg') no-repeat center center/cover;
     background-attachment: fixed;
     color: #fff;
@@ -18,10 +17,8 @@
     overflow: hidden;
     margin: 0;
     padding: 0;
-    left: 0;
 }
 
-/* Overlay para el hero */
 .hero-section::before {
     content: '';
     position: absolute;
@@ -29,50 +26,40 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.65);
-    /* Un poco más oscuro para mejor contraste con texto */
+    background-color: rgba(0, 0, 0, 0.65); /* Un poco más oscuro para contraste */
     z-index: 0;
 }
 
-/* Estilos de la barra de navegación */
+/* =========================================
+   2. NAVBAR (BARRA DE NAVEGACIÓN)
+   ========================================= */
+/* Estructura ESTANDARIZADA (Igual a Inicio y Cursos) */
 .navbar {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     display: flex;
-    justify-content: center;
+    justify-content: space-between; /* Logo izq, Menú der */
     align-items: center;
-    padding: 20px 50px;
+    padding: 10px 50px;
     box-sizing: border-box;
     z-index: 2;
 }
 
-/* Contenedor interno para el logo y el menú de navegación para controlar el ancho */
-.navbar .logo,
-.navbar .nav-menu {
-    max-width: 1200px;
-    /* Ancho máximo para el contenido real de la navbar */
-    flex-basis: 50%;
-    /* Divide el espacio entre logo y menú */
+/* --- LOGO --- */
+.navbar .logo {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    /* Espacio entre logo y menú */
+    max-width: 250px;
+    padding: 0;
 }
 
-.navbar .logo {
-    justify-content: flex-start;
-    padding-left: 50px;
-    /* Alineación del logo a la izquierda */
-}
-
-.navbar .nav-menu {
-    justify-content: flex-end;
-    padding-right: 50px;
-    /* Alineación del menú a la derecha */
-    gap: 30px;
-    /* Ajuste para asegurar el espaciado del menú */
+.navbar .logo img {
+    height: 100px;        /* TAMAÑO ESCRITORIO (Estándar) */
+    width: auto;
+    object-fit: contain;
+    display: block;
 }
 
 .navbar .logo a {
@@ -82,12 +69,17 @@
     text-decoration: none;
 }
 
+/* --- MENÚ --- */
+.navbar .nav-menu {
+    display: flex;
+    padding: 0;
+}
+
 .navbar ul.nav-menu {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
-    /* Asegura el flex para el menú */
     gap: 30px;
 }
 
@@ -105,14 +97,15 @@
     color: #ffc107;
 }
 
-/* Contenido del hero (título, párrafo, botones) */
+/* =========================================
+   3. CONTENIDO HERO (TEXTOS)
+   ========================================= */
 .hero-content {
     position: relative;
     z-index: 1;
     max-width: 800px;
     padding: 20px;
-    margin-top: 100px;
-    /* Ajusta este valor para bajar el texto y evitar que la navbar lo tape */
+    margin-top: 100px; /* Espacio para bajar el texto */
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -132,30 +125,25 @@
     margin-bottom: 30px;
 }
 
-
-/* Estilos de las secciones de contenido */
+/* =========================================
+   4. SECCIONES GENERALES & ESTILOS
+   ========================================= */
 .section-light {
-    /* Nueva clase para secciones con fondo más claro */
     background-color: #121212;
-    /* Sombra interna sutil para darle más profundidad */
     box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4);
 }
 
 .section-dark {
-    /* Ya definida en main.css, pero puedes sobrescribir si necesitas */
     background-color: #1a1a1a;
     box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
-.section-padded {
-    padding: 80px 20px;
-}
+.section-padded { padding: 80px 20px; }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
     text-align: center;
-    /* Centra el texto dentro del contenedor si no hay grid */
 }
 
 h2 {
@@ -174,7 +162,9 @@ h2 {
     line-height: 1.8;
 }
 
-/* SECCIÓN: Mesas Disponibles */
+/* =========================================
+   5. SECCIÓN: MESAS DISPONIBLES
+   ========================================= */
 .mesas-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -185,7 +175,6 @@ h2 {
     background-color: #212121;
     border-radius: 10px;
     overflow: hidden;
-    /* Asegura que la imagen no se salga de los bordes redondeados */
     box-shadow: 0 4px 10px #ffc107;
     display: flex;
     flex-direction: column;
@@ -201,11 +190,8 @@ h2 {
 .mesa-card img {
     width: 100%;
     height: 200px;
-    /* Altura fija para las imágenes de las mesas */
     object-fit: cover;
-    /* Ajusta la imagen para cubrir el espacio */
     border-bottom: 2px solid rgba(255, 193, 7, 0.3);
-    /* Un toque de color */
 }
 
 .mesa-card h3 {
@@ -219,19 +205,17 @@ h2 {
     color: #ccc;
     padding: 0 20px;
     flex-grow: 1;
-    /* Permite que el párrafo ocupe el espacio disponible */
 }
 
 .mesa-card .btn-primary {
     margin: 20px auto;
-    /* Centra el botón y le da espacio */
     width: calc(100% - 40px);
-    /* Ancho del botón con padding */
     max-width: 200px;
-    /* Limita el ancho máximo */
 }
 
-/* SECCIÓN: Experiencia DealerClub */
+/* =========================================
+   6. SECCIÓN: EXPERIENCIA
+   ========================================= */
 .experiencia-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -244,7 +228,6 @@ h2 {
     padding: 25px;
     border-radius: 8px;
     text-align: center;
-    /* Centra el contenido de cada tarjeta */
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     transition: transform 0.3s ease, background-color 0.3s ease;
 }
@@ -252,30 +235,21 @@ h2 {
 .experiencia-item:hover {
     transform: translateY(-5px);
     background-color: #2a2a2a;
-    /* Ligeramente más claro al pasar el ratón */
 }
 
 .experiencia-item i {
     font-size: 2.5em;
-    /* Iconos más grandes */
     color: #ffc107;
     margin-bottom: 15px;
     display: block;
 }
 
-.experiencia-item h4 {
-    font-size: 1.3em;
-    color: #ffc107;
-    margin-bottom: 10px;
-}
+.experiencia-item h4 { font-size: 1.3em; color: #ffc107; margin-bottom: 10px; }
+.experiencia-item p { font-size: 0.9em; color: #ccc; line-height: 1.6; }
 
-.experiencia-item p {
-    font-size: 0.9em;
-    color: #ccc;
-    line-height: 1.6;
-}
-
-/* SECCIÓN: Dealers Destacados */
+/* =========================================
+   7. SECCIÓN: DEALERS DESTACADOS
+   ========================================= */
 .dealers-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -291,7 +265,6 @@ h2 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* Centra el contenido horizontalmente */
     text-align: center;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -303,59 +276,28 @@ h2 {
 
 .dealer-card img {
     width: 150px;
-    /* Tamaño de la imagen del dealer */
     height: 150px;
     object-fit: cover;
-
-    /* === NUEVOS ESTILOS PARA LA FORMA DE ESTRELLA === */
-    clip-path: polygon(50% 0%,
-            61% 35%,
-            98% 35%,
-            68% 57%,
-            79% 91%,
-            50% 70%,
-            21% 91%,
-            32% 57%,
-            2% 35%,
-            39% 35%);
-    border: 3px solid #ffc107;
-    /* Filo dorado */
-    box-shadow: 0 0 15px rgba(255, 193, 7, 0.7),
-        /* Sombra dorada brillante */
-        0 0 5px rgba(255, 193, 7, 0.3);
-    /* Sombra más suave */
+    /* Recorte de Estrella */
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    border: 3px solid #ffc107; /* Filo dorado */
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.7), 0 0 5px rgba(255, 193, 7, 0.3);
     transition: all 0.3s ease;
-    /* Transición para efectos de hover */
     margin-bottom: 20px;
 }
 
 .dealer-card img:hover {
-    box-shadow: 0 0 20px rgba(255, 193, 7, 1),
-        /* Más brillante al pasar el ratón */
-        0 0 8px rgba(255, 193, 7, 0.5);
+    box-shadow: 0 0 20px rgba(255, 193, 7, 1), 0 0 8px rgba(255, 193, 7, 0.5);
     transform: scale(1.03);
-    /* Ligeramente más grande */
 }
 
-.dealer-card h3 {
-    font-size: 1.5em;
-    color: #ffc107;
-    margin-bottom: 5px;
-}
+.dealer-card h3 { font-size: 1.5em; color: #ffc107; margin-bottom: 5px; }
+.dealer-card p { font-size: 0.9em; color: #ccc; margin-bottom: 15px; }
+.dealer-card .btn-primary { width: auto; padding: 10px 20px; }
 
-.dealer-card p {
-    font-size: 0.9em;
-    color: #ccc;
-    margin-bottom: 15px;
-}
-
-.dealer-card .btn-primary {
-    width: auto;
-    /* Ancho automático para el botón */
-    padding: 10px 20px;
-}
-
-
+/* =========================================
+   8. FOOTER
+   ========================================= */
 /* Estilos para el Footer */
 /* Footer Estilo Pchujoy */
 .main-footer {
@@ -380,7 +322,7 @@ h2 {
     font-weight: 800;
     margin: 0;
     padding-top: 0px; /* Ajuste manual para nivelar con los iconos de al lado */
-    color: #ffc107; /* O el color que prefieras para 'Dealer' */
+    color: #ffc107;
     line-height: 1;
 }
 
@@ -490,23 +432,19 @@ h2 {
     font-weight: bold;
 }
 
-
-/* MODAL BASE STYLES (Aplicado a ambos .modal de cotización y WhatsApp) */
+/* =========================================
+   9. MODALES (Cotización y WhatsApp)
+   ========================================= */
 .modal {
     display: none;
-    /* Oculto por defecto */
     position: fixed;
-    /* Posición fija para cubrir toda la pantalla */
     z-index: 10000;
-    /* Alto z-index para que esté por encima de todo */
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
     overflow: auto;
-    /* Habilita scroll si el contenido es demasiado largo */
     background-color: rgba(0, 0, 0, 0.7);
-    /* Fondo oscuro semi-transparente */
     justify-content: center;
     align-items: center;
     padding: 20px;
@@ -515,7 +453,6 @@ h2 {
 
 .modal-content {
     background-color: #1a1a1a;
-    /* Fondo oscuro del modal */
     margin: auto;
     padding: 30px;
     border-radius: 10px;
@@ -524,409 +461,121 @@ h2 {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     position: relative;
     color: #f0f0f0;
-    animation-name: animatetop;
-    animation-duration: 0.4s;
+    animation: animatetop 0.4s;
 }
 
-@keyframes animatetop {
-    from {
-        top: -300px;
-        opacity: 0
-    }
+@keyframes animatetop { from { top: -300px; opacity: 0 } to { top: 0; opacity: 1 } }
 
-    to {
-        top: 0;
-        opacity: 1
-    }
+.close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; position: absolute; top: 10px; right: 20px; }
+.close-button:hover { color: #ffc107; }
+.modal-content h2 { color: #ffc107; text-align: center; margin-bottom: 20px; }
+.modal-content p#modalQuoteFor { text-align: center; color: #ccc; margin-bottom: 20px; font-style: italic; }
+
+.form-group { margin-bottom: 15px; text-align: left; }
+.form-group label { display: block; margin-bottom: 5px; color: #f0f0f0; font-weight: 500; }
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 10px; border: 1px solid #444; border-radius: 5px; background-color: #2a2a2a; color: #f0f0f0; font-size: 1em; box-sizing: border-box;
 }
-
-.close-button {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-    position: absolute;
-    top: 10px;
-    right: 20px;
-}
-
-.close-button:hover,
-.close-button:focus {
-    color: #ffc107;
-    text-decoration: none;
-}
-
-.modal-content h2 {
-    color: #ffc107;
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.modal-content p#modalQuoteFor {
-    text-align: center;
-    color: #ccc;
-    margin-bottom: 20px;
-    font-style: italic;
-}
-
-.form-group {
-    margin-bottom: 15px;
-    text-align: left;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    color: #f0f0f0;
-    font-weight: 500;
-}
-
-.form-group input[type="text"],
-.form-group input[type="email"],
-.form-group input[type="tel"],
-.form-group input[type="date"],
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #444;
-    border-radius: 5px;
-    background-color: #2a2a2a;
-    color: #f0f0f0;
-    font-size: 1em;
-    box-sizing: border-box;
-    /* Incluye padding y border en el width */
-}
-
-.form-group input[type="text"]:focus,
-.form-group input[type="email"]:focus,
-.form-group input[type="tel"]:focus,
-.form-group input[type="date"]:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: #ffc107;
-    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
-}
-
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #ffc107; box-shadow: 0 0 5px rgba(255, 193, 7, 0.5); }
 .form-group select {
-    appearance: none;
-    /* Elimina estilos por defecto del select */
-    -webkit-appearance: none;
-    -moz-appearance: none;
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
     background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23f0f0f0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-5.6H18.4c-6.5%200-11.7%205.2-11.7%2011.7%200%206.5%205.2%2011.7%2011.7%2011.7h255.3c7%200%2012.3-5.2%2012.3-11.7%200-7-5.3-12.3-12.3-12.3z%22%2F%3E%3C%2Fsvg%3E');
-    /* Icono de flecha SVG */
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 1em;
-    padding-right: 30px;
-    /* Espacio para el icono */
+    background-repeat: no-repeat; background-position: right 10px center; background-size: 1em; padding-right: 30px;
 }
+#submitQuoteBtn { width: 100%; padding: 12px; font-size: 1.1em; margin-top: 10px; }
+.form-message { text-align: center; padding: 10px; border-radius: 5px; margin-top: 15px; font-weight: bold; }
+.form-message.success { background-color: #28a745; color: #fff; }
+.form-message.error { background-color: #dc3545; color: #fff; }
+.form-message.loading { background-color: #ffc107; color: #000; }
 
-.form-group textarea {
-    resize: vertical;
-    /* Permite redimensionar verticalmente */
-}
+/* Estilos específicos Modal WhatsApp */
+#whatsappPreChatModal .modal-content { max-width: 450px; text-align: center; padding: 25px; }
+#sendWhatsappBtn { background-color: #25d366; color: white; margin-top: 20px; width: 100%; font-size: 1em; }
+#sendWhatsappBtn:hover { background-color: #128c7e; }
+.or-separator { margin: 25px 0; font-weight: bold; color: #ccc; position: relative; font-size: 0.9em; }
+.or-separator::before, .or-separator::after { content: ''; position: absolute; top: 50%; width: 40%; height: 1px; background-color: #444; }
+.or-separator::before { left: 0; }
+.or-separator::after { right: 0; }
+#goToQuoteFormBtn { width: 100%; font-size: 1em; background-color: transparent; color: #ffc107; border: 2px solid #ffc107; padding: 12px; }
+#goToQuoteFormBtn:hover { background-color: #ffc107; color: #000; }
 
-#submitQuoteBtn {
-    width: 100%;
-    padding: 12px;
-    font-size: 1.1em;
-    margin-top: 10px;
-}
-
-.form-message {
-    text-align: center;
-    padding: 10px;
-    border-radius: 5px;
-    margin-top: 15px;
-    font-weight: bold;
-    color: #f0f0f0;
-    /* Color de texto por defecto */
-}
-
-.form-message.success {
-    background-color: #28a745;
-    /* Verde para éxito */
-    color: #fff;
-}
-
-.form-message.error {
-    background-color: #dc3545;
-    /* Rojo para error */
-    color: #fff;
-}
-
-.form-message.loading {
-    background-color: #ffc107;
-    /* Dorado para carga */
-    color: #000;
-}
-
-/* --- ESTILOS ESPECÍFICOS PARA EL MODAL DE WHATSAPP --- */
-#whatsappPreChatModal .modal-content {
-    max-width: 450px;
-    /* Un poco más pequeño que el modal de cotización */
-    text-align: center;
-    padding: 25px;
-}
-
-#whatsappPreChatModal h2 {
-    margin-bottom: 15px;
-}
-
-#whatsappPreChatModal p {
-    color: #ccc;
-    margin-bottom: 25px;
-}
-
-#whatsappPreChatForm .form-group {
-    margin-bottom: 10px;
-    /* Menos espacio entre los campos */
-}
-
-#sendWhatsappBtn {
-    background-color: #25d366;
-    /* Color de WhatsApp */
-    color: white;
-    margin-top: 20px;
-    width: 100%;
-    font-size: 1em;
-}
-
-#sendWhatsappBtn:hover {
-    background-color: #128c7e;
-}
-
-.or-separator {
-    margin: 25px 0;
-    font-weight: bold;
-    color: #ccc;
-    position: relative;
-    font-size: 0.9em;
-}
-
-.or-separator::before,
-.or-separator::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 40%;
-    height: 1px;
-    background-color: #444;
-}
-
-.or-separator::before {
-    left: 0;
-}
-
-.or-separator::after {
-    right: 0;
-}
-
-#goToQuoteFormBtn {
-    width: 100%;
-    font-size: 1em;
-    background-color: transparent;
-    color: #ffc107;
-    border: 2px solid #ffc107;
-    padding: 12px;
-}
-
-#goToQuoteFormBtn:hover {
-    background-color: #ffc107;
-    color: #000;
-}
-
-
-/* Media Queries para Modal en móvil */
+/* =========================================
+   10. RESPONSIVE (MÓVIL)
+   ========================================= */
 @media (max-width: 768px) {
-    .modal-content {
-        width: 95%;
-        padding: 20px;
-    }
-
-    .close-button {
-        font-size: 24px;
-        top: 5px;
-        right: 15px;
-    }
-
-    .modal-content h2 {
-        font-size: 1.8em;
-    }
-
-    .form-group label,
-    .form-group input,
-    .form-group select,
-    .form-group textarea,
-    #submitQuoteBtn,
-    #sendWhatsappBtn,
-    #goToQuoteFormBtn {
-        font-size: 0.9em;
-    }
-
-    #whatsappPreChatModal .modal-content {
-        padding: 20px;
-    }
-}
-
-
-/* Media Queries generales (ya existentes, solo reordenando para consistencia) */
-@media (max-width: 768px) {
-    .navbar {
-        flex-direction: column;
-        align-items: flex-start;
-        /* Alinea los elementos a la izquierda por defecto */
-        padding: 15px 20px;
-    }
-
-    .navbar .logo {
-        margin-bottom: 15px;
-        padding-left: 0;
-    }
-
-    .navbar .nav-menu {
-        flex-direction: column;
-        gap: 10px;
-        padding-right: 0;
-    }
-
-    .navbar ul.nav-menu {
-        flex-direction: column;
-        gap: 10px;
-        width: 100%;
-        text-align: left;
-        /* Alinea los elementos de la lista a la izquierda */
-    }
-
-    .navbar .nav-menu li {
-        width: 100%;
-        /* Cada ítem del menú ocupa todo el ancho */
-    }
-
-    .navbar .nav-menu li a {
-        padding: 10px 0;
-        /* Más espacio al hacer clic en móvil */
-        display: block;
-        /* Para que el padding se aplique a toda el área */
-    }
-
-    .hero-content h1 {
-        font-size: 2em;
-    }
-
-    .footer-container {
-        text-align: center;
-    }
-
-    .footer-info,
-    .footer-contact,
-    .footer-social {
-        min-width: unset;
-        width: 100%;
-        margin-bottom: 20px;
-    }
-
-    .mesas-grid,
-    .experiencia-grid,
-    .dealers-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* =============================================
-   CORRECCIONES RESPONSIVE (SOLUCIÓN SERVICIOS)
-   Pegar al final de assets/css/servicios.css
-   ============================================= */
-
-@media (max-width: 768px) {
-
-    /* 1. ARREGLO DEL HERO Y NAVBAR (Vertical Apilado y Transparente) */
+    /* --- Header & Navbar Móvil (Igual que Index) --- */
     .hero-section {
         width: 100%;
         min-height: 60vh;
     }
 
     .navbar {
-        position: relative;
-        /* CRUCIAL: Lo saca de la posición absoluta/flotante */
+        position: relative; /* Deja de flotar */
         background-color: transparent !important;
-        /* Asegura que no haya fondo negro */
         flex-direction: column;
-        /* Lo hace vertical */
         justify-content: center;
         align-items: center;
-        /* Centra todo */
-        padding: 15px 10px;
+        padding: 10px 5px;
         height: auto;
     }
 
-    .navbar .logo,
-    .navbar .nav-menu {
-        padding-left: 0;
-        padding-right: 0;
-        flex-basis: auto;
-        width: 100%;
+    /* Ajuste de Logo para Móvil */
+    .navbar .logo {
+        margin-bottom: 10px;
         justify-content: center;
-        /* Centra el logo y el menú */
-        text-align: center;
+        width: 100%;
+        padding-left: 0;
     }
 
-    .navbar .logo a {
-        font-size: 1.5em;
-        /* Tamaño del logo */
+    .navbar .logo img {
+        height: 60px; /* TAMAÑO MÓVIL ESTÁNDAR */
+    }
+
+    .navbar .logo a { font-size: 1.5em; }
+
+    /* Menú Móvil */
+    .navbar .nav-menu {
+        width: 100%;
+        justify-content: center;
+        padding-right: 0;
     }
 
     .navbar ul.nav-menu {
         flex-direction: row;
-        /* Mantiene los enlaces en fila, pero centrados */
-        flex-wrap: nowrap;
-        /* Permite que los enlaces se envuelvan si no caben */
+        flex-wrap: wrap;
         gap: 8px;
-        /* Espacio reducido entre enlaces */
-        margin-top: 10px;
-        /* Espacio entre el logo y los enlaces */
         justify-content: center;
+        margin-top: 5px;
+        width: 100%;
+        text-align: center;
     }
+    
+    .navbar .nav-menu li { width: auto; } /* Reset */
 
     .navbar .nav-menu li a {
         padding: 5px 8px;
         font-size: 0.85em;
         white-space: nowrap;
+        display: inline-block; /* Reset del block */
     }
 
-    /* Ajuste de textos del Hero */
-    .hero-content {
-        margin-top: 20px;
-        /* Acercamos el Hero content al menú */
-        padding: 0 10px;
-    }
+    /* Contenido Hero Móvil */
+    .hero-content { margin-top: 10px; padding: 0 10px; }
+    .hero-content h1 { font-size: 2em; }
 
-    .hero-content h1 {
-        font-size: 2.2em;
-    }
-
-    h2 {
-        font-size: 1.8em;
-    }
-
-    .section-padded {
-        padding: 40px 15px;
-    }
-
-    /* APILAMIENTO DE SECCIONES INTERNAS */
-    .destacados-grid,
-    .testimonials-grid,
-    .contacto-form-container {
-        grid-template-columns: 1fr;
-    }
-
-    /* APILAMIENTO DEL FOOTER */
+    /* Ajustes Generales Móvil */
+    .mesas-grid, 
+    .experiencia-grid, 
+    .dealers-grid, 
     .footer-container {
+        grid-template-columns: 1fr;
         flex-direction: column;
         text-align: center;
-        gap: 20px;
     }
+
+    .footer-info, .footer-contact, .footer-social { width: 100%; margin-bottom: 20px; }
+
+    /* Modal Móvil */
+    .modal-content { width: 95%; padding: 20px; }
+    .close-button { top: 5px; right: 15px; }
 }
