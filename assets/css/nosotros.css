@@ -3,13 +3,12 @@
    ========================================= */
 .hero-section {
     position: relative;
-    width: 100%; /* Corregido de 99vw a 100% para evitar scroll horizontal */
+    width: 100%;
     height: 60vh;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    /* Imagen de fondo específica para Nosotros */
     background: url('https://images.unsplash.com/photo-1504279807002-09854ccc9b6c?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxjb2xsZWN0aW9uLXBhZ2V8MjJ8UjB0NWJPUlNNSnd8fGVufDB8fHx8fA%3D%3D') no-repeat center center/cover;
     background-attachment: fixed;
     color: #fff;
@@ -26,12 +25,12 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7); /* Oscuro para resaltar texto */
+    background-color: rgba(0, 0, 0, 0.7);
     z-index: 0;
 }
 
 /* =========================================
-   2. NAVBAR (ESTANDARIZADO - IGUAL A INICIO)
+   2. NAVBAR
    ========================================= */
 .navbar {
     position: absolute;
@@ -39,14 +38,13 @@
     left: 0;
     width: 100%;
     display: flex;
-    justify-content: space-between; /* Logo izq, Menú der */
+    justify-content: space-between;
     align-items: center;
     padding: 10px 50px;
     box-sizing: border-box;
     z-index: 2;
 }
 
-/* --- LOGO --- */
 .navbar .logo {
     display: flex;
     align-items: center;
@@ -56,7 +54,7 @@
 }
 
 .navbar .logo img {
-    height: 100px;        /* TAMAÑO ESCRITORIO */
+    height: 100px;
     width: auto;
     object-fit: contain;
     display: block;
@@ -69,7 +67,6 @@
     text-decoration: none;
 }
 
-/* --- MENÚ --- */
 .navbar .nav-menu {
     display: flex;
     justify-content: flex-end;
@@ -99,14 +96,14 @@
 }
 
 /* =========================================
-   3. CONTENIDO HERO (TEXTOS)
+   3. CONTENIDO HERO
    ========================================= */
 .hero-content {
     position: relative;
     z-index: 1;
     max-width: 800px;
     padding: 20px;
-    margin-top: 100px; /* Espacio para bajar el texto */
+    margin-top: 100px;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -154,7 +151,6 @@ h2 {
     font-family: 'Playfair Display', serif;
 }
 
-/* Imágenes circulares genéricas */
 .circular-img {
     width: 200px;
     height: 200px;
@@ -229,7 +225,7 @@ h2 {
 }
 
 /* =========================================
-   7. SECCIONES: PROFESORES Y ALUMNOS
+   7. SECCIONES: PROFESORES Y ALUMNOS (OPTIMIZADO)
    ========================================= */
 .profesores-grid,
 .alumnos-grid {
@@ -286,10 +282,8 @@ h2 {
 /* =========================================
    8. FOOTER
    ========================================= */
-/* Estilos para el Footer */
-/* Footer Estilo Pchujoy */
 .main-footer {
-    background-color: #0c0c0c; /* Color oscuro similar al ejemplo */
+    background-color: #0c0c0c;
     color: #ffffff;
     padding: 60px 40px 20px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -299,31 +293,30 @@ h2 {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    align-items: flex-start; /* Alinea todas las columnas al tope */
+    align-items: flex-start;
     max-width: 1400px;
     margin: 0 auto;
     gap: 20px;
 }
 
 .footer-brand h2 {
-    font-size: 1.5rem; /* Tamaño ligeramente ajustado */
+    font-size: 1.5rem;
     font-weight: 800;
     margin: 0;
-    padding-top: 0px; /* Ajuste manual para nivelar con los iconos de al lado */
-    color: #ffc107; /* O el color que prefieras para 'Dealer' */
+    padding-top: 0px;
+    color: #ffc107;
     line-height: 1;
 }
 
 .footer-brand span {
-    color: #ffc107; /* O el color que prefieras para 'Club' */
+    color: #ffc107;
 }
 
-/* Columnas y Separadores */
 .footer-section {
     flex: 1;
     min-width: 200px;
     padding-left: 20px;
-    border-left: 1px solid #333; /* El separador vertical del ejemplo */
+    border-left: 1px solid #333;
 }
 
 .footer-brand {
@@ -363,7 +356,6 @@ h2 {
     color: #fff;
 }
 
-/* Iconos de Redes */
 .social-links {
     display: flex;
     gap: 15px;
@@ -372,15 +364,14 @@ h2 {
 .social-links img {
     width: 24px;
     height: 24px;
-    filter: grayscale(100%) invert(1); /* Para que sean blancos como el estilo */
+    filter: grayscale(100%) invert(1);
     transition: filter 0.3s;
 }
 
 .social-links img:hover {
-    filter: none; /* Recuperan color al pasar el mouse */
+    filter: none;
 }
 
-/* Cuadro Libro de Reclamaciones */
 .claims-header {
     display: flex;
     justify-content: space-between;
@@ -397,7 +388,6 @@ h2 {
     height: auto;
 }
 
-/* Footer Bottom */
 .footer-bottom {
     margin-top: 50px;
     padding-top: 20px;
@@ -424,15 +414,13 @@ h2 {
    9. RESPONSIVE (MÓVIL)
    ========================================= */
 @media (max-width: 768px) {
-    
-    /* --- Header & Navbar Móvil (Igual que Index) --- */
     .hero-section {
         width: 100%;
         min-height: 60vh;
     }
 
     .navbar {
-        position: relative; /* Deja de flotar */
+        position: relative;
         background-color: transparent !important;
         flex-direction: column;
         justify-content: center;
@@ -441,7 +429,6 @@ h2 {
         height: auto;
     }
 
-    /* Ajuste de Logo para Móvil */
     .navbar .logo {
         margin-bottom: 10px;
         justify-content: center;
@@ -450,12 +437,11 @@ h2 {
     }
 
     .navbar .logo img {
-        height: 60px; /* TAMAÑO MÓVIL ESTÁNDAR */
+        height: 60px;
     }
 
     .navbar .logo a { font-size: 1.5em; }
 
-    /* Menú Móvil */
     .navbar .nav-menu {
         width: 100%;
         justify-content: center;
@@ -479,12 +465,10 @@ h2 {
         display: inline-block;
     }
 
-    /* Contenido Hero Móvil */
     .hero-content { margin-top: 10px; padding: 0 10px; }
     .hero-content h1 { font-size: 2em; }
     h2 { font-size: 1.8em; }
 
-    /* Ajustes Secciones Móvil */
     .fundador-card { padding: 20px; }
     
     .mision-vision-grid, 

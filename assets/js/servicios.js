@@ -384,3 +384,55 @@ document.addEventListener('DOMContentLoaded', () => {
         openQuoteModal(quoteInfo);
     }
 });
+
+// ==========================================
+    // LÓGICA DE SELECCIÓN INTERACTIVA (ARMA TU PAQUETE)
+    // ==========================================
+    const itemCards = document.querySelectorAll('.item-card');
+    const detailsInput = document.getElementById('details');
+
+    // Función para actualizar el cuadro de texto basado en lo seleccionado
+    function updateDetailsText() {
+        const selectedMesas = [];
+        const selectedExtras = [];
+
+        // Recorremos todas las tarjetas para ver cuáles tienen la clase 'selected'
+        document.querySelectorAll('.item-card.selected').forEach(card => {
+            if (card.dataset.type === 'Mesa') {
+                selectedMesas.push(card.dataset.name);
+            } else if (card.dataset.type === 'Extra') {
+                selectedExtras.push(card.dataset.name);
+            }
+        });
+
+        // Construimos el texto
+        let resultText = "";
+        
+        if (selectedMesas.length > 0) {
+            resultText += "🎲 MESAS: " + selectedMesas.join(', ') + ".\n";
+        }
+        if (selectedExtras.length > 0) {
+            resultText += "✨ EXTRAS: " + selectedExtras.join(', ') + ".\n";
+        }
+
+        // Lo inyectamos en el textarea
+        detailsInput.value = resultText;
+    }
+
+    // Le damos a cada tarjeta la habilidad de reaccionar al clic
+    itemCards.forEach(card => {
+        card.addEventListener('click', function() {
+            // Activa o desactiva la clase 'selected'
+            this.classList.toggle('selected');
+            // Actualiza el texto inmediatamente
+            updateDetailsText();
+        });
+    });
+
+    // Modificamos la función que cierra el modal para que también limpie las selecciones
+    const originalCloseQuoteModal = closeQuoteModal;
+    closeQuoteModal = function() {
+        originalCloseQuoteModal(); // Cierra el modal y resetea el form como ya lo hacías
+        // Quitamos la selección visual de las tarjetas
+        itemCards.forEach(card => card.classList.remove('selected'));
+    };

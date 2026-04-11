@@ -1,794 +1,560 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, setDoc, doc, updateDoc, deleteDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// Configuración de Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
+    authDomain: "dealerclubpe.firebaseapp.com",
+    projectId: "dealerclubpe",
+    storageBucket: "dealerclubpe.firebasestorage.app",
+    messagingSenderId: "330568352415",
+    appId: "1:330568352415:web:9fcd7651698bfafac998aa"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const appId = 'default-app-id'; 
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Referencias a elementos del DOM
-    const sidebarNav = document.querySelector('.sidebar-nav ul');
-    const adminMainTitle = document.getElementById('admin-main-title');
     const adminUserInfo = document.getElementById('admin-user-info');
-    const adminLogoutBtn = document.getElementById('admin-logout-btn');
+    const adminMainTitle = document.getElementById('admin-main-title');
+    const sidebarNav = document.querySelector('.sidebar-nav ul');
+    
+    let unsubscribeListeners = {};
 
-    // Secciones de gestión
-    const coursesManagementSection = document.getElementById('courses-management');
-    const enrollmentsManagementSection = document.getElementById('enrollments-management');
-    const servicesManagementSection = document.getElementById('services-management');
-    const dealersManagementSection = document.getElementById('dealers-management');
-    const requestsManagementSection = document.getElementById('requests-management');
-    const announcementsManagementSection = document.getElementById('announcements-management');
-
-    // Cuerpos de tabla
-    const coursesTableBody = document.getElementById('courses-table-body');
-    const enrollmentsTableBody = document.getElementById('enrollments-table-body');
-    const servicesTableBody = document.getElementById('services-table-body');
-    const dealersTableBody = document.getElementById('dealers-table-body');
-    const requestsTableBody = document.getElementById('requests-table-body');
-
-    // Mensajes de no hay datos
-    const noCoursesMessage = document.getElementById('no-courses-message');
-    const noEnrollmentsMessage = document.getElementById('no-enrollments-message');
-    const noServicesMessage = document.getElementById('no-services-message');
-    const noDealersMessage = document.getElementById('no-dealers-message');
-    const noRequestsMessage = document.getElementById('no-requests-message');
-
-    // Botones de añadir
-    const addCourseBtn = document.getElementById('add-course-btn');
-    const addServiceBtn = document.getElementById('add-service-btn');
-    const addDealerBtn = document.getElementById('add-dealer-btn');
-
-    // Modales y sus elementos - Curso
-    const courseModal = document.getElementById('courseModal');
-    const closeCourseModalBtn = document.getElementById('closeCourseModalBtn');
-    const modalTitleAction = document.getElementById('modal-title-action');
-    const courseForm = document.getElementById('courseForm');
-    const courseIdInput = document.getElementById('courseId');
-    const courseNameInput = document.getElementById('courseName');
-    const courseOrderInput = document.getElementById('courseOrder');
-    const courseDescriptionInput = document.getElementById('courseDescription');
-    const coursePriceInput = document.getElementById('coursePrice');
-    const courseScheduleInput = document.getElementById('courseSchedule');
-    const courseDurationInput = document.getElementById('courseDuration');
-    const courseGamesInput = document.getElementById('courseGames');
-    const courseStatusSelect = document.getElementById('courseStatus');
-    const courseFormMessage = document.getElementById('courseFormMessage');
-
-    // Modales y sus elementos - Dealer
-    const dealerModal = document.getElementById('dealerModal');
-    const closeDealerModalBtn = document.getElementById('closeDealerModalBtn');
-    const dealerModalTitleAction = document.getElementById('dealer-modal-title-action');
-    const dealerForm = document.getElementById('dealerForm');
-    const dealerIdInput = document.getElementById('dealerId');
-    const dealerNameInput = document.getElementById('dealerName');
-    const dealerOrderInput = document.getElementById('dealerOrder');
-    const dealerSpecialtyInput = document.getElementById('dealerSpecialty');
-    const dealerExperienceInput = document.getElementById('dealerExperience');
-    const dealerBioInput = document.getElementById('dealerBio');
-    const dealerImageUrlInput = document.getElementById('dealerImageUrl');
-    const dealerFormMessage = document.getElementById('dealerFormMessage');
-
-    // Elementos del formulario de Anuncios
-    const announceBarForm = document.getElementById('announceBarForm');
-    const announceText = document.getElementById('announceText');
-    const announceStatus = document.getElementById('announceStatus');
-    const announceFormMessage = document.getElementById('announceFormMessage');
-
-    // Modal de Confirmación
-    const confirmationModal = document.getElementById('confirmationModal');
-    const closeConfirmationModalBtn = document.getElementById('closeConfirmationModalBtn');
-    const confirmationMessage = document.getElementById('confirmationMessage');
-    const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
-    const confirmActionBtn = document.getElementById('confirmActionBtn');
-
-    // Variables de Firebase
-    let db;
-    let auth;
-    let appId;
-    let firebaseCollection;
-    let firebaseGetDocs;
-    let firebaseAddDoc;
-    let firebaseSetDoc;
-    let firebaseDoc;
-    let firebaseUpdateDoc;
-    let firebaseDeleteDoc;
-    let firebaseOnSnapshot;
-    let firebaseSignOut;
-    let firebaseOnAuthStateChanged;
-
-    let currentUserId = null;
-    const unsubscribeListeners = {}; // Objeto para almacenar las funciones de desuscripción de onSnapshot
-
-    // --- Funciones de Utilidad del Modal ---
-    const openModal = (modalElement) => {
-        modalElement.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    };
-
-    const closeModal = (modalElement) => {
-        modalElement.style.display = 'none';
-        document.body.style.overflow = 'auto';
-    };
-
-    const showFormMessage = (messageElement, message, type) => {
-        messageElement.textContent = message;
-        messageElement.className = `form-message ${type}`;
-    };
-
-    // --- Inicialización de Firebase ---
-    const initializeFirebaseAndAdmin = async () => {
-        // Esperar a que las variables globales de Firebase estén disponibles desde admin.html
-        // Ya que estas variables son exportadas de un script de módulo antes de cargar admin.js,
-        // esperamos que estén listas o reintentamos.
-        if (window.firebaseDb && window.firebaseAuth && window.appId) {
-            db = window.firebaseDb;
-            auth = window.firebaseAuth;
-            appId = window.appId;
-            firebaseCollection = window.firebaseCollection;
-            firebaseGetDocs = window.firebaseGetDocs;
-            firebaseAddDoc = window.firebaseAddDoc;
-            firebaseSetDoc = window.firebaseSetDoc;
-            firebaseDoc = window.firebaseDoc;
-            firebaseUpdateDoc = window.firebaseUpdateDoc;
-            firebaseDeleteDoc = window.firebaseDeleteDoc;
-            firebaseOnSnapshot = window.firebaseOnSnapshot;
-            firebaseSignOut = window.firebaseSignOut;
-            firebaseOnAuthStateChanged = window.firebaseOnAuthStateChanged;
-
-            // Escuchar cambios en el estado de autenticación de Firebase
-            firebaseOnAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUserId = user.uid;
-                    adminUserInfo.innerHTML = `<span>Bienvenido, Administrador (${user.uid.substring(0, 8)}...)</span><i class="fas fa-user-circle"></i>`;
-                    console.log("Admin.js: Usuario autenticado como administrador:", user.uid);
-                    // IMPORTANTE: Solo cargar la sección inicial DESPUÉS de que el usuario esté autenticado.
+    // --- SEGURIDAD ESTRICTA (PUNTO 2) ---
+    onAuthStateChanged(auth, async (user) => {
+        if (user && !user.isAnonymous) {
+            const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
+            try {
+                const userRoleSnap = await getDoc(userRoleRef);
+                if (userRoleSnap.exists() && userRoleSnap.data().role === 'admin') {
+                    adminUserInfo.innerHTML = `<span>Bienvenido, Admin</span><i class="fas fa-user-circle"></i>`;
                     loadSection('courses');
                 } else {
-                    currentUserId = null;
-                    console.warn("Admin.js: No hay usuario autenticado. Redirigiendo a login.");
-                    window.location.href = 'login.html';
+                    await signOut(auth);
+                    window.location.replace('login.html'); // Evita historial
                 }
-            });
-
-            // No necesitamos un bloque `if (auth.currentUser)` aquí debido al `onAuthStateChanged` arriba,
-            // que manejará la carga inicial una vez que el estado de autenticación se resuelva.
-            // Esto evita condiciones de carrera.
-
+            } catch (error) {
+                await signOut(auth);
+                window.location.replace('login.html');
+            }
         } else {
-            console.error("Firebase SDK global variables not found for admin.js. Reintentando en 100ms...");
-            setTimeout(initializeFirebaseAndAdmin, 100);
+            window.location.replace('login.html'); // Si no hay sesión, expulsa sin dejar historial
+        }
+    });
+
+    // --- UTILIDADES ---
+    const openModal = (modal) => { modal.style.display = 'flex'; document.body.style.overflow = 'hidden'; };
+    const closeModal = (modal) => { modal.style.display = 'none'; document.body.style.overflow = 'auto'; };
+    const showMsg = (element, msg, type) => { element.textContent = msg; element.className = `form-message ${type}`; };
+
+    // --- FUNCIÓN GENÉRICA PARA ELIMINAR ---
+    let deleteCallback = null;
+    const confirmationModal = document.getElementById('confirmationModal');
+    
+    const openConfirmationModal = (message, callback) => {
+        document.getElementById('confirmationMessage').textContent = message;
+        deleteCallback = callback;
+        showMsg(document.getElementById('deleteFormMessage'), '', '');
+        openModal(confirmationModal);
+    };
+
+    const deleteItem = async (collectionName, itemId) => {
+        showMsg(document.getElementById('deleteFormMessage'), 'Eliminando...', 'loading');
+        try {
+            await deleteDoc(doc(db, `/artifacts/${appId}/public/data/${collectionName}/${itemId}`));
+            showMsg(document.getElementById('deleteFormMessage'), 'Eliminado con éxito.', 'success');
+            setTimeout(() => closeModal(confirmationModal), 1000);
+        } catch (error) {
+            showMsg(document.getElementById('deleteFormMessage'), `Error: ${error.message}`, 'error');
         }
     };
 
-    // --- Lógica para cargar y mostrar secciones ---
+    document.getElementById('confirmActionBtn').addEventListener('click', () => { if (deleteCallback) deleteCallback(); });
+    document.getElementById('cancelConfirmBtn').addEventListener('click', () => closeModal(confirmationModal));
+    document.getElementById('closeConfirmationModalBtn').addEventListener('click', () => closeModal(confirmationModal));
+
+    // --- NAVEGACIÓN ---
     const loadSection = (sectionName) => {
-        console.log(`Intentando cargar sección: ${sectionName}`);
+        Object.values(unsubscribeListeners).forEach(unsub => unsub());
+        document.querySelectorAll('.admin-content .content-section').forEach(sec => sec.style.display = 'none');
+        document.querySelectorAll('.sidebar-nav a').forEach(link => link.classList.remove('active'));
 
-        // Desuscribirse de todos los listeners de Firestore activos
-        Object.values(unsubscribeListeners).forEach(unsubscribe => unsubscribe());
-        for (const key in unsubscribeListeners) {
-            delete unsubscribeListeners[key];
-        }
+        const activeSection = document.getElementById(`${sectionName}-management`);
+        const activeLink = document.getElementById(`nav-${sectionName}`);
+        
+        if (activeSection && activeLink) {
+            activeSection.style.display = 'block';
+            activeLink.classList.add('active');
 
-        // Ocultar todas las secciones de contenido
-        document.querySelectorAll('.admin-content .content-section').forEach(section => {
-            section.style.display = 'none';
-            section.classList.remove('active');
-        });
-
-        // Eliminar 'active' de todos los elementos de navegación
-        document.querySelectorAll('.sidebar-nav a').forEach(link => {
-            link.classList.remove('active');
-        });
-
-        // Mostrar la sección y cargar datos según el nombre
-        switch (sectionName) {
-            case 'courses':
-                coursesManagementSection.style.display = 'block';
-                coursesManagementSection.classList.add('active');
-                adminMainTitle.textContent = 'Gestión de Cursos';
-                document.getElementById('nav-courses').classList.add('active');
-                loadCoursesRealtime();
-                break;
-            case 'enrollments':
-                enrollmentsManagementSection.style.display = 'block';
-                enrollmentsManagementSection.classList.add('active');
-                adminMainTitle.textContent = 'Gestión de Inscripciones';
-                document.getElementById('nav-enrollments').classList.add('active');
-                loadEnrollmentsRealtime();
-                break;
-            case 'services':
-                servicesManagementSection.style.display = 'block';
-                servicesManagementSection.classList.add('active');
-                adminMainTitle.textContent = 'Gestión de Servicios';
-                document.getElementById('nav-services').classList.add('active');
-                loadServicesRealtime();
-                break;
-            case 'dealers':
-                dealersManagementSection.style.display = 'block';
-                dealersManagementSection.classList.add('active');
-                adminMainTitle.textContent = 'Gestión de Dealers Destacados';
-                document.getElementById('nav-dealers').classList.add('active');
-                loadDealersRealtime();
-                break;
-            case 'requests':
-                requestsManagementSection.style.display = 'block';
-                requestsManagementSection.classList.add('active');
-                adminMainTitle.textContent = 'Gestión de Solicitudes';
-                document.getElementById('nav-requests').classList.add('active');
-                loadRequestsRealtime();
-                break;
-            case 'announcements':
-                announcementsManagementSection.style.display = 'block';
-                announcementsManagementSection.classList.add('active');
-                adminMainTitle.textContent = 'Gestión de Anuncios';
-                document.getElementById('nav-announcements').classList.add('active');
-                loadAnnouncementsRealtime();
-                break;
-            default:
-                console.warn(`Sección '${sectionName}' no reconocida. Recargando cursos.`);
-                loadSection('courses'); // Fallback a cursos
-                break;
+            switch (sectionName) {
+                case 'courses': adminMainTitle.textContent = 'Gestión de Cursos'; loadCourses(); break;
+                case 'professors': adminMainTitle.textContent = 'Gestión de Profesores'; loadProfessors(); break; // PUNTO 3
+                case 'alumni': adminMainTitle.textContent = 'Gestión de Egresados'; loadAlumni(); break;
+                case 'dealers': adminMainTitle.textContent = 'Gestión de Dealers'; loadDealers(); break;
+                case 'services': adminMainTitle.textContent = 'Gestión de Servicios'; loadServices(); break;
+                case 'enrollments': adminMainTitle.textContent = 'Gestión de Inscripciones'; loadEnrollments(); break;
+                case 'requests': adminMainTitle.textContent = 'Gestión de Solicitudes'; loadRequests(); break;
+                case 'announcements': adminMainTitle.textContent = 'Gestión de Anuncios'; loadAnnouncements(); break;
+            }
         }
     };
 
+    sidebarNav.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const target = e.target.closest('a');
+        if (!target) return;
 
-    // --- Gestión de Cursos (CRUD) ---
-    const loadCoursesRealtime = () => {
-        console.log("Cargando cursos en tiempo real...");
-        if (!db || !appId || !firebaseOnSnapshot || !currentUserId) {
-            console.warn("No se puede iniciar el listener de cursos en tiempo real. Firebase no inicializado o usuario no autenticado.");
-            coursesTableBody.innerHTML = `<tr><td colspan="8" class="error-message">Error: Firebase no está listo o usuario no autenticado.</td></tr>`;
-            noCoursesMessage.style.display = 'none'; // Ocultar mensaje de no cursos
+        if (target.id === 'admin-logout-btn') {
+            await signOut(auth);
+            window.location.replace('login.html'); // PUNTO 2: Destruye el historial al salir
             return;
         }
+        loadSection(target.id.replace('nav-', ''));
+    });
 
-        const coursesCollectionRef = firebaseCollection(db, `/artifacts/${appId}/public/data/courses`);
-
-        if (unsubscribeListeners.courses) {
-            unsubscribeListeners.courses();
-        }
-
-        unsubscribeListeners.courses = firebaseOnSnapshot(coursesCollectionRef, (querySnapshot) => {
-            coursesTableBody.innerHTML = '';
-            if (querySnapshot.empty) {
-                noCoursesMessage.style.display = 'block';
+    // ==========================================
+    // CRUD: INSCRIPCIONES Y SOLICITUDES (PUNTO 1)
+    // ==========================================
+    const loadEnrollments = () => {
+        const tbody = document.getElementById('enrollments-table-body');
+        unsubscribeListeners.enrollments = onSnapshot(collection(db, `/artifacts/${appId}/public/data/course_enrollments`), (snap) => {
+            if (snap.empty) {
+                // PUNTO 1: Mensaje limpio dentro de la tabla en lugar de div externo
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#ccc;">🎉 No hay inscripciones pendientes.</td></tr>`;
                 return;
             }
-            noCoursesMessage.style.display = 'none';
+            tbody.innerHTML = '';
+            snap.docs.forEach(docSnap => {
+                const e = docSnap.data();
+                const tr = tbody.insertRow();
+                tr.innerHTML = `
+                    <td>${e.courseName || '-'}</td><td>${e.fullName || '-'}</td><td>${e.email || '-'}</td>
+                    <td>${e.phone || '-'}</td><td>${e.comments || '-'}</td>
+                    <td>${e.timestamp ? new Date(e.timestamp.seconds * 1000).toLocaleDateString() : '-'}</td>
+                    <td><button class="btn btn-danger btn-delete" data-id="${docSnap.id}"><i class="fas fa-trash"></i></button></td>
+                `;
+            });
+            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
+                openConfirmationModal('¿Eliminar inscripción?', () => deleteItem('course_enrollments', e.target.closest('button').dataset.id));
+            }));
+        });
+    };
 
-            const courses = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            courses.sort((a, b) => (a.order || 999) - (b.order || 999));
+    const loadRequests = () => {
+        const tbody = document.getElementById('requests-table-body');
+        unsubscribeListeners.requests = onSnapshot(collection(db, `/artifacts/${appId}/public/data/service_requests`), (snap) => {
+            if (snap.empty) {
+                // PUNTO 1: Mensaje limpio dentro de la tabla
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#ccc;">📬 No tienes solicitudes nuevas.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = '';
+            snap.docs.forEach(docSnap => {
+                const r = docSnap.data();
+                const tr = tbody.insertRow();
+                tr.innerHTML = `
+                    <td>${docSnap.id.substring(0,8)}</td><td>${r.fullName || '-'}</td><td>${r.email || '-'}</td>
+                    <td>${r.eventType || r.subject || '-'}</td><td>${(r.details || r.message || '').substring(0,40)}...</td>
+                    <td>${r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleDateString() : '-'}</td>
+                    <td><button class="btn btn-danger btn-delete" data-id="${docSnap.id}"><i class="fas fa-trash"></i></button></td>
+                `;
+            });
+            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
+                openConfirmationModal('¿Eliminar solicitud?', () => deleteItem('service_requests', e.target.closest('button').dataset.id));
+            }));
+        });
+    };
 
-            courses.forEach(course => {
-                const row = coursesTableBody.insertRow();
-                row.dataset.courseId = course.id;
 
-                row.innerHTML = `
-                    <td>${course.order || '-'}</td>
-                    <td>${course.name || 'N/A'}</td>
-                    <td>${(course.description && course.description.length > 50) ? course.description.substring(0, 50) + '...' : course.description || 'N/A'}</td>
-                    <td>${course.price || 'N/A'}</td>
-                    <td>${course.schedule || 'N/A'}</td>
-                    <td>${course.duration || 'N/A'}</td>
+    // ==========================================
+    // CRUD NUEVO: PROFESORES (PUNTO 3)
+    // ==========================================
+    const loadProfessors = () => {
+        const tbody = document.getElementById('professors-table-body');
+        unsubscribeListeners.professors = onSnapshot(collection(db, `/artifacts/${appId}/public/data/professors`), (snap) => {
+            if (snap.empty) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ccc;">No hay profesores registrados.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = '';
+            const profs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
+            
+            profs.forEach(p => {
+                const tr = tbody.insertRow();
+                tr.innerHTML = `
+                    <td>${p.order || '-'}</td><td>${p.name}</td><td>${p.specialty}</td>
+                    <td>${(p.bio || '').substring(0,40)}...</td>
                     <td>
-                        <select class="status-select" data-course-id="${course.id}">
-                            <option value="Abierto" ${course.status === 'Abierto' ? 'selected' : ''}>Abierto</option>
-                            <option value="En Progreso" ${course.status === 'En Progreso' ? 'selected' : ''}>En Progreso</option>
-                            <option value="Próximamente" ${course.status === 'Próximamente' ? 'selected' : ''}>Próximamente</option>
-                            <option value="Cerrado" ${course.status === 'Cerrado' ? 'selected' : ''}>Cerrado</option>
+                        <button class="btn btn-secondary btn-edit" data-id="${p.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-delete" data-id="${p.id}"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+            });
+
+            tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
+                const p = profs.find(x => x.id === e.target.closest('button').dataset.id);
+                document.getElementById('professorId').value = p.id;
+                document.getElementById('professorName').value = p.name || '';
+                document.getElementById('professorOrder').value = p.order || 0;
+                document.getElementById('professorSpecialty').value = p.specialty || '';
+                document.getElementById('professorBio').value = p.bio || '';
+                document.getElementById('professorImageUrl').value = p.imageUrl || '';
+                document.getElementById('professor-modal-title-action').textContent = 'Editar';
+                openModal(document.getElementById('professorModal'));
+            }));
+
+            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
+                openConfirmationModal('¿Eliminar profesor?', () => deleteItem('professors', e.target.closest('button').dataset.id));
+            }));
+        });
+    };
+
+    document.getElementById('add-professor-btn').addEventListener('click', () => {
+        document.getElementById('professorForm').reset();
+        document.getElementById('professorId').value = '';
+        document.getElementById('professor-modal-title-action').textContent = 'Añadir';
+        openModal(document.getElementById('professorModal'));
+    });
+
+    document.getElementById('professorForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msgBox = document.getElementById('professorFormMessage');
+        showMsg(msgBox, 'Guardando...', 'loading');
+        
+        const id = document.getElementById('professorId').value;
+        const data = {
+            name: document.getElementById('professorName').value,
+            order: parseInt(document.getElementById('professorOrder').value),
+            specialty: document.getElementById('professorSpecialty').value,
+            bio: document.getElementById('professorBio').value,
+            imageUrl: document.getElementById('professorImageUrl').value,
+            lastUpdated: new Date()
+        };
+
+        try {
+            if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/professors/${id}`), data);
+            else await addDoc(collection(db, `/artifacts/${appId}/public/data/professors`), data);
+            closeModal(document.getElementById('professorModal'));
+            showMsg(msgBox, '', '');
+        } catch (err) { showMsg(msgBox, "Error guardando", "error"); }
+    });
+    document.getElementById('closeProfessorModalBtn').addEventListener('click', () => closeModal(document.getElementById('professorModal')));
+
+    // ==========================================
+    // CRUD NUEVO: EGRESADOS
+    // ==========================================
+    const loadAlumni = () => {
+        const tbody = document.getElementById('alumni-table-body');
+        unsubscribeListeners.alumni = onSnapshot(collection(db, `/artifacts/${appId}/public/data/alumni`), (snap) => {
+            if (snap.empty) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ccc;">No hay egresados registrados.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = '';
+            const alumni = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
+            
+            alumni.forEach(a => {
+                const tr = tbody.insertRow();
+                tr.innerHTML = `
+                    <td>${a.order || '-'}</td><td>${a.name}</td><td>${a.info}</td>
+                    <td>"${(a.testimonial || '').substring(0,40)}..."</td>
+                    <td>
+                        <button class="btn btn-secondary btn-edit" data-id="${a.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-delete" data-id="${a.id}"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+            });
+
+            tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
+                const a = alumni.find(x => x.id === e.target.closest('button').dataset.id);
+                document.getElementById('alumniId').value = a.id;
+                document.getElementById('alumniName').value = a.name || '';
+                document.getElementById('alumniOrder').value = a.order || 0;
+                document.getElementById('alumniInfo').value = a.info || '';
+                document.getElementById('alumniTestimonial').value = a.testimonial || '';
+                document.getElementById('alumniImageUrl').value = a.imageUrl || '';
+                document.getElementById('alumni-modal-title-action').textContent = 'Editar';
+                openModal(document.getElementById('alumniModal'));
+            }));
+
+            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
+                openConfirmationModal('¿Eliminar egresado?', () => deleteItem('alumni', e.target.closest('button').dataset.id));
+            }));
+        });
+    };
+
+    document.getElementById('add-alumni-btn').addEventListener('click', () => {
+        document.getElementById('alumniForm').reset();
+        document.getElementById('alumniId').value = '';
+        document.getElementById('alumni-modal-title-action').textContent = 'Añadir';
+        openModal(document.getElementById('alumniModal'));
+    });
+
+    document.getElementById('alumniForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msgBox = document.getElementById('alumniFormMessage');
+        showMsg(msgBox, 'Guardando...', 'loading');
+        
+        const id = document.getElementById('alumniId').value;
+        const data = {
+            name: document.getElementById('alumniName').value,
+            order: parseInt(document.getElementById('alumniOrder').value),
+            info: document.getElementById('alumniInfo').value,
+            testimonial: document.getElementById('alumniTestimonial').value,
+            imageUrl: document.getElementById('alumniImageUrl').value,
+            lastUpdated: new Date()
+        };
+
+        try {
+            if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/alumni/${id}`), data);
+            else await addDoc(collection(db, `/artifacts/${appId}/public/data/alumni`), data);
+            closeModal(document.getElementById('alumniModal'));
+            showMsg(msgBox, '', '');
+        } catch (err) { showMsg(msgBox, "Error guardando", "error"); }
+    });
+    document.getElementById('closeAlumniModalBtn').addEventListener('click', () => closeModal(document.getElementById('alumniModal')));
+
+    // ==========================================
+    // RESTO DE CRUDS (Cursos, Dealers, Servicios, Anuncios)
+    // ==========================================
+    
+    // Cursos
+    const loadCourses = () => {
+        const tbody = document.getElementById('courses-table-body');
+        unsubscribeListeners.courses = onSnapshot(collection(db, `/artifacts/${appId}/public/data/courses`), (snap) => {
+            if (snap.empty) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No hay cursos.</td></tr>`; return; }
+            tbody.innerHTML = '';
+            const courses = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
+            courses.forEach(c => {
+                const tr = tbody.insertRow();
+                tr.innerHTML = `
+                    <td>${c.order || '-'}</td><td>${c.name}</td><td>${(c.description||'').substring(0,30)}...</td>
+                    <td>${c.price}</td><td>${c.schedule}</td><td>${c.duration}</td>
+                    <td>
+                        <select class="status-select" data-id="${c.id}">
+                            <option value="Abierto" ${c.status==='Abierto'?'selected':''}>Abierto</option>
+                            <option value="En Progreso" ${c.status==='En Progreso'?'selected':''}>En Progreso</option>
+                            <option value="Próximamente" ${c.status==='Próximamente'?'selected':''}>Próximamente</option>
+                            <option value="Cerrado" ${c.status==='Cerrado'?'selected':''}>Cerrado</option>
                         </select>
                     </td>
-                    <td class="action-buttons">
-                        <button class="btn btn-secondary btn-edit" data-collection="courses" data-id="${course.id}"><i class="fas fa-edit"></i> Editar</button>
-                        <button class="btn btn-danger btn-delete" data-collection="courses" data-id="${course.id}"><i class="fas fa-trash-alt"></i> Eliminar</button>
+                    <td>
+                        <button class="btn btn-secondary btn-edit" data-id="${c.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-delete" data-id="${c.id}"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
             });
-
-            // Asegurarse de adjuntar eventos a los elementos recién creados
-            document.querySelectorAll('#courses-table-body .status-select').forEach(select => {
-                select.addEventListener('change', async (event) => {
-                    const courseId = event.target.dataset.courseId;
-                    const newStatus = event.target.value;
-                    await updateCourseStatus(courseId, newStatus);
-                });
-            });
-
-            document.querySelectorAll('#courses-table-body .btn-edit').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const courseId = event.target.dataset.id;
-                    openEditCourseModal(courseId, courses);
-                });
-            });
-            document.querySelectorAll('#courses-table-body .btn-delete').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const courseId = event.target.dataset.id;
-                    openConfirmationModal('¿Estás seguro de que quieres eliminar este curso?', () => deleteItem('courses', courseId));
-                });
-            });
-
-        }, (error) => {
-            console.error("Error al escuchar cursos en tiempo real:", error);
-            coursesTableBody.innerHTML = `<tr><td colspan="8" class="error-message">Error al cargar cursos: ${error.message}</td></tr>`;
+            tbody.querySelectorAll('.status-select').forEach(sel => sel.addEventListener('change', async (e) => {
+                await updateDoc(doc(db, `/artifacts/${appId}/public/data/courses/${e.target.dataset.id}`), { status: e.target.value });
+            }));
+            tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
+                const c = courses.find(x => x.id === e.target.closest('button').dataset.id);
+                document.getElementById('courseId').value = c.id;
+                document.getElementById('courseName').value = c.name;
+                document.getElementById('courseOrder').value = c.order;
+                document.getElementById('courseDescription').value = c.description;
+                document.getElementById('coursePrice').value = c.price;
+                document.getElementById('courseSchedule').value = c.schedule;
+                document.getElementById('courseDuration').value = c.duration;
+                document.getElementById('courseGames').value = (c.gamesIncluded || []).join(', ');
+                document.getElementById('courseStatus').value = c.status;
+                document.getElementById('modal-title-action').textContent = 'Editar';
+                openModal(document.getElementById('courseModal'));
+            }));
+            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
+                openConfirmationModal('¿Eliminar curso?', () => deleteItem('courses', e.target.closest('button').dataset.id));
+            }));
         });
     };
 
-    const updateCourseStatus = async (courseId, newStatus) => {
-        try {
-            const courseRef = firebaseDoc(db, `/artifacts/${appId}/public/data/courses/${courseId}`);
-            await firebaseUpdateDoc(courseRef, { status: newStatus });
-            console.log(`Status del curso ${courseId} actualizado a ${newStatus}`);
-        } catch (error) {
-            console.error("Error al actualizar el status del curso:", error);
-            showFormMessage(courseFormMessage, `Error al actualizar el estado: ${error.message}`, 'error');
-        }
-    };
-
-    addCourseBtn.addEventListener('click', () => {
-        courseForm.reset();
-        courseIdInput.value = '';
-        modalTitleAction.textContent = 'Añadir';
-        showFormMessage(courseFormMessage, '', '');
-        openModal(courseModal);
+    document.getElementById('add-course-btn').addEventListener('click', () => {
+        document.getElementById('courseForm').reset();
+        document.getElementById('courseId').value = '';
+        document.getElementById('modal-title-action').textContent = 'Añadir';
+        openModal(document.getElementById('courseModal'));
     });
 
-    const openEditCourseModal = (courseId, coursesList) => {
-        const courseToEdit = coursesList.find(c => c.id === courseId);
-        if (courseToEdit) {
-            courseIdInput.value = courseToEdit.id;
-            courseNameInput.value = courseToEdit.name || '';
-            courseOrderInput.value = courseToEdit.order || 0;
-            courseDescriptionInput.value = courseToEdit.description || '';
-            coursePriceInput.value = courseToEdit.price || '';
-            courseScheduleInput.value = courseToEdit.schedule || '';
-            courseDurationInput.value = courseToEdit.duration || '';
-            courseGamesInput.value = (courseToEdit.gamesIncluded && Array.isArray(courseToEdit.gamesIncluded)) ? courseToEdit.gamesIncluded.join(', ') : '';
-            courseStatusSelect.value = courseToEdit.status || 'Abierto';
-
-            modalTitleAction.textContent = 'Editar';
-            showFormMessage(courseFormMessage, '', '');
-            openModal(courseModal);
-        } else {
-            console.error("Curso no encontrado para editar:", courseId);
-            showFormMessage(courseFormMessage, 'Error: Curso no encontrado para editar.', 'error');
-        }
-    };
-
-    courseForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        showFormMessage(courseFormMessage, 'Guardando curso...', 'loading');
-
-        const isEditing = !!courseIdInput.value;
-        const courseData = {
-            name: courseNameInput.value,
-            order: parseInt(courseOrderInput.value, 10),
-            description: courseDescriptionInput.value,
-            price: coursePriceInput.value,
-            schedule: courseScheduleInput.value,
-            duration: courseDurationInput.value,
-            gamesIncluded: courseGamesInput.value.split(',').map(game => game.trim()).filter(game => game !== ''),
-            status: courseStatusSelect.value,
+    document.getElementById('courseForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('courseId').value;
+        const data = {
+            name: document.getElementById('courseName').value,
+            order: parseInt(document.getElementById('courseOrder').value),
+            description: document.getElementById('courseDescription').value,
+            price: document.getElementById('coursePrice').value,
+            schedule: document.getElementById('courseSchedule').value,
+            duration: document.getElementById('courseDuration').value,
+            gamesIncluded: document.getElementById('courseGames').value.split(',').map(g => g.trim()),
+            status: document.getElementById('courseStatus').value,
             lastUpdated: new Date()
         };
-
         try {
-            if (isEditing) {
-                const courseRef = firebaseDoc(db, `/artifacts/${appId}/public/data/courses/${courseIdInput.value}`);
-                await firebaseUpdateDoc(courseRef, courseData);
-                showFormMessage(courseFormMessage, 'Curso actualizado exitosamente.', 'success');
-            } else {
-                const coursesCollectionRef = firebaseCollection(db, `/artifacts/${appId}/public/data/courses`);
-                await firebaseAddDoc(coursesCollectionRef, courseData);
-                showFormMessage(courseFormMessage, 'Curso añadido exitosamente.', 'success');
-            }
-            setTimeout(() => closeModal(courseModal), 1500);
-        } catch (error) {
-            console.error("Error al guardar el curso:", error);
-            showFormMessage(courseFormMessage, `Error al guardar el curso: ${error.message}`, 'error');
-        }
+            if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/courses/${id}`), data);
+            else await addDoc(collection(db, `/artifacts/${appId}/public/data/courses`), data);
+            closeModal(document.getElementById('courseModal'));
+        } catch (err) { alert("Error guardando curso"); }
     });
+    document.getElementById('closeCourseModalBtn').addEventListener('click', () => closeModal(document.getElementById('courseModal')));
 
-    // --- Gestión de Inscripciones ---
-    const loadEnrollmentsRealtime = () => {
-        console.log("Cargando inscripciones en tiempo real...");
-        if (!db || !appId || !firebaseOnSnapshot || !currentUserId) {
-            console.warn("No se puede iniciar el listener de inscripciones. Firebase no inicializado o usuario no autenticado.");
-            enrollmentsTableBody.innerHTML = `<tr><td colspan="8" class="error-message">Error: Firebase no está listo o usuario no autenticado.</td></tr>`;
-            noEnrollmentsMessage.style.display = 'none';
-            return;
-        }
 
-        const enrollmentsCollectionRef = firebaseCollection(db, `/artifacts/${appId}/public/data/course_enrollments`);
-
-        if (unsubscribeListeners.enrollments) {
-            unsubscribeListeners.enrollments();
-        }
-
-        unsubscribeListeners.enrollments = firebaseOnSnapshot(enrollmentsCollectionRef, (querySnapshot) => {
-            enrollmentsTableBody.innerHTML = '';
-            if (querySnapshot.empty) {
-                noEnrollmentsMessage.style.display = 'block';
-                return;
-            }
-            noEnrollmentsMessage.style.display = 'none';
-
-            querySnapshot.docs.forEach(doc => {
-                const enrollment = doc.data();
-                const row = enrollmentsTableBody.insertRow();
-                row.innerHTML = `
-                    <td>${enrollment.courseName || 'N/A'}</td>
-                    <td>${enrollment.fullName || 'N/A'}</td>
-                    <td>${enrollment.email || 'N/A'}</td>
-                    <td>${enrollment.phone || 'N/A'}</td>
-                    <td>${(enrollment.comments && enrollment.comments.length > 50) ? enrollment.comments.substring(0, 50) + '...' : enrollment.comments || 'N/A'}</td>
-                    <td>${enrollment.timestamp ? new Date(enrollment.timestamp.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
-                    <td>${enrollment.status || 'N/A'}</td>
-                    <td class="action-buttons">
-                        <button class="btn btn-danger btn-delete" data-collection="course_enrollments" data-id="${doc.id}"><i class="fas fa-trash-alt"></i> Eliminar</button>
+    // Dealers
+    const loadDealers = () => {
+        const tbody = document.getElementById('dealers-table-body');
+        unsubscribeListeners.dealers = onSnapshot(collection(db, `/artifacts/${appId}/public/data/dealers`), (snap) => {
+            if (snap.empty) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No hay dealers.</td></tr>`; return; }
+            tbody.innerHTML = '';
+            const dealers = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
+            dealers.forEach(d => {
+                const tr = tbody.insertRow();
+                tr.innerHTML = `
+                    <td>${d.order || '-'}</td><td>${d.name}</td><td>${d.specialty}</td>
+                    <td>${d.experience} años</td><td>${(d.bio||'').substring(0,30)}...</td>
+                    <td>
+                        <button class="btn btn-secondary btn-edit" data-id="${d.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-delete" data-id="${d.id}"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
             });
-             document.querySelectorAll('#enrollments-table-body .btn-delete').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const id = event.target.dataset.id;
-                    openConfirmationModal('¿Estás seguro de que quieres eliminar esta inscripción?', () => deleteItem('course_enrollments', id));
-                });
-            });
-        }, (error) => {
-            console.error("Error al escuchar inscripciones en tiempo real:", error);
-            enrollmentsTableBody.innerHTML = `<tr><td colspan="8" class="error-message">Error al cargar inscripciones: ${error.message}</td></tr>`;
+            tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
+                const d = dealers.find(x => x.id === e.target.closest('button').dataset.id);
+                document.getElementById('dealerId').value = d.id;
+                document.getElementById('dealerName').value = d.name;
+                document.getElementById('dealerOrder').value = d.order;
+                document.getElementById('dealerSpecialty').value = d.specialty;
+                document.getElementById('dealerExperience').value = d.experience;
+                document.getElementById('dealerBio').value = d.bio;
+                document.getElementById('dealerImageUrl').value = d.imageUrl || '';
+                document.getElementById('dealer-modal-title-action').textContent = 'Editar';
+                openModal(document.getElementById('dealerModal'));
+            }));
+            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
+                openConfirmationModal('¿Eliminar dealer?', () => deleteItem('dealers', e.target.closest('button').dataset.id));
+            }));
         });
     };
 
-    // --- Gestión de Servicios ---
-    const loadServicesRealtime = () => {
-        console.log("Cargando servicios en tiempo real...");
-        if (!db || !appId || !firebaseOnSnapshot || !currentUserId) {
-            console.warn("No se puede iniciar el listener de servicios. Firebase no inicializado o usuario no autenticado.");
-            servicesTableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error: Firebase no está listo o usuario no autenticado.</td></tr>`;
-            noServicesMessage.style.display = 'none';
-            return;
-        }
-
-        const servicesCollectionRef = firebaseCollection(db, `/artifacts/${appId}/public/data/services`);
-
-        if (unsubscribeListeners.services) {
-            unsubscribeListeners.services();
-        }
-
-        unsubscribeListeners.services = firebaseOnSnapshot(servicesCollectionRef, (querySnapshot) => {
-            servicesTableBody.innerHTML = '';
-            if (querySnapshot.empty) {
-                noServicesMessage.style.display = 'block';
-                return;
-            }
-            noServicesMessage.style.display = 'none';
-
-            querySnapshot.docs.forEach(doc => {
-                const service = doc.data();
-                const row = servicesTableBody.insertRow();
-                row.innerHTML = `
-                    <td>${service.order || '-'}</td>
-                    <td>${service.name || 'N/A'}</td>
-                    <td>${(service.description && service.description.length > 50) ? service.description.substring(0, 50) + '...' : service.description || 'N/A'}</td>
-                    <td>${service.price || 'N/A'}</td>
-                    <td>${service.status || 'N/A'}</td>
-                    <td class="action-buttons">
-                        <button class="btn btn-secondary btn-edit" data-collection="services" data-id="${doc.id}"><i class="fas fa-edit"></i> Editar</button>
-                        <button class="btn btn-danger btn-delete" data-collection="services" data-id="${doc.id}"><i class="fas fa-trash-alt"></i> Eliminar</button>
-                    </td>
-                `;
-            });
-            document.querySelectorAll('#services-table-body .btn-edit').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const id = event.target.dataset.id;
-                    alert('Funcionalidad de edición de servicio aún no implementada.');
-                });
-            });
-            document.querySelectorAll('#services-table-body .btn-delete').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const id = event.target.dataset.id;
-                    openConfirmationModal('¿Estás seguro de que quieres eliminar este servicio?', () => deleteItem('services', id));
-                });
-            });
-        }, (error) => {
-            console.error("Error al escuchar servicios en tiempo real:", error);
-            servicesTableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error al cargar servicios: ${error.message}</td></tr>`;
-        });
-    };
-    addServiceBtn.addEventListener('click', () => {
-        alert('Funcionalidad de añadir servicio aún no implementada.');
+    document.getElementById('add-dealer-btn').addEventListener('click', () => {
+        document.getElementById('dealerForm').reset();
+        document.getElementById('dealerId').value = '';
+        document.getElementById('dealer-modal-title-action').textContent = 'Añadir';
+        openModal(document.getElementById('dealerModal'));
     });
 
-    // --- Gestión de Dealers Destacados ---
-    const loadDealersRealtime = () => {
-        console.log("Cargando dealers en tiempo real...");
-        if (!db || !appId || !firebaseOnSnapshot || !currentUserId) {
-            console.warn("No se puede iniciar el listener de dealers. Firebase no inicializado o usuario no autenticado.");
-            dealersTableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error: Firebase no está listo o usuario no autenticado.</td></tr>`;
-            noDealersMessage.style.display = 'none';
-            return;
-        }
-
-        const dealersCollectionRef = firebaseCollection(db, `/artifacts/${appId}/public/data/dealers`);
-
-        if (unsubscribeListeners.dealers) {
-            unsubscribeListeners.dealers();
-        }
-
-        unsubscribeListeners.dealers = firebaseOnSnapshot(dealersCollectionRef, (querySnapshot) => {
-            dealersTableBody.innerHTML = '';
-            if (querySnapshot.empty) {
-                noDealersMessage.style.display = 'block';
-                return;
-            }
-            noDealersMessage.style.display = 'none';
-
-            const dealers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            dealers.sort((a, b) => (a.order || 999) - (b.order || 999));
-
-            dealers.forEach(dealer => {
-                const row = dealersTableBody.insertRow();
-                row.innerHTML = `
-                    <td>${dealer.order || '-'}</td>
-                    <td>${dealer.name || 'N/A'}</td>
-                    <td>${dealer.specialty || 'N/A'}</td>
-                    <td>${dealer.experience || 'N/A'}</td>
-                    <td>${(dealer.bio && dealer.bio.length > 50) ? dealer.bio.substring(0, 50) + '...' : dealer.bio || 'N/A'}</td>
-                    <td class="action-buttons">
-                        <button class="btn btn-secondary btn-edit" data-collection="dealers" data-id="${dealer.id}"><i class="fas fa-edit"></i> Editar</button>
-                        <button class="btn btn-danger btn-delete" data-collection="dealers" data-id="${dealer.id}"><i class="fas fa-trash-alt"></i> Eliminar</button>
-                    </td>
-                `;
-            });
-             document.querySelectorAll('#dealers-table-body .btn-edit').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const id = event.target.dataset.id;
-                    openEditDealerModal(id, dealers);
-                });
-            });
-            document.querySelectorAll('#dealers-table-body .btn-delete').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const id = event.target.dataset.id;
-                    openConfirmationModal('¿Estás seguro de que quieres eliminar este dealer?', () => deleteItem('dealers', id));
-                });
-            });
-        }, (error) => {
-            console.error("Error al escuchar dealers en tiempo real:", error);
-            dealersTableBody.innerHTML = `<tr><td colspan="6" class="error-message">Error al cargar dealers: ${error.message}</td></tr>`;
-        });
-    };
-    
-    addDealerBtn.addEventListener('click', () => {
-        dealerForm.reset();
-        dealerIdInput.value = '';
-        dealerModalTitleAction.textContent = 'Añadir';
-        showFormMessage(dealerFormMessage, '', '');
-        openModal(dealerModal);
-    });
-
-    const openEditDealerModal = (dealerId, dealersList) => {
-        const dealerToEdit = dealersList.find(d => d.id === dealerId);
-        if (dealerToEdit) {
-            dealerIdInput.value = dealerToEdit.id;
-            dealerNameInput.value = dealerToEdit.name || '';
-            dealerOrderInput.value = dealerToEdit.order || 0;
-            dealerSpecialtyInput.value = dealerToEdit.specialty || '';
-            dealerExperienceInput.value = dealerToEdit.experience || '';
-            dealerBioInput.value = dealerToEdit.bio || '';
-            dealerImageUrlInput.value = dealerToEdit.imageUrl || '';
-
-            dealerModalTitleAction.textContent = 'Editar';
-            showFormMessage(dealerFormMessage, '', '');
-            openModal(dealerModal);
-        } else {
-            console.error("Dealer no encontrado para editar:", dealerId);
-            showFormMessage(dealerFormMessage, 'Error: Dealer no encontrado para editar.', 'error');
-        }
-    };
-
-    dealerForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        showFormMessage(dealerFormMessage, 'Guardando dealer...', 'loading');
-
-        const isEditing = !!dealerIdInput.value;
-        const dealerData = {
-            name: dealerNameInput.value,
-            order: parseInt(dealerOrderInput.value, 10),
-            specialty: dealerSpecialtyInput.value,
-            experience: parseInt(dealerExperienceInput.value, 10),
-            bio: dealerBioInput.value,
-            imageUrl: dealerImageUrlInput.value,
+    document.getElementById('dealerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('dealerId').value;
+        const data = {
+            name: document.getElementById('dealerName').value,
+            order: parseInt(document.getElementById('dealerOrder').value),
+            specialty: document.getElementById('dealerSpecialty').value,
+            experience: parseInt(document.getElementById('dealerExperience').value),
+            bio: document.getElementById('dealerBio').value,
+            imageUrl: document.getElementById('dealerImageUrl').value,
             lastUpdated: new Date()
         };
-
         try {
-            if (isEditing) {
-                const dealerRef = firebaseDoc(db, `/artifacts/${appId}/public/data/dealers/${dealerIdInput.value}`);
-                await firebaseUpdateDoc(dealerRef, dealerData);
-                showFormMessage(dealerFormMessage, 'Dealer actualizado exitosamente.', 'success');
-            } else {
-                const dealersCollectionRef = firebaseCollection(db, `/artifacts/${appId}/public/data/dealers`);
-                await firebaseAddDoc(dealersCollectionRef, dealerData);
-                showFormMessage(dealerFormMessage, 'Dealer añadido exitosamente.', 'success');
-            }
-            setTimeout(() => closeModal(dealerModal), 1500);
-        } catch (error) {
-            console.error("Error al guardar el dealer:", error);
-            showFormMessage(dealerFormMessage, `Error al guardar el dealer: ${error.message}`, 'error');
-        }
+            if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/dealers/${id}`), data);
+            else await addDoc(collection(db, `/artifacts/${appId}/public/data/dealers`), data);
+            closeModal(document.getElementById('dealerModal'));
+        } catch (err) { alert("Error guardando dealer"); }
     });
+    document.getElementById('closeDealerModalBtn').addEventListener('click', () => closeModal(document.getElementById('dealerModal')));
 
-    // --- Gestión de Solicitudes ---
-    const loadRequestsRealtime = () => {
-        console.log("Cargando solicitudes en tiempo real...");
-        if (!db || !appId || !firebaseOnSnapshot || !currentUserId) {
-            console.warn("No se puede iniciar el listener de solicitudes. Firebase no inicializado o usuario no autenticado.");
-            requestsTableBody.innerHTML = `<tr><td colspan="8" class="error-message">Error: Firebase no está listo o usuario no autenticado.</td></tr>`;
-            noRequestsMessage.style.display = 'none';
-            return;
-        }
 
-        const requestsCollectionRef = firebaseCollection(db, `/artifacts/${appId}/public/data/service_requests`);
-
-        if (unsubscribeListeners.requests) {
-            unsubscribeListeners.requests();
-        }
-
-        unsubscribeListeners.requests = firebaseOnSnapshot(requestsCollectionRef, (querySnapshot) => {
-            requestsTableBody.innerHTML = '';
-            if (querySnapshot.empty) {
-                noRequestsMessage.style.display = 'block';
-                return;
-            }
-            noRequestsMessage.style.display = 'none';
-
-            querySnapshot.docs.forEach(doc => {
-                const request = doc.data();
-                const row = requestsTableBody.insertRow();
-                row.innerHTML = `
-                    <td>${doc.id.substring(0, 8)}...</td>
-                    <td>${request.fullName || 'N/A'}</td>
-                    <td>${request.email || 'N/A'}</td>
-                    <td>${request.subject || 'N/A'}</td>
-                    <td>${(request.message && request.message.length > 50) ? request.message.substring(0, 50) + '...' : request.message || 'N/A'}</td>
-                    <td>${request.timestamp ? new Date(request.timestamp.seconds * 1000).toLocaleDateString() : 'N/A'}</td>
-                    <td>${request.status || 'N/A'}</td>
-                    <td class="action-buttons">
-                        <button class="btn btn-danger btn-delete" data-collection="service_requests" data-id="${doc.id}"><i class="fas fa-trash-alt"></i> Eliminar</button>
+    // Servicios
+    const loadServices = () => {
+        const tbody = document.getElementById('services-table-body');
+        unsubscribeListeners.services = onSnapshot(collection(db, `/artifacts/${appId}/public/data/services`), (snap) => {
+            if (snap.empty) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No hay servicios.</td></tr>`; return; }
+            tbody.innerHTML = '';
+            const services = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
+            services.forEach(s => {
+                const tr = tbody.insertRow();
+                tr.innerHTML = `
+                    <td>${s.order || '-'}</td><td>${s.name}</td><td>${(s.description||'').substring(0,30)}...</td>
+                    <td>${s.price || 'Consultar'}</td><td>${s.status || 'Activo'}</td>
+                    <td>
+                        <button class="btn btn-secondary btn-edit" data-id="${s.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-delete" data-id="${s.id}"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
             });
-            document.querySelectorAll('#requests-table-body .btn-delete').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const id = event.target.dataset.id;
-                    openConfirmationModal('¿Estás seguro de que quieres eliminar esta solicitud?', () => deleteItem('service_requests', id));
-                });
-            });
-        }, (error) => {
-            console.error("Error al escuchar solicitudes en tiempo real:", error);
-            requestsTableBody.innerHTML = `<tr><td colspan="8" class="error-message">Error al cargar solicitudes: ${error.message}</td></tr>`;
+            tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
+                const s = services.find(x => x.id === e.target.closest('button').dataset.id);
+                document.getElementById('serviceId').value = s.id;
+                document.getElementById('serviceName').value = s.name || '';
+                document.getElementById('serviceOrder').value = s.order || 0;
+                document.getElementById('serviceDescription').value = s.description || '';
+                document.getElementById('servicePrice').value = s.price || '';
+                document.getElementById('serviceStatus').value = s.status || 'Activo';
+                document.getElementById('service-modal-title-action').textContent = 'Editar';
+                openModal(document.getElementById('serviceModal'));
+            }));
+            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
+                openConfirmationModal('¿Eliminar servicio?', () => deleteItem('services', e.target.closest('button').dataset.id));
+            }));
         });
     };
 
-    // --- Gestión de Anuncios ---
-    const loadAnnouncementsRealtime = () => {
-        console.log("Cargando anuncio en tiempo real...");
-        if (!db || !appId || !firebaseOnSnapshot || !firebaseDoc || !currentUserId) {
-            console.warn("Firebase no está completamente inicializado o usuario no autenticado para anuncios.");
-            showFormMessage(announceFormMessage, 'Error al cargar anuncio: Firebase no listo o usuario no autenticado.', 'error');
-            return;
-        }
+    document.getElementById('add-service-btn').addEventListener('click', () => {
+        document.getElementById('serviceForm').reset();
+        document.getElementById('serviceId').value = '';
+        document.getElementById('service-modal-title-action').textContent = 'Añadir';
+        openModal(document.getElementById('serviceModal'));
+    });
 
-        const announcementsDocRef = firebaseDoc(db, `/artifacts/${appId}/public/data/config/announceBar`);
-
-        if (unsubscribeListeners.announcements) {
-            unsubscribeListeners.announcements();
-        }
-
-        unsubscribeListeners.announcements = firebaseOnSnapshot(announcementsDocRef, (docSnapshot) => {
-            if (docSnapshot.exists()) {
-                const data = docSnapshot.data();
-                announceText.value = data.text || '';
-                announceStatus.value = data.status || 'inactive';
-                console.log("Anuncio cargado:", data);
-            } else {
-                announceText.value = '';
-                announceStatus.value = 'inactive';
-                console.log("No se encontró el documento de anuncio, inicializando campos.");
-            }
-            showFormMessage(announceFormMessage, '', ''); // Limpiar mensaje previo al cargar el formulario
-        }, (error) => {
-            console.error("Error al escuchar anuncio en tiempo real:", error);
-            showFormMessage(announceFormMessage, `Error al cargar anuncio: ${error.message}`, 'error');
-        });
-    };
-
-    announceBarForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        showFormMessage(announceFormMessage, 'Guardando anuncio...', 'loading');
-
-        const announceData = {
-            text: announceText.value,
-            status: announceStatus.value,
+    document.getElementById('serviceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('serviceId').value;
+        const data = {
+            name: document.getElementById('serviceName').value,
+            order: parseInt(document.getElementById('serviceOrder').value),
+            description: document.getElementById('serviceDescription').value,
+            price: document.getElementById('servicePrice').value,
+            status: document.getElementById('serviceStatus').value,
             lastUpdated: new Date()
         };
-
         try {
-            const announcementsDocRef = firebaseDoc(db, `/artifacts/${appId}/public/data/config/announceBar`);
-            await firebaseSetDoc(announcementsDocRef, announceData, { merge: true });
-            showFormMessage(announceFormMessage, 'Anuncio guardado exitosamente.', 'success');
-            console.log("Anuncio guardado:", announceData);
-        } catch (error) {
-            console.error("Error al guardar el anuncio:", error);
-            showFormMessage(announceFormMessage, `Error al guardar el anuncio: ${error.message}`, 'error');
-        }
+            if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/services/${id}`), data);
+            else await addDoc(collection(db, `/artifacts/${appId}/public/data/services`), data);
+            closeModal(document.getElementById('serviceModal'));
+        } catch (err) { alert("Error guardando servicio"); }
     });
+    document.getElementById('closeServiceModalBtn').addEventListener('click', () => closeModal(document.getElementById('serviceModal')));
 
-    // --- Función Genérica para Eliminar Item ---
-    const deleteItem = async (collectionName, itemId) => {
-        try {
-            const itemRef = firebaseDoc(db, `/artifacts/${appId}/public/data/${collectionName}/${itemId}`);
-            await firebaseDeleteDoc(itemRef);
-            console.log(`Documento ${itemId} de la colección ${collectionName} eliminado.`);
-            showFormMessage(courseFormMessage, `Item eliminado de ${collectionName} exitosamente.`, 'success');
-            setTimeout(() => closeModal(confirmationModal), 500);
-        } catch (error) {
-            console.error(`Error al eliminar el item de ${collectionName}:`, error);
-            showFormMessage(courseFormMessage, `Error al eliminar el item: ${error.message}`, 'error');
-        }
+
+    // Anuncios
+    const loadAnnouncements = () => {
+        unsubscribeListeners.announcements = onSnapshot(doc(db, `/artifacts/${appId}/public/data/config/announceBar`), (docSnap) => {
+            if (docSnap.exists()) {
+                document.getElementById('announceText').value = docSnap.data().text || '';
+                document.getElementById('announceStatus').value = docSnap.data().status || 'inactive';
+            }
+        });
     };
 
-
-    // --- Cierre de Modales ---
-    closeCourseModalBtn.addEventListener('click', () => closeModal(courseModal));
-    closeDealerModalBtn.addEventListener('click', () => closeModal(dealerModal));
-    closeConfirmationModalBtn.addEventListener('click', () => closeModal(confirmationModal));
-
-    window.addEventListener('click', (event) => {
-        if (event.target === courseModal) closeModal(courseModal);
-        if (event.target === dealerModal) closeModal(dealerModal);
-        if (event.target === confirmationModal) closeModal(confirmationModal);
-    });
-
-    // --- Navegación del Sidebar ---
-    sidebarNav.addEventListener('click', (event) => {
-        event.preventDefault();
-        const target = event.target.closest('a');
-
-        if (target) {
-            if (target.id === 'admin-logout-btn') {
-                handleAdminLogout();
-                return;
-            }
-            // Mapear IDs de navegación a nombres de sección
-            const sectionMap = {
-                'nav-courses': 'courses',
-                'nav-enrollments': 'enrollments',
-                'nav-services': 'services',
-                'nav-dealers': 'dealers',
-                'nav-requests': 'requests',
-                'nav-announcements': 'announcements', // Nuevo mapeo
-            };
-            const sectionName = sectionMap[target.id];
-            if (sectionName) {
-                loadSection(sectionName);
-            }
-        }
-    });
-
-    // --- Manejo del Logout ---
-    const handleAdminLogout = async () => {
+    document.getElementById('announceBarForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById('announceFormMessage');
+        showMsg(msg, 'Guardando...', 'loading');
         try {
-            if (auth.currentUser) {
-                await firebaseSignOut(auth);
-                console.log("Admin.js: Sesión cerrada exitosamente.");
-                window.location.href = 'login.html';
-            }
-        } catch (error) {
-            console.error("Admin.js: Error al cerrar sesión:", error);
-            alert("Error al cerrar sesión. Por favor, inténtalo de nuevo.");
-        }
-    };
+            await setDoc(doc(db, `/artifacts/${appId}/public/data/config/announceBar`), {
+                text: document.getElementById('announceText').value,
+                status: document.getElementById('announceStatus').value,
+                lastUpdated: new Date()
+            }, { merge: true });
+            showMsg(msg, 'Anuncio guardado.', 'success');
+        } catch (err) { showMsg(msg, 'Error guardando.', 'error'); }
+    });
 
-    initializeFirebaseAndAdmin(); // Inicia la inicialización de Firebase y la carga de datos del admin
+    // Cerrar cualquier modal al dar clic fuera de él
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            closeModal(e.target);
+        }
+    });
 });
-
-
-
-"BUG AL CERRAR SESION, DANDO CLICK ATRAS, VUELVES A ESTAR EN SESION"

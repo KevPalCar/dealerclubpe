@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administración - DealerClub</title>
+    <link rel="shortcut icon" href="../assets/images/favicon_pokerchips.png" type="image/x-icon">
     <link rel="stylesheet" href="../assets/css/main.css">
     <link rel="stylesheet" href="../assets/css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -17,9 +18,11 @@
             <nav class="sidebar-nav">
                 <ul>
                     <li><a href="#" id="nav-courses" class="active"><i class="fas fa-book"></i> Cursos</a></li>
-                    <li><a href="#" id="nav-enrollments"><i class="fas fa-users"></i> Inscripciones</a></li>
-                    <li><a href="#" id="nav-services"><i class="fas fa-cogs"></i> Servicios</a></li>
+                    <li><a href="#" id="nav-professors"><i class="fas fa-chalkboard-teacher"></i> Profesores</a></li>
+                    <li><a href="#" id="nav-alumni"><i class="fas fa-user-graduate"></i> Egresados</a></li>
                     <li><a href="#" id="nav-dealers"><i class="fas fa-star"></i> Dealers Destacados</a></li>
+                    <li><a href="#" id="nav-services"><i class="fas fa-cogs"></i> Servicios</a></li>
+                    <li><a href="#" id="nav-enrollments"><i class="fas fa-users"></i> Inscripciones</a></li>
                     <li><a href="#" id="nav-requests"><i class="fas fa-clipboard-list"></i> Solicitudes</a></li>
                     <li><a href="#" id="nav-announcements"><i class="fas fa-bullhorn"></i> Anuncios</a></li>
                     <li><a href="#" id="admin-logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a></li>
@@ -54,48 +57,46 @@
                         </tbody>
                     </table>
                 </div>
-                <div id="no-courses-message" class="info-message" style="display: none;">No hay cursos disponibles.</div>
             </section>
 
-            <section id="enrollments-management" class="content-section">
+            <section id="professors-management" class="content-section">
                 <div class="section-header">
-                    <h2>Listado de Inscripciones</h2>
+                    <h2>Gestión de Profesores</h2>
+                    <button class="btn btn-primary" id="add-professor-btn"><i class="fas fa-plus"></i> Añadir Profesor</button>
                 </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Curso</th><th>Nombre</th><th>Email</th><th>Teléfono</th>
-                                <th>Comentarios</th><th>Fecha</th><th>Status</th><th>Acciones</th>
+                                <th>Orden</th><th>Nombre</th><th>Especialidad</th>
+                                <th>Biografía</th><th>Acciones</th>
                             </tr>
                         </thead>
-                        <tbody id="enrollments-table-body">
-                            <tr><td colspan="8" class="loading-message">Cargando inscripciones...</td></tr>
+                        <tbody id="professors-table-body">
+                            <tr><td colspan="5" class="loading-message">Cargando profesores...</td></tr>
                         </tbody>
                     </table>
                 </div>
-                <div id="no-enrollments-message" class="info-message" style="display: none;">No hay inscripciones.</div>
             </section>
 
-            <section id="services-management" class="content-section">
+            <section id="alumni-management" class="content-section">
                 <div class="section-header">
-                    <h2>Listado de Servicios</h2>
-                    <button class="btn btn-primary" id="add-service-btn"><i class="fas fa-plus"></i> Añadir Servicio</button>
+                    <h2>Gestión de Egresados</h2>
+                    <button class="btn btn-primary" id="add-alumni-btn"><i class="fas fa-plus"></i> Añadir Egresado</button>
                 </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Orden</th><th>Nombre</th><th>Descripción</th>
-                                <th>Precio</th><th>Status</th><th>Acciones</th>
+                                <th>Orden</th><th>Nombre</th><th>Puesto/Empresa</th>
+                                <th>Testimonio</th><th>Acciones</th>
                             </tr>
                         </thead>
-                        <tbody id="services-table-body">
-                            <tr><td colspan="6" class="loading-message">Cargando servicios...</td></tr>
+                        <tbody id="alumni-table-body">
+                            <tr><td colspan="5" class="loading-message">Cargando egresados...</td></tr>
                         </tbody>
                     </table>
                 </div>
-                <div id="no-services-message" class="info-message" style="display: none;">No hay servicios disponibles.</div>
             </section>
 
             <section id="dealers-management" class="content-section">
@@ -116,27 +117,64 @@
                         </tbody>
                     </table>
                 </div>
-                <div id="no-dealers-message" class="info-message" style="display: none;">No hay dealers disponibles.</div>
+            </section>
+
+            <section id="services-management" class="content-section">
+                <div class="section-header">
+                    <h2>Listado de Servicios</h2>
+                    <button class="btn btn-primary" id="add-service-btn"><i class="fas fa-plus"></i> Añadir Servicio</button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Orden</th><th>Nombre</th><th>Descripción</th>
+                                <th>Precio</th><th>Status</th><th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="services-table-body">
+                            <tr><td colspan="6" class="loading-message">Cargando servicios...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="enrollments-management" class="content-section">
+                <div class="section-header">
+                    <h2>Listado de Inscripciones</h2>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Curso</th><th>Nombre</th><th>Email</th><th>Teléfono</th>
+                                <th>Comentarios</th><th>Fecha</th><th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="enrollments-table-body">
+                            <tr><td colspan="7" class="loading-message">Cargando inscripciones...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
             <section id="requests-management" class="content-section">
                 <div class="section-header">
-                    <h2>Listado de Solicitudes de Contacto</h2>
+                    <h2>Solicitudes de Contacto</h2>
                 </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
                         <thead>
                             <tr>
                                 <th>ID Solicitud</th><th>Nombre</th><th>Email</th><th>Asunto</th>
-                                <th>Mensaje</th><th>Fecha</th><th>Status</th><th>Acciones</th>
+                                <th>Mensaje</th><th>Fecha</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="requests-table-body">
-                            <tr><td colspan="8" class="loading-message">Cargando solicitudes...</td></tr>
+                            <tr><td colspan="7" class="loading-message">Cargando solicitudes...</td></tr>
                         </tbody>
                     </table>
                 </div>
-                <div id="no-requests-message" class="info-message" style="display: none;">No hay solicitudes disponibles.</div>
             </section>
 
             <section id="announcements-management" class="content-section">
@@ -191,6 +229,40 @@
         </div>
     </div>
 
+    <div id="professorModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeProfessorModalBtn">&times;</span>
+            <h2><span id="professor-modal-title-action">Añadir</span> Profesor</h2>
+            <form id="professorForm">
+                <input type="hidden" id="professorId">
+                <div class="form-group"><label>Nombre del Profesor:</label><input type="text" id="professorName" required></div>
+                <div class="form-group"><label>Orden de Visualización:</label><input type="number" id="professorOrder" value="0" required></div>
+                <div class="form-group"><label>Especialidad/Cargo:</label><input type="text" id="professorSpecialty" required></div>
+                <div class="form-group"><label>Biografía corta:</label><textarea id="professorBio" rows="3" required></textarea></div>
+                <div class="form-group"><label>URL Imagen de Perfil:</label><input type="text" id="professorImageUrl"></div>
+                <button type="submit" class="btn btn-primary">Guardar Profesor</button>
+                <div id="professorFormMessage" class="form-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="alumniModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeAlumniModalBtn">&times;</span>
+            <h2><span id="alumni-modal-title-action">Añadir</span> Egresado</h2>
+            <form id="alumniForm">
+                <input type="hidden" id="alumniId">
+                <div class="form-group"><label>Nombre del Egresado:</label><input type="text" id="alumniName" required></div>
+                <div class="form-group"><label>Orden de Visualización:</label><input type="number" id="alumniOrder" value="0" required></div>
+                <div class="form-group"><label>Puesto o Empresa (Ej: Dealer en Casino Grand Bellagio):</label><input type="text" id="alumniInfo" required></div>
+                <div class="form-group"><label>Testimonio:</label><textarea id="alumniTestimonial" rows="3" required></textarea></div>
+                <div class="form-group"><label>URL Imagen de Perfil:</label><input type="text" id="alumniImageUrl"></div>
+                <button type="submit" class="btn btn-primary">Guardar Egresado</button>
+                <div id="alumniFormMessage" class="form-message"></div>
+            </form>
+        </div>
+    </div>
+
     <div id="dealerModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeDealerModalBtn">&times;</span>
@@ -215,22 +287,10 @@
             <h2><span id="service-modal-title-action">Añadir</span> Servicio</h2>
             <form id="serviceForm">
                 <input type="hidden" id="serviceId">
-                <div class="form-group">
-                    <label>Nombre del Servicio:</label>
-                    <input type="text" id="serviceName" required>
-                </div>
-                <div class="form-group">
-                    <label>Orden de Visualización:</label>
-                    <input type="number" id="serviceOrder" value="0" required>
-                </div>
-                <div class="form-group">
-                    <label>Descripción:</label>
-                    <textarea id="serviceDescription" rows="3" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Precio:</label>
-                    <input type="text" id="servicePrice" placeholder="Ej: Consultar o S/ 500" required>
-                </div>
+                <div class="form-group"><label>Nombre del Servicio:</label><input type="text" id="serviceName" required></div>
+                <div class="form-group"><label>Orden de Visualización:</label><input type="number" id="serviceOrder" value="0" required></div>
+                <div class="form-group"><label>Descripción:</label><textarea id="serviceDescription" rows="3" required></textarea></div>
+                <div class="form-group"><label>Precio:</label><input type="text" id="servicePrice" placeholder="Ej: Consultar o S/ 500" required></div>
                 <div class="form-group">
                     <label>Estado:</label>
                     <select id="serviceStatus" required>
@@ -245,410 +305,18 @@
     </div>
 
     <div id="confirmationModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
             <span class="close-button" id="closeConfirmationModalBtn">&times;</span>
             <h3 style="color:#ffc107; margin-bottom: 15px;">Confirmar Acción</h3>
             <p id="confirmationMessage" style="margin-bottom: 20px;"></p>
             <div class="modal-actions" style="display:flex; gap:10px; justify-content:center;">
                 <button class="btn btn-secondary" id="cancelConfirmBtn">Cancelar</button>
-                <button class="btn btn-primary" id="confirmActionBtn" style="background-color: #dc3545; color: white;">Confirmar Eliminación</button>
+                <button class="btn btn-primary" id="confirmActionBtn" style="background-color: #dc3545; color: white; border: none;">Sí, Eliminar</button>
             </div>
             <div id="deleteFormMessage" class="form-message"></div>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, setDoc, doc, updateDoc, deleteDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = {
-            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
-            authDomain: "dealerclubpe.firebaseapp.com",
-            projectId: "dealerclubpe",
-            storageBucket: "dealerclubpe.firebasestorage.app",
-            messagingSenderId: "330568352415",
-            appId: "1:330568352415:web:9fcd7651698bfafac998aa"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const adminUserInfo = document.getElementById('admin-user-info');
-            const adminMainTitle = document.getElementById('admin-main-title');
-            
-            let currentUserId = null;
-            const unsubscribeListeners = {}; 
-
-            // Variables para el Modal de Confirmación
-            let deleteCallback = null;
-            const confirmationModal = document.getElementById('confirmationModal');
-            const confirmationMessage = document.getElementById('confirmationMessage');
-            const confirmActionBtn = document.getElementById('confirmActionBtn');
-            const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
-            const deleteFormMessage = document.getElementById('deleteFormMessage');
-
-            // --- VERIFICACIÓN ESTRICTA DE ADMIN (Seguridad) ---
-            onAuthStateChanged(auth, async (user) => {
-                if (user && !user.isAnonymous) {
-                    currentUserId = user.uid;
-                    const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
-                    try {
-                        const userRoleSnap = await getDoc(userRoleRef);
-                        if (userRoleSnap.exists() && userRoleSnap.data().role === 'admin') {
-                            adminUserInfo.innerHTML = `<span>Bienvenido, Admin</span><i class="fas fa-user-circle"></i>`;
-                            loadSection('courses'); // Iniciar con Cursos
-                        } else {
-                            await signOut(auth);
-                            window.location.href = 'login.html';
-                        }
-                    } catch (error) {
-                        await signOut(auth);
-                        window.location.href = 'login.html';
-                    }
-                } else {
-                    window.location.href = 'login.html';
-                }
-            });
-
-            // --- UTILIDADES ---
-            const openModal = (modalElement) => {
-                modalElement.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            };
-
-            const closeModal = (modalElement) => {
-                modalElement.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            };
-
-            const showFormMessage = (element, message, type) => {
-                element.textContent = message;
-                element.className = `form-message ${type}`;
-            };
-
-            // --- FUNCIÓN GENÉRICA PARA ELIMINAR ---
-            const deleteItem = async (collectionName, itemId) => {
-                showFormMessage(deleteFormMessage, 'Eliminando...', 'loading');
-                try {
-                    const itemRef = doc(db, `/artifacts/${appId}/public/data/${collectionName}/${itemId}`);
-                    await deleteDoc(itemRef);
-                    showFormMessage(deleteFormMessage, 'Eliminado con éxito.', 'success');
-                    setTimeout(() => {
-                        closeModal(confirmationModal);
-                        showFormMessage(deleteFormMessage, '', ''); // Limpiar
-                    }, 1000);
-                } catch (error) {
-                    showFormMessage(deleteFormMessage, `Error al eliminar: ${error.message}`, 'error');
-                }
-            };
-
-            const openConfirmationModal = (message, callback) => {
-                confirmationMessage.textContent = message;
-                deleteCallback = callback;
-                showFormMessage(deleteFormMessage, '', ''); // Reset mensajes
-                openModal(confirmationModal);
-            };
-
-            confirmActionBtn.addEventListener('click', () => {
-                if (deleteCallback) deleteCallback();
-            });
-
-            cancelConfirmBtn.addEventListener('click', () => closeModal(confirmationModal));
-            document.getElementById('closeConfirmationModalBtn').addEventListener('click', () => closeModal(confirmationModal));
-
-            // --- NAVEGACIÓN ENTRE PESTAÑAS ---
-            const loadSection = (sectionName) => {
-                Object.values(unsubscribeListeners).forEach(unsub => unsub());
-                document.querySelectorAll('.admin-content .content-section').forEach(sec => sec.style.display = 'none');
-                document.querySelectorAll('.sidebar-nav a').forEach(link => link.classList.remove('active'));
-
-                const activeSection = document.getElementById(`${sectionName}-management`);
-                const activeLink = document.getElementById(`nav-${sectionName}`);
-                
-                if (activeSection && activeLink) {
-                    activeSection.style.display = 'block';
-                    activeLink.classList.add('active');
-
-                    switch (sectionName) {
-                        case 'courses': adminMainTitle.textContent = 'Gestión de Cursos'; loadCoursesRealtime(); break;
-                        case 'enrollments': adminMainTitle.textContent = 'Gestión de Inscripciones'; loadEnrollmentsRealtime(); break;
-                        case 'services': adminMainTitle.textContent = 'Gestión de Servicios'; loadServicesRealtime(); break;
-                        case 'dealers': adminMainTitle.textContent = 'Gestión de Dealers'; loadDealersRealtime(); break;
-                        case 'requests': adminMainTitle.textContent = 'Gestión de Solicitudes'; loadRequestsRealtime(); break;
-                        case 'announcements': adminMainTitle.textContent = 'Gestión de Anuncios'; loadAnnouncementsRealtime(); break;
-                    }
-                }
-            };
-
-            document.querySelector('.sidebar-nav ul').addEventListener('click', (e) => {
-                e.preventDefault();
-                const target = e.target.closest('a');
-                if (!target) return;
-
-                if (target.id === 'admin-logout-btn') {
-                    signOut(auth).then(() => window.location.href = 'login.html');
-                    return;
-                }
-                const sectionName = target.id.replace('nav-', '');
-                loadSection(sectionName);
-            });
-
-            // --- GESTIÓN DE CURSOS ---
-            const loadCoursesRealtime = () => {
-                const tbody = document.getElementById('courses-table-body');
-                const noMsg = document.getElementById('no-courses-message');
-                unsubscribeListeners.courses = onSnapshot(collection(db, `/artifacts/${appId}/public/data/courses`), (snap) => {
-                    tbody.innerHTML = '';
-                    if (snap.empty) { noMsg.style.display = 'block'; return; }
-                    noMsg.style.display = 'none';
-
-                    const courses = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
-                    courses.forEach(c => {
-                        const tr = tbody.insertRow();
-                        tr.innerHTML = `
-                            <td>${c.order || '-'}</td><td>${c.name}</td>
-                            <td>${c.description?.substring(0,30)}...</td><td>${c.price}</td>
-                            <td>${c.schedule}</td><td>${c.duration}</td>
-                            <td>
-                                <select class="status-select" data-id="${c.id}">
-                                    <option value="Abierto" ${c.status==='Abierto'?'selected':''}>Abierto</option>
-                                    <option value="En Progreso" ${c.status==='En Progreso'?'selected':''}>En Progreso</option>
-                                    <option value="Próximamente" ${c.status==='Próximamente'?'selected':''}>Próximamente</option>
-                                    <option value="Cerrado" ${c.status==='Cerrado'?'selected':''}>Cerrado</option>
-                                </select>
-                            </td>
-                            <td>
-                                <button class="btn btn-secondary btn-edit" data-id="${c.id}"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-danger btn-delete" data-id="${c.id}"><i class="fas fa-trash"></i></button>
-                            </td>
-                        `;
-                    });
-
-                    // Eventos Edit/Delete Cursos
-                    tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
-                        const course = courses.find(cr => cr.id === e.target.closest('button').dataset.id);
-                        document.getElementById('courseId').value = course.id;
-                        document.getElementById('courseName').value = course.name;
-                        document.getElementById('courseOrder').value = course.order;
-                        document.getElementById('courseDescription').value = course.description;
-                        document.getElementById('coursePrice').value = course.price;
-                        document.getElementById('courseSchedule').value = course.schedule;
-                        document.getElementById('courseDuration').value = course.duration;
-                        document.getElementById('courseGames').value = (course.gamesIncluded || []).join(', ');
-                        document.getElementById('courseStatus').value = course.status;
-                        document.getElementById('modal-title-action').textContent = 'Editar';
-                        openModal(document.getElementById('courseModal'));
-                    }));
-                    tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
-                        openConfirmationModal('¿Eliminar este curso permanentemente?', () => deleteItem('courses', e.target.closest('button').dataset.id));
-                    }));
-                    tbody.querySelectorAll('.status-select').forEach(sel => sel.addEventListener('change', async (e) => {
-                        await updateDoc(doc(db, `/artifacts/${appId}/public/data/courses/${e.target.dataset.id}`), { status: e.target.value });
-                    }));
-                });
-            };
-
-            document.getElementById('add-course-btn').addEventListener('click', () => {
-                document.getElementById('courseForm').reset();
-                document.getElementById('courseId').value = '';
-                document.getElementById('modal-title-action').textContent = 'Añadir';
-                openModal(document.getElementById('courseModal'));
-            });
-
-            document.getElementById('courseForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const id = document.getElementById('courseId').value;
-                const data = {
-                    name: document.getElementById('courseName').value,
-                    order: parseInt(document.getElementById('courseOrder').value),
-                    description: document.getElementById('courseDescription').value,
-                    price: document.getElementById('coursePrice').value,
-                    schedule: document.getElementById('courseSchedule').value,
-                    duration: document.getElementById('courseDuration').value,
-                    gamesIncluded: document.getElementById('courseGames').value.split(',').map(g => g.trim()),
-                    status: document.getElementById('courseStatus').value,
-                    lastUpdated: new Date()
-                };
-                try {
-                    if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/courses/${id}`), data);
-                    else await addDoc(collection(db, `/artifacts/${appId}/public/data/courses`), data);
-                    closeModal(document.getElementById('courseModal'));
-                } catch (err) { alert("Error guardando curso"); }
-            });
-
-            // --- GESTIÓN DE DEALERS ---
-            const loadDealersRealtime = () => {
-                const tbody = document.getElementById('dealers-table-body');
-                const noMsg = document.getElementById('no-dealers-message');
-                unsubscribeListeners.dealers = onSnapshot(collection(db, `/artifacts/${appId}/public/data/dealers`), (snap) => {
-                    tbody.innerHTML = '';
-                    if (snap.empty) { noMsg.style.display = 'block'; return; }
-                    noMsg.style.display = 'none';
-
-                    const dealers = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
-                    dealers.forEach(d => {
-                        const tr = tbody.insertRow();
-                        tr.innerHTML = `
-                            <td>${d.order || '-'}</td><td>${d.name}</td><td>${d.specialty}</td>
-                            <td>${d.experience} años</td><td>${d.bio?.substring(0,30)}...</td>
-                            <td>
-                                <button class="btn btn-secondary btn-edit" data-id="${d.id}"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-danger btn-delete" data-id="${d.id}"><i class="fas fa-trash"></i></button>
-                            </td>
-                        `;
-                    });
-
-                    tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
-                        const dealer = dealers.find(dr => dr.id === e.target.closest('button').dataset.id);
-                        document.getElementById('dealerId').value = dealer.id;
-                        document.getElementById('dealerName').value = dealer.name;
-                        document.getElementById('dealerOrder').value = dealer.order;
-                        document.getElementById('dealerSpecialty').value = dealer.specialty;
-                        document.getElementById('dealerExperience').value = dealer.experience;
-                        document.getElementById('dealerBio').value = dealer.bio;
-                        document.getElementById('dealerImageUrl').value = dealer.imageUrl || '';
-                        document.getElementById('dealer-modal-title-action').textContent = 'Editar';
-                        openModal(document.getElementById('dealerModal'));
-                    }));
-                    tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
-                        openConfirmationModal('¿Eliminar este dealer permanentemente?', () => deleteItem('dealers', e.target.closest('button').dataset.id));
-                    }));
-                });
-            };
-
-            document.getElementById('add-dealer-btn').addEventListener('click', () => {
-                document.getElementById('dealerForm').reset();
-                document.getElementById('dealerId').value = '';
-                document.getElementById('dealer-modal-title-action').textContent = 'Añadir';
-                openModal(document.getElementById('dealerModal'));
-            });
-
-            document.getElementById('dealerForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const id = document.getElementById('dealerId').value;
-                const data = {
-                    name: document.getElementById('dealerName').value,
-                    order: parseInt(document.getElementById('dealerOrder').value),
-                    specialty: document.getElementById('dealerSpecialty').value,
-                    experience: parseInt(document.getElementById('dealerExperience').value),
-                    bio: document.getElementById('dealerBio').value,
-                    imageUrl: document.getElementById('dealerImageUrl').value,
-                    lastUpdated: new Date()
-                };
-                try {
-                    if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/dealers/${id}`), data);
-                    else await addDoc(collection(db, `/artifacts/${appId}/public/data/dealers`), data);
-                    closeModal(document.getElementById('dealerModal'));
-                } catch (err) { alert("Error guardando dealer"); }
-            });
-
-            // --- GESTIÓN DE SERVICIOS (Corregido) ---
-            // --- GESTIÓN DE SERVICIOS ---
-            const loadServicesRealtime = () => {
-                const tbody = document.getElementById('services-table-body');
-                const noMsg = document.getElementById('no-services-message');
-                unsubscribeListeners.services = onSnapshot(collection(db, `/artifacts/${appId}/public/data/services`), (snap) => {
-                    tbody.innerHTML = '';
-                    if (snap.empty) { noMsg.style.display = 'block'; return; }
-                    noMsg.style.display = 'none';
-
-                    const services = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
-                    services.forEach(s => {
-                        const tr = tbody.insertRow();
-                        tr.innerHTML = `
-                            <td>${s.order || '-'}</td><td>${s.name}</td>
-                            <td>${s.description?.substring(0,30)}...</td><td>${s.price || 'Consultar'}</td>
-                            <td>${s.status || 'Activo'}</td>
-                            <td>
-                                <button class="btn btn-secondary btn-edit" data-id="${s.id}"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-danger btn-delete" data-id="${s.id}"><i class="fas fa-trash"></i></button>
-                            </td>
-                        `;
-                    });
-
-                    // Evento Editar Servicio
-                    tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
-                        const service = services.find(sr => sr.id === e.target.closest('button').dataset.id);
-                        document.getElementById('serviceId').value = service.id;
-                        document.getElementById('serviceName').value = service.name || '';
-                        document.getElementById('serviceOrder').value = service.order || 0;
-                        document.getElementById('serviceDescription').value = service.description || '';
-                        document.getElementById('servicePrice').value = service.price || '';
-                        document.getElementById('serviceStatus').value = service.status || 'Activo';
-                        document.getElementById('service-modal-title-action').textContent = 'Editar';
-                        openModal(document.getElementById('serviceModal'));
-                    }));
-
-                    // Evento Eliminar Servicio
-                    tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
-                        openConfirmationModal('¿Eliminar este servicio permanentemente?', () => deleteItem('services', e.target.closest('button').dataset.id));
-                    }));
-                });
-            };
-
-            // Evento Abrir Modal para Añadir Nuevo Servicio
-            document.getElementById('add-service-btn').addEventListener('click', () => {
-                document.getElementById('serviceForm').reset();
-                document.getElementById('serviceId').value = '';
-                document.getElementById('service-modal-title-action').textContent = 'Añadir';
-                openModal(document.getElementById('serviceModal'));
-            });
-
-            // Evento Guardar Servicio (Crear o Actualizar)
-            document.getElementById('serviceForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const id = document.getElementById('serviceId').value;
-                const data = {
-                    name: document.getElementById('serviceName').value,
-                    order: parseInt(document.getElementById('serviceOrder').value),
-                    description: document.getElementById('serviceDescription').value,
-                    price: document.getElementById('servicePrice').value,
-                    status: document.getElementById('serviceStatus').value,
-                    lastUpdated: new Date()
-                };
-                try {
-                    if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/services/${id}`), data);
-                    else await addDoc(collection(db, `/artifacts/${appId}/public/data/services`), data);
-                    closeModal(document.getElementById('serviceModal'));
-                } catch (err) { alert("Error guardando servicio"); }
-            });
-
-            // Cerrar modal dando click a la X (Añade esta línea junto a los otros cierres de modal al final del script)
-            document.getElementById('closeServiceModalBtn').addEventListener('click', () => closeModal(document.getElementById('serviceModal')));
-
-            // --- ANUNCIOS GLOBALES ---
-            const loadAnnouncementsRealtime = () => {
-                unsubscribeListeners.announcements = onSnapshot(doc(db, `/artifacts/${appId}/public/data/config/announceBar`), (docSnap) => {
-                    if (docSnap.exists()) {
-                        document.getElementById('announceText').value = docSnap.data().text || '';
-                        document.getElementById('announceStatus').value = docSnap.data().status || 'inactive';
-                    }
-                });
-            };
-
-            document.getElementById('announceBarForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const msg = document.getElementById('announceFormMessage');
-                showFormMessage(msg, 'Guardando...', 'loading');
-                try {
-                    await setDoc(doc(db, `/artifacts/${appId}/public/data/config/announceBar`), {
-                        text: document.getElementById('announceText').value,
-                        status: document.getElementById('announceStatus').value,
-                        lastUpdated: new Date()
-                    }, { merge: true });
-                    showFormMessage(msg, 'Anuncio guardado.', 'success');
-                } catch (err) { showFormMessage(msg, 'Error guardando.', 'error'); }
-            });
-
-            // Cerrar Modales dando click a la X
-            document.getElementById('closeCourseModalBtn').addEventListener('click', () => closeModal(document.getElementById('courseModal')));
-            document.getElementById('closeDealerModalBtn').addEventListener('click', () => closeModal(document.getElementById('dealerModal')));
-        });
-        
-    </script>
+    <script type="module" src="../assets/js/admin.js"></script>
 </body>
 </html>

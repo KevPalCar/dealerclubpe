@@ -125,7 +125,7 @@
                 <ul>
                     <li>• Horario: 09:00 a 18:00</li>
                     <li>• WhatsApp: +51 929610747</li>
-                    <li>• Dirección: Los Alhelíes 610, El Agustino</li>
+                    <li>• Dirección: XXXXXXXXXXXXXXX</li>
                 </ul>
             </div>
 
@@ -191,44 +191,104 @@
 
     <!-- Modal de Cotización de Servicios -->
     <div id="quoteModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content split-modal">
             <span class="close-button" id="closeQuoteModalBtn">&times;</span>
-            <h2>Solicitar Cotización</h2>
-            <p id="modalQuoteFor"></p>
-            <form id="quoteForm">
-                <div class="form-group">
-                    <label for="fullName">Nombre Completo:</label>
-                    <input type="text" id="fullName" name="fullName" required>
+            
+            <div class="modal-selection-area">
+                <h2 class="modal-main-title">Arma tu Experiencia</h2>
+                <p class="modal-subtitle">Selecciona las mesas y servicios extra para tu evento.</p>
+
+                <div class="selection-group">
+                    <h3>1. Mesas Disponibles</h3>
+                    <div class="interactive-grid">
+                        <div class="item-card" data-type="Mesa" data-name="Blackjack">
+                            <span class="badge badge-popular">🔥 Más Solicitado</span>
+                            <span class="item-name">Blackjack</span>
+                        </div>
+                        <div class="item-card" data-type="Mesa" data-name="Ruleta Francesa">
+                            <span class="badge badge-popular">🔥 Más Solicitado</span>
+                            <span class="item-name">Ruleta Francesa</span>
+                        </div>
+                        <div class="item-card" data-type="Mesa" data-name="Ultimate Texas Hold'em">
+                            <span class="badge badge-gold">⭐ Recomendado</span>
+                            <span class="item-name">Ultimate Texas Hold'em</span>
+                        </div>
+                        
+                        <div class="item-card" data-type="Mesa" data-name="Texas Hold'em">
+                            <span class="item-name">Texas Hold'em</span>
+                        </div>
+                        <div class="item-card" data-type="Mesa" data-name="Craps">
+                            <span class="item-name">Mesa de Craps</span>
+                        </div>
+                        <div class="item-card" data-type="Mesa" data-name="3 Card Póker">
+                            <span class="item-name">3 Card Póker</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="email">Correo Electrónico:</label>
-                    <input type="email" id="email" name="email" required>
+
+                <div class="selection-group">
+                    <h3>2. Servicios Extra</h3>
+                    <div class="interactive-grid extras-grid">
+                        <div class="item-card extra-card" data-type="Extra" data-name="Grabación y Fotos">
+                            <div class="extra-img-box">
+                                <img src="https://images.unsplash.com/photo-1520390138845-fd2d229dd553?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Fotos del evento">
+                            </div>
+                            <span class="item-name">Grabación / Fotos</span>
+                        </div>
+                        <div class="item-card extra-card" data-type="Extra" data-name="Barman y Mesero">
+                            <div class="extra-img-box">
+                                <img src="https://plus.unsplash.com/premium_photo-1753729729729-4e78444f30c0?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Barman">
+                            </div>
+                            <span class="item-name">Barman / Mesero</span>
+                        </div>
+                        <div class="item-card extra-card" data-type="Extra" data-name="Decoración">
+                            <div class="extra-img-box">
+                                <img src="https://images.unsplash.com/photo-1604668915840-580c30026e5f?q=80&w=1948&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Decoración">
+                            </div>
+                            <span class="item-name">Decoración</span>
+                        </div>
+                    </div>
+                    <p class="disclaimer-text">* Estas son imágenes referenciales y aplican Términos y Condiciones.</p>
                 </div>
-                <div class="form-group">
-                    <label for="phone">Teléfono (WhatsApp):</label>
-                    <input type="tel" id="phone" name="phone" required>
-                </div>
-                <div class="form-group">
-                    <label for="eventType">Tipo de Evento:</label>
-                    <select id="eventType" name="eventType" required>
-                        <option value="">Selecciona...</option>
-                        <option value="corporativo">Corporativo</option>
-                        <option value="privado">Privado</option>
-                        <option value="boda">Boda</option>
-                        <option value="otro">Otro</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="eventDate">Fecha del Evento:</label>
-                    <input type="date" id="eventDate" name="eventDate" required>
-                </div>
-                <div class="form-group">
-                    <label for="details">Detalles y mesas/dealers de interés:</label>
-                    <textarea id="details" name="details" rows="4"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary" id="submitQuoteBtn">Enviar Cotización</button>
-                <div id="formMessage" class="form-message"></div>
-            </form>
+            </div>
+
+            <div class="modal-form-area">
+                <h2 class="modal-main-title">Tus Datos</h2>
+                <p id="modalQuoteFor" style="display:none;"></p> <form id="quoteForm">
+                    <div class="form-group">
+                        <label for="fullName">Nombre Completo:</label>
+                        <input type="text" id="fullName" name="fullName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Correo Electrónico:</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Teléfono (WhatsApp):</label>
+                        <input type="tel" id="phone" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventType">Tipo de Evento:</label>
+                        <select id="eventType" name="eventType" required>
+                            <option value="">Selecciona...</option>
+                            <option value="corporativo">Corporativo</option>
+                            <option value="privado">Privado</option>
+                            <option value="boda">Boda</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventDate">Fecha del Evento:</label>
+                        <input type="date" id="eventDate" name="eventDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="details">Tu Selección (Auto-completado):</label>
+                        <textarea id="details" name="details" rows="4" placeholder="Haz clic en las opciones de la izquierda y aparecerán aquí..." readonly></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="submitQuoteBtn">Enviar Cotización</button>
+                    <div id="formMessage" class="form-message"></div>
+                </form>
+            </div>
         </div>
     </div>
 
