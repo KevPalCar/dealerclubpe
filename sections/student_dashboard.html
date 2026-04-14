@@ -30,7 +30,8 @@
             <p>Este es tu panel de control personalizado.</p>
             <div id="auth-status-message" class="message">Verificando estado de la sesión...</div>
 
-            <div class="dashboard-content">
+            <div id="dashboard-content" class="dashboard-content" style="position: relative;">
+
                 <h3>Mis Cursos Inscritos</h3>
                 <div id="enrolled-courses-list" class="courses-list">
                     <p id="loading-enrolled-courses">Cargando cursos...</p>
@@ -59,6 +60,11 @@
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // 1. Configuración y BFCache (Protección botón "Atrás")
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) window.location.reload();
+        });
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = {
             apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
@@ -81,45 +87,46 @@
             const loadingEnrolledCourses = document.getElementById('loading-enrolled-courses');
             const noEnrolledCourses = document.getElementById('no-enrolled-courses');
             const adminPanelLinkContainer = document.getElementById('admin-panel-link-container');
+            const dashboardContent = document.getElementById('dashboard-content');
 
-            let currentUserId = null;
             let unsubscribeEnrollments = null; 
 
             const showAuthStatus = (message, type) => {
                 authStatusMessage.textContent = message;
                 authStatusMessage.className = `message ${type}`; 
+                if (message === '') authStatusMessage.style.display = 'none';
+                else authStatusMessage.style.display = 'block';
             };
 
-            // --- Listener de Autenticación (Bloquea Anónimos) ---
+            // 2. Observador de Sesión
             onAuthStateChanged(auth, async (user) => {
                 if (user && !user.isAnonymous) {
-                    currentUserId = user.uid;
-                    showAuthStatus('Sesión activa. Verificando rol...', 'loading');
+                    showAuthStatus('Verificando acceso...', 'loading');
                     
-                    const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
                     try {
+                        const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
                         const userRoleSnap = await getDoc(userRoleRef);
+                        
                         if (userRoleSnap.exists()) {
                             const role = userRoleSnap.data().role;
-                            if (role === 'student') {
-                                welcomeMessage.textContent = `¡Bienvenido/a!`;
-                                showAuthStatus('', ''); // Limpiamos mensaje de estado al cargar bien
-                                loadEnrolledCourses(user.uid);
-                            } else if (role === 'admin') {
-                                // Si un admin entra aquí, le mostramos el botón al panel y lo dejamos ver el dashboard
-                                welcomeMessage.textContent = `¡Hola Administrador!`;
-                                showAuthStatus('', '');
-                                adminPanelLinkContainer.style.display = 'block';
+
+                            if (role === 'student' || role === 'admin') {
+                                // MOSTRAR CONTENIDO
+                                welcomeMessage.textContent = role === 'admin' ? '¡Hola Administrador!' : '¡Bienvenido/a!';
+                                if (role === 'admin') adminPanelLinkContainer.style.display = 'block';
+                                
+                                showAuthStatus('', ''); // Limpia el mensaje
+                                dashboardContent.style.display = 'block'; // MUESTRA EL DASHBOARD
+                                
                                 loadEnrolledCourses(user.uid);
                             } else {
-                                await signOut(auth);
-                                window.location.href = 'login.html';
+                                throw new Error("Rol no autorizado");
                             }
                         } else {
-                            await signOut(auth);
-                            window.location.href = 'login.html';
+                            throw new Error("Usuario sin rol");
                         }
                     } catch (error) {
+                        console.error("Error de acceso:", error);
                         await signOut(auth);
                         window.location.href = 'login.html';
                     }
@@ -128,43 +135,55 @@
                 }
             });
 
-            // --- Carga de Cursos ---
+            // 3. Cargar Cursos
             const loadEnrolledCourses = (userId) => {
-                const enrollmentsCollectionRef = collection(db, `/artifacts/${appId}/public/data/course_enrollments`);
-                const q = query(enrollmentsCollectionRef, where("studentId", "==", userId));
-
+                const q = query(collection(db, `/artifacts/${appId}/public/data/course_enrollments`), where("studentId", "==", userId));
                 if (unsubscribeEnrollments) unsubscribeEnrollments();
 
-                unsubscribeEnrollments = onSnapshot(q, (querySnapshot) => {
+                unsubscribeEnrollments = onSnapshot(q, (snap) => {
                     enrolledCoursesList.innerHTML = ''; 
                     loadingEnrolledCourses.style.display = 'none';
 
-                    if (querySnapshot.empty) {
+                    if (snap.empty) {
                         noEnrolledCourses.style.display = 'block';
                         return;
                     }
                     noEnrolledCourses.style.display = 'none';
 
-                    querySnapshot.docs.forEach(doc => {
+                    snap.docs.forEach(doc => {
                         const enrollment = doc.data();
                         const courseDiv = document.createElement('div');
-                        courseDiv.className = 'enrolled-course-item'; // <-- CLASE CORREGIDA
+                        const rawStatus = (enrollment.status || 'pending').toLowerCase();
+                        
+                        let cardClass = 'card-pending';
+                        let badgeText = '🔒 Validando Pago';
+                        let btnHtml = `<button class="card-action-btn btn-locked" disabled><i class="fas fa-clock"></i> Esperando Verificación</button>`;
+
+                        if (['waitlist', 'lista_espera', 'espera'].includes(rawStatus)) {
+                            cardClass = 'card-waitlist';
+                            badgeText = '⏳ En Lista de Espera';
+                            btnHtml = `<button class="card-action-btn btn-locked" disabled><i class="fas fa-lock"></i> Cupos Cerrados</button>`;
+                        } else if (['active', 'activo', 'aprobado'].includes(rawStatus)) {
+                            cardClass = 'card-active';
+                            badgeText = '✅ Curso Activo';
+                            btnHtml = `<button class="card-action-btn btn-enter"><i class="fas fa-play"></i> Entrar al Curso</button>`;
+                        }
+
+                        courseDiv.className = `course-card ${cardClass}`; 
+                        const dateStr = enrollment.timestamp ? new Date(enrollment.timestamp.seconds * 1000).toLocaleDateString() : 'N/A';
+
                         courseDiv.innerHTML = `
-                            <h4>${enrollment.courseName || 'Curso Desconocido'}</h4>
-                            <p><strong>Estado de Inscripción:</strong> ${enrollment.status || 'Pendiente'}</p>
-                            <p><strong>Fecha:</strong> ${enrollment.timestamp ? new Date(enrollment.timestamp.seconds * 1000).toLocaleDateString() : 'N/A'}</p>
-                            <p>${enrollment.comments || ''}</p>
+                            <div class="status-badge">${badgeText}</div>
+                            <h4>${enrollment.courseName || 'Curso VIP DealerClub'}</h4>
+                            <p class="date">Solicitado el: ${dateStr}</p>
+                            ${btnHtml}
                         `;
                         enrolledCoursesList.appendChild(courseDiv);
                     });
-                }, (error) => {
-                    loadingEnrolledCourses.style.display = 'none';
-                    noEnrolledCourses.textContent = `Error al cargar tus cursos.`;
-                    noEnrolledCourses.style.display = 'block';
                 });
             };
 
-            // --- Logout ---
+            // 4. Botón Cerrar Sesión
             logoutBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 try {

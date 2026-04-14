@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             switch (sectionName) {
                 case 'courses': adminMainTitle.textContent = 'Gestión de Cursos'; loadCourses(); break;
-                case 'professors': adminMainTitle.textContent = 'Gestión de Profesores'; loadProfessors(); break; // PUNTO 3
+                case 'professors': adminMainTitle.textContent = 'Gestión de Profesores'; loadProfessors(); break;
                 case 'alumni': adminMainTitle.textContent = 'Gestión de Egresados'; loadAlumni(); break;
                 case 'dealers': adminMainTitle.textContent = 'Gestión de Dealers'; loadDealers(); break;
                 case 'services': adminMainTitle.textContent = 'Gestión de Servicios'; loadServices(); break;
@@ -110,34 +110,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (target.id === 'admin-logout-btn') {
             await signOut(auth);
-            window.location.replace('login.html'); // PUNTO 2: Destruye el historial al salir
+            window.location.replace('login.html'); // Destruye el historial al salir
             return;
         }
         loadSection(target.id.replace('nav-', ''));
     });
 
     // ==========================================
-    // CRUD: INSCRIPCIONES Y SOLICITUDES (PUNTO 1)
+    // CRUD: INSCRIPCIONES (ACTUALIZADO MASTER PLAN)
     // ==========================================
     const loadEnrollments = () => {
         const tbody = document.getElementById('enrollments-table-body');
         unsubscribeListeners.enrollments = onSnapshot(collection(db, `/artifacts/${appId}/public/data/course_enrollments`), (snap) => {
             if (snap.empty) {
-                // PUNTO 1: Mensaje limpio dentro de la tabla en lugar de div externo
                 tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#ccc;">🎉 No hay inscripciones pendientes.</td></tr>`;
                 return;
             }
             tbody.innerHTML = '';
-            snap.docs.forEach(docSnap => {
-                const e = docSnap.data();
+            
+            // Ordenar para ver las más recientes primero
+            const enrollments = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => {
+                const timeA = a.timestamp ? a.timestamp.seconds : 0;
+                const timeB = b.timestamp ? b.timestamp.seconds : 0;
+                return timeB - timeA;
+            });
+
+            enrollments.forEach(e => {
                 const tr = tbody.insertRow();
+                
+                // Formato de Estado
+                const statusBadge = e.status === 'Aprobado' 
+                    ? `<span style="background:#28a745; color:white; padding:3px 8px; border-radius:12px; font-size:0.8em;">Aprobado</span><br><small style="color:#ffc107; font-weight:bold;">Cód: ${e.referralCode || 'N/A'}</small>` 
+                    : `<span style="background:#ffc107; color:black; padding:3px 8px; border-radius:12px; font-size:0.8em;">Pendiente</span>`;
+
+                // Link del Voucher o texto WhatsApp
+                const voucherLink = e.voucherUrl 
+                    ? `<a href="${e.voucherUrl}" target="_blank" style="color:#007bff; text-decoration:underline;">Ver Comprobante</a>` 
+                    : `<span style="color:#888;">Por WhatsApp</span>`;
+
+                // Botón de aprobar (solo visible si está pendiente)
+                const approveBtn = e.status !== 'Aprobado' 
+                    ? `<button class="btn btn-primary btn-approve" data-id="${e.id}" data-name="${e.fullName}" style="padding:5px 10px; font-size:0.8em; margin-right:5px; background-color:#28a745; border-color:#28a745;"><i class="fas fa-check"></i> Aprobar</button>` 
+                    : '';
+
                 tr.innerHTML = `
-                    <td>${e.courseName || '-'}</td><td>${e.fullName || '-'}</td><td>${e.email || '-'}</td>
-                    <td>${e.phone || '-'}</td><td>${e.comments || '-'}</td>
                     <td>${e.timestamp ? new Date(e.timestamp.seconds * 1000).toLocaleDateString() : '-'}</td>
-                    <td><button class="btn btn-danger btn-delete" data-id="${docSnap.id}"><i class="fas fa-trash"></i></button></td>
+                    <td><strong>${e.courseName || '-'}</strong></td>
+                    <td>${e.fullName || '-'}<br><small>${e.email || '-'}</small></td>
+                    <td>${e.phone || '-'}</td>
+                    <td>${voucherLink}</td>
+                    <td>${statusBadge}</td>
+                    <td class="action-buttons">
+                        ${approveBtn}
+                        <button class="btn btn-danger btn-delete" data-id="${e.id}" style="padding:5px 10px; font-size:0.8em;"><i class="fas fa-trash"></i></button>
+                    </td>
                 `;
             });
+
+            // Acción: Aprobar Inscripción y generar código de referido
+            tbody.querySelectorAll('.btn-approve').forEach(btn => btn.addEventListener('click', async (event) => {
+                const button = event.target.closest('button');
+                const id = button.dataset.id;
+                const name = button.dataset.name || 'Estudiante';
+                
+                // Generar código único usando el primer nombre y un número aleatorio
+                const firstName = name.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '');
+                const randomNum = Math.floor(100 + Math.random() * 900);
+                const uniqueCode = `${firstName}-${randomNum}`;
+
+                if(confirm(`¿Confirmas que recibiste el pago de ${name}?\nSe le generará y asignará el código de referido: ${uniqueCode}`)) {
+                    try {
+                        const enrollmentRef = doc(db, `/artifacts/${appId}/public/data/course_enrollments/${id}`);
+                        await updateDoc(enrollmentRef, { 
+                            status: 'Aprobado',
+                            referralCode: uniqueCode,
+                            approvedAt: new Date()
+                        });
+                    } catch (error) { 
+                        alert("Error al aprobar: " + error.message); 
+                    }
+                }
+            }));
+
+            // Acción: Eliminar Inscripción
             tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
                 openConfirmationModal('¿Eliminar inscripción?', () => deleteItem('course_enrollments', e.target.closest('button').dataset.id));
             }));
@@ -148,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('requests-table-body');
         unsubscribeListeners.requests = onSnapshot(collection(db, `/artifacts/${appId}/public/data/service_requests`), (snap) => {
             if (snap.empty) {
-                // PUNTO 1: Mensaje limpio dentro de la tabla
                 tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#ccc;">📬 No tienes solicitudes nuevas.</td></tr>`;
                 return;
             }
@@ -169,9 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-
     // ==========================================
-    // CRUD NUEVO: PROFESORES (PUNTO 3)
+    // CRUD: PROFESORES
     // ==========================================
     const loadProfessors = () => {
         const tbody = document.getElementById('professors-table-body');
@@ -245,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('closeProfessorModalBtn').addEventListener('click', () => closeModal(document.getElementById('professorModal')));
 
     // ==========================================
-    // CRUD NUEVO: EGRESADOS
+    // CRUD: EGRESADOS
     // ==========================================
     const loadAlumni = () => {
         const tbody = document.getElementById('alumni-table-body');
@@ -317,12 +370,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) { showMsg(msgBox, "Error guardando", "error"); }
     });
     document.getElementById('closeAlumniModalBtn').addEventListener('click', () => closeModal(document.getElementById('alumniModal')));
-
-    // ==========================================
+    
+   // ==========================================
     // RESTO DE CRUDS (Cursos, Dealers, Servicios, Anuncios)
     // ==========================================
     
-    // Cursos
+    // Cursos (ACTUALIZADO MASTER PLAN - ETIQUETAS)
     const loadCourses = () => {
         const tbody = document.getElementById('courses-table-body');
         unsubscribeListeners.courses = onSnapshot(collection(db, `/artifacts/${appId}/public/data/courses`), (snap) => {
@@ -332,7 +385,9 @@ document.addEventListener('DOMContentLoaded', () => {
             courses.forEach(c => {
                 const tr = tbody.insertRow();
                 tr.innerHTML = `
-                    <td>${c.order || '-'}</td><td>${c.name}</td><td>${(c.description||'').substring(0,30)}...</td>
+                    <td>${c.order || '-'}</td>
+                    <td>${c.name} <br> <small style="color:#ffc107;">${c.tag || ''}</small></td>
+                    <td>${(c.description||'').substring(0,30)}...</td>
                     <td>${c.price}</td><td>${c.schedule}</td><td>${c.duration}</td>
                     <td>
                         <select class="status-select" data-id="${c.id}">
@@ -355,6 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const c = courses.find(x => x.id === e.target.closest('button').dataset.id);
                 document.getElementById('courseId').value = c.id;
                 document.getElementById('courseName').value = c.name;
+                document.getElementById('courseTag').value = c.tag || ''; // NUEVO: Lee la etiqueta
                 document.getElementById('courseOrder').value = c.order;
                 document.getElementById('courseDescription').value = c.description;
                 document.getElementById('coursePrice').value = c.price;
@@ -383,6 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = document.getElementById('courseId').value;
         const data = {
             name: document.getElementById('courseName').value,
+            tag: document.getElementById('courseTag').value, // NUEVO: Guarda la etiqueta
             order: parseInt(document.getElementById('courseOrder').value),
             description: document.getElementById('courseDescription').value,
             price: document.getElementById('coursePrice').value,

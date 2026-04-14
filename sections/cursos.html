@@ -54,7 +54,7 @@
         <!-- Sección de Propuesta de Paquetes de Formación Intensiva -->
         <section id="paquetes-formacion" class="section-dark section-padded">
             <div class="container">
-                <h2>Propuesta de Paquetes de Formación Intensiva</h2>
+                <h2>Propuesta de Paquetes de Escuela Intensiva</h2>
                 <!-- Aquí se cargarán los cursos dinámicamente desde Firestore -->
                 <div id="courses-grid-container" class="paquete-grid">
                     <!-- Mensaje de carga mientras se obtienen los cursos -->
@@ -181,56 +181,102 @@
 
     <!-- Modal de Inscripción a Cursos -->
     <div id="enrollCourseModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" id="closeEnrollModalBtn">&times;</span>
-            <h2>Inscripción al Curso</h2>
-            <p id="enrollCourseName"></p>
-            <form id="enrollmentForm">
-                <input type="hidden" id="enrollCourseId" name="courseId">
-                <div class="form-group">
-                    <label for="enrollFullName">Nombre Completo:</label>
-                    <input type="text" id="enrollFullName" name="fullName" required>
-                </div>
-                <div class="form-group">
-                    <label for="enrollEmail">Correo Electrónico:</label>
-                    <input type="email" id="enrollEmail" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="enrollPhone">Teléfono (WhatsApp):</label>
-                    <input type="tel" id="enrollPhone" name="phone" required>
-                </div>
-                <div class="form-group">
-                    <label for="enrollComments">Comentarios o Preguntas:</label>
-                    <textarea id="enrollComments" name="comments" rows="3"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary" id="submitEnrollmentBtn">Confirmar Inscripción</button>
-                <div id="enrollFormMessage" class="form-message"></div>
-            </form>
+    <div class="modal-content">
+        <span class="close-button" id="closeEnrollModalBtn">&times;</span>
+        <h2 id="wizardMainTitle" style="font-size: 1.5rem;">Inscripción</h2>
+        <p id="enrollCourseName" style="color: #888; margin-bottom: 15px;"></p>
+
+        <div class="wizard-progress">
+            <span class="step active" id="dot1">1</span>
+            <span class="step" id="dot2">2</span>
+            <span class="step" id="dot3">3</span>
         </div>
+
+        <form id="enrollmentForm">
+            <input type="hidden" id="enrollCourseId">
+            <input type="hidden" id="enrollIsWaitlist">
+
+            <div class="wizard-step active" id="step1">
+                <div class="form-group"><input type="text" id="enrollFullName" placeholder="Nombre Completo" required></div>
+                <div class="form-group"><input type="email" id="enrollEmail" placeholder="Correo Electrónico" required></div>
+                <div class="form-group"><input type="tel" id="enrollPhone" placeholder="WhatsApp (Ej: 999888777)" required></div>
+                
+                <div class="form-group">
+                    <input type="password" id="enrollPassword" placeholder="Crea tu contraseña (mín. 6 caracteres)" required minlength="6" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #444; color: #fff; border-radius: 4px; margin-top: 5px;">
+                    <p style="font-size: 0.75em; color: #888; margin-top: 5px;">* Esta será tu contraseña para ingresar a tu Panel de Estudiante.</p>
+                </div>
+
+                <button type="button" class="btn btn-primary btn-next" data-next="2" style="width:100%; margin-top: 15px;">Continuar</button>
+            </div>
+
+            <div class="wizard-step" id="step2">
+                <div id="paymentBox" class="payment-info-box">
+                <h4>Cuentas Bancarias:</h4>
+                <p><strong>Interbank Soles:</strong> 003-200-003008147025-31</p>
+                <p><strong>CCI:</strong> 200-3008147025</p>
+                <p><strong>Interbank(Plin):</strong> 929 610 747</p>
+                <p style="color: #ffc107; font-weight: bold; margin-top: 10px;">Titular: DealerClub E.I.R.L.</p>
+                
+                <div class="file-input-wrapper" style="margin-top: 15px;">
+                    <label>Link de tu Voucher (Drive/Imgur):</label>
+                    <input type="url" id="enrollVoucherUrl" placeholder="Opcional. También puedes enviarlo por WhatsApp" style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px;">
+                </div>
+                    <p style="font-size: 0.75em; color: #666; margin-top: 5px;">* Si prefieres, puedes enviarlo por WhatsApp.</p>
+                </div>
+                <div class="form-group">
+                    <textarea id="enrollComments" placeholder="¿Tienes alguna duda?" rows="2"></textarea>
+                </div>
+                <div class="wizard-actions">
+                    <button type="button" class="btn btn-secondary btn-prev" data-prev="1">Atrás</button>
+                    <button type="button" class="btn btn-primary btn-next" data-next="3">Siguiente</button>
+                </div>
+            </div>
+
+            <div class="wizard-step" id="step3">
+                <h3 style="color: #ffc107;">¡Confirmación Final!</h3>
+                <p style="font-size: 0.9em; margin-bottom: 20px;">Al hacer clic en enviar, procesaremos tu solicitud y te asignaremos un código de seguimiento.</p>
+                <div class="wizard-actions">
+                    <button type="button" class="btn btn-secondary btn-prev" data-prev="2">Atrás</button>
+                    <button type="submit" class="btn btn-primary" id="submitEnrollmentBtn">Finalizar Inscripción</button>
+                </div>
+                <div id="enrollFormMessage" class="form-message"></div>
+            </div>
+        </form>
     </div>
+</div>
 
     <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE Y LÓGICA DE LA PÁGINA -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Usar las variables globales del entorno Canvas, con fallbacks para desarrollo local
+        // Tus credenciales (las mantuve tal cual)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", // Reemplaza con tu API Key real
-            authDomain: "dealerclubpe.firebaseapp.com", // Reemplaza con tu Auth Domain real
-            projectId: "dealerclubpe", // Reemplaza con tu Project ID real
-            storageBucket: "dealerclubpe.firebasestorage.app", // Reemplaza con tu Storage Bucket real
-            messagingSenderId: "330568352415", // Reemplaza con tu Messaging Sender ID real
-            appId: "1:330568352415:web:9fcd7651698bfafac998aa", // Reemplaza con tu App ID real
-            measurementId: "G-PF3W9NDSDP" // Reemplaza con tu Measurement ID real
+            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
+            authDomain: "dealerclubpe.firebaseapp.com", 
+            projectId: "dealerclubpe", 
+            storageBucket: "dealerclubpe.firebasestorage.app", 
+            messagingSenderId: "330568352415", 
+            appId: "1:330568352415:web:9fcd7651698bfafac998aa", 
+            measurementId: "G-PF3W9NDSDP" 
         };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? initialAuthToken : null;
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // --- FUNCIÓN: GENERADOR DE CÓDIGO ÚNICO DE ALUMNO ---
+        function generateStudentCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Sin O, 0, I, 1 para evitar confusiones
+            let code = '';
+            for (let i = 0; i < 5; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            // Formato: DC-25 + 5 caracteres (Ej: DC-25XJK92)
+            return `DC-${new Date().getFullYear().toString().slice(-2)}${code}`;
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             const studentAccessLink = document.getElementById('student-access-link');
@@ -247,32 +293,70 @@
             const enrollEmail = document.getElementById('enrollEmail');
             const enrollPhone = document.getElementById('enrollPhone');
             const enrollComments = document.getElementById('enrollComments');
+            const enrollVoucherUrl = document.getElementById('enrollVoucherUrl'); // Ahora es texto
+            const enrollIsWaitlist = document.getElementById('enrollIsWaitlist');
+            const enrollFormMessage = document.getElementById('enrollFormMessage');
 
-            const announceBar = document.getElementById('announce-bar');
-            const announceTextElement = document.getElementById('announce-text');
-            const closeAnnounceBarBtn = document.getElementById('close-announce-bar');
+            // --- Lógica del Wizard ---
+            let currentStep = 1;
+            const updateWizard = () => {
+                document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+                document.getElementById(`step${currentStep}`).classList.add('active');
+                
+                document.querySelectorAll('.wizard-progress .step').forEach((el, index) => {
+                    el.classList.toggle('active', index + 1 <= currentStep);
+                });
+            };
 
-            let selectedCourseId = null;
+            const resetWizard = () => {
+                currentStep = 1;
+                enrollmentForm.reset();
+                showFormMessage(enrollFormMessage, '', '');
+                updateWizard();
+            };
+
+            document.querySelectorAll('.btn-next').forEach(btn => btn.addEventListener('click', (e) => {
+                if(currentStep === 1) {
+                    const enrollPassword = document.getElementById('enrollPassword');
+                    
+                    // Validamos que todos los campos, INCLUYENDO la contraseña, estén llenos
+                    if(!enrollFullName.value || !enrollEmail.value || !enrollPhone.value || !enrollPassword.value) {
+                        alert("Por favor completa todos tus datos personales y crea tu contraseña."); 
+                        return;
+                    }
+                    
+                    // Firebase exige mínimo 6 caracteres, lo validamos aquí para evitar errores en el Paso 3
+                    if(enrollPassword.value.length < 6) {
+                        alert("La contraseña debe tener al menos 6 caracteres."); 
+                        return;
+                    }
+                }
+                
+                currentStep = parseInt(e.currentTarget.dataset.next); 
+                updateWizard();
+            }));
+
+            document.querySelectorAll('.btn-prev').forEach(btn => btn.addEventListener('click', (e) => {
+                currentStep = parseInt(e.currentTarget.dataset.prev); 
+                updateWizard();
+            }));
 
             const showFormMessage = (messageElement, message, type) => {
-                messageElement.textContent = message;
+                // Si es un mensaje HTML (para mostrar el código destacado)
+                if (message.includes('<')) {
+                    messageElement.innerHTML = message;
+                } else {
+                    messageElement.textContent = message;
+                }
                 messageElement.className = `form-message ${type}`;
-                setTimeout(() => messageElement.textContent = '', 3000);
+                if(type === 'error') {
+                    setTimeout(() => messageElement.textContent = '', 4000);
+                }
             };
 
-            const openModal = (modalElement) => {
-                modalElement.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            };
-
-            const closeModal = (modalElement) => {
-                modalElement.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            };
-
+            // --- Autenticación ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    console.log("Cursos.html: Usuario autenticado:", user.uid);
                     const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
                     try {
                         const userRoleSnap = await getDoc(userRoleRef);
@@ -284,189 +368,175 @@
                             } else if (role === 'student') {
                                 studentAccessLink.textContent = 'Mi Dashboard';
                                 studentAccessLink.href = 'student_dashboard.html';
-                            } else {
-                                studentAccessLink.textContent = 'Iniciar Sesión';
-                                studentAccessLink.href = 'login.html';
-                                // No cerramos sesión aquí para no interrumpir la sesión anónima si el rol no existe
-                                // pero sí indicamos que para "acceso estudiante" deben loguearse
                             }
-                        } else {
-                            // Si no tiene rol (ej. anónimo), mantenemos el link a login
-                            studentAccessLink.textContent = 'Iniciar Sesión';
-                            studentAccessLink.href = 'login.html';
                         }
-                    } catch (error) {
-                        console.error("Cursos.html: Error al verificar rol:", error);
-                        studentAccessLink.textContent = 'Iniciar Sesión';
-                        studentAccessLink.href = 'login.html';
-                    }
+                    } catch (error) { console.error(error); }
                 } else {
-                    studentAccessLink.textContent = 'Iniciar Sesión';
-                    studentAccessLink.href = 'login.html';
-
-                    // INICIO DE SESIÓN ANÓNIMO AUTOMÁTICO
-                    // Esto permite que usuarios "random" tengan permisos para escribir en Firestore
-                    console.log("Cursos.html: Usuario no autenticado. Iniciando sesión anónima...");
-                    try {
-                        await signInAnonymously(auth);
-                        console.log("Cursos.html: Sesión anónima establecida con éxito.");
-                    } catch (error) {
-                        console.error("Cursos.html: Error al iniciar sesión anónima:", error);
-                    }
+                    signInAnonymously(auth); // Permite inscribirse sin cuenta
                 }
             });
 
-            // Lógica para cargar cursos dinámicamente
+            // --- Carga de Cursos ---
             const loadCourses = () => {
-                if (!db || !appId) {
-                    console.error("Cursos.html: Firebase Firestore no está inicializado.");
-                    loadingCoursesMessage.style.display = 'none';
-                    noCoursesMessage.textContent = 'Error: No se pudo cargar la base de datos de cursos.';
-                    noCoursesMessage.style.display = 'block';
-                    return;
-                }
-
-                const coursesCollectionRef = collection(db, `/artifacts/${appId}/public/data/courses`);
-
-                onSnapshot(coursesCollectionRef, (querySnapshot) => {
+                if (!db || !appId) return;
+                onSnapshot(collection(db, `/artifacts/${appId}/public/data/courses`), (querySnapshot) => {
                     coursesGridContainer.innerHTML = '';
                     loadingCoursesMessage.style.display = 'none';
 
                     if (querySnapshot.empty) {
-                        noCoursesMessage.style.display = 'block';
-                        return;
+                        noCoursesMessage.style.display = 'block'; return;
                     }
-                    noCoursesMessage.style.display = 'none';
 
                     const courses = [];
-                    querySnapshot.docs.forEach(doc => {
-                        courses.push({ id: doc.id, ...doc.data() });
-                    });
-
+                    querySnapshot.docs.forEach(doc => courses.push({ id: doc.id, ...doc.data() }));
                     courses.sort((a, b) => (a.order || 999) - (b.order || 999));
 
                     courses.forEach(course => {
                         const courseCard = document.createElement('div');
                         courseCard.className = 'paquete-card';
 
-                        const statusClass = course.status ? `status-${course.status.toLowerCase().replace(/\s/g, '-')}` : 'status-default';
+                        const isClosed = course.status === 'Cerrado';
+                        const isWaitlist = course.status === 'Próximamente';
+                        
+                        let btnText = isWaitlist ? 'Unirse a Lista de Espera' : '¡Inscríbete ahora!';
+                        let btnClass = isWaitlist ? 'btn-secondary' : 'btn-primary';
+                        let disabledAttr = isClosed ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : '';
+                        if (isClosed) btnText = 'Cupos Agotados';
 
-                        const gamesIncludedHtml = Array.isArray(course.gamesIncluded)
-                            ? course.gamesIncluded.map(game => `<li>${game}</li>`).join('')
-                            : (course.gamesIncluded ? `<li>${course.gamesIncluded}</li>` : '');
+                        const statusClass = course.status ? `status-${course.status.toLowerCase().replace(/\s/g, '-')}` : 'status-default';
+                        
+                        // HTML de las etiquetas usando las clases del CSS
+                        const statusHtml = `<span class="course-status ${statusClass}">${course.status || 'N/A'}</span>`;
+                        const marketingHtml = course.tag ? `<div class="marketing-tag"><i class="fas fa-fire"></i> ${course.tag}</div>` : '';
+
+                        const gamesHtml = Array.isArray(course.gamesIncluded)
+                            ? course.gamesIncluded.map(g => `<li>${g}</li>`).join('')
+                            : `<li>${course.gamesIncluded || ''}</li>`;
 
                         courseCard.innerHTML = `
-                            <span class="course-status ${statusClass}">${course.status || 'N/A'}</span>
-                            <div class="card-content-wrapper">
-                                <h3 class="course-title">${course.name || 'Curso Sin Nombre'}</h3>
-                                <p class="course-description">${course.description || 'Descripción no disponible.'}</p>
+                            ${marketingHtml}
+                            ${statusHtml}
+                            <div class="card-content-wrapper"> 
+                                <h3 class="course-title">${course.name || 'Curso'}</h3>
+                                <p class="course-description">${course.description || ''}</p>
                                 <p class="price">${course.price || 'N/A'}</p>
                                 <ul class="course-details">
                                     <li><strong>Horario:</strong> ${course.schedule || 'N/A'}</li>
-                                    <li><strong>Juegos Incluidos:</strong></li>
-                                    <ol>${gamesIncludedHtml}</ol>
+                                    <li><strong>Juegos:</strong></li>
+                                    <ol>${gamesHtml}</ol>
                                 </ul>
-                                <p class="course-duration"><strong>Duración Estimada:</strong> ${course.duration || 'N/A'}</p>
+                                <p class="course-duration"><strong>Duración:</strong> ${course.duration || 'N/A'}</p>
                             </div>
-                            <button class="btn btn-primary enroll-btn" data-course-id="${course.id}" data-course-name="${course.name}">¡Inscribete ahora!</button>
+                            <button class="btn ${btnClass} enroll-btn" data-course-id="${course.id}" data-course-name="${course.name}" data-waitlist="${isWaitlist}" ${disabledAttr}>${btnText}</button>
                         `;
                         coursesGridContainer.appendChild(courseCard);
                     });
 
-                    // Añadir event listeners a los botones de inscripción
-                    document.querySelectorAll('.enroll-btn').forEach(button => {
-                        button.addEventListener('click', (event) => {
-                            selectedCourseId = event.target.dataset.courseId;
-                            const courseName = event.target.dataset.courseName;
-                            enrollCourseName.textContent = `Curso: ${courseName}`;
-                            enrollCourseId.value = selectedCourseId;
-                            enrollmentForm.reset();
-                            showFormMessage(enrollFormMessage, '', '');
-                            openModal(enrollCourseModal);
+                    // Eventos a botones
+                    document.querySelectorAll('.enroll-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const isWaitlist = e.target.dataset.waitlist === 'true';
+                            enrollCourseName.textContent = `Curso: ${e.target.dataset.courseName}`;
+                            enrollCourseId.value = e.target.dataset.courseId;
+                            enrollIsWaitlist.value = isWaitlist;
+
+                            document.getElementById('wizardMainTitle').textContent = isWaitlist ? 'Lista de Espera' : 'Inscripción al Curso';
+                            document.getElementById('paymentBox').style.display = isWaitlist ? 'none' : 'block';
+
+                            resetWizard();
+                            enrollCourseModal.style.display = 'flex';
+                            document.body.style.overflow = 'hidden';
                         });
                     });
-
-                }, (error) => {
-                    console.error("Cursos.html: Error al cargar cursos:", error);
-                    loadingCoursesMessage.style.display = 'none';
-                    noCoursesMessage.textContent = `Error al cargar los cursos: ${error.message}`;
-                    noCoursesMessage.style.display = 'block';
                 });
             };
 
-            // Lógica del Modal de Inscripción
-            closeEnrollModalBtn.addEventListener('click', () => closeModal(enrollCourseModal));
+           // --- Envío de Formulario a Firestore ---
+            closeEnrollModalBtn.addEventListener('click', () => { enrollCourseModal.style.display = 'none'; document.body.style.overflow = 'auto'; });
+            window.addEventListener('click', (e) => { if (e.target === enrollCourseModal) { enrollCourseModal.style.display = 'none'; document.body.style.overflow = 'auto'; } });
 
-            window.addEventListener('click', (event) => {
-                if (event.target === enrollCourseModal) {
-                    closeModal(enrollCourseModal);
-                }
-            });
+            enrollmentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = document.getElementById('submitEnrollmentBtn');
+                submitBtn.disabled = true;
+                showFormMessage(enrollFormMessage, 'Generando tu bóveda y código de alumno...', 'loading');
 
-            enrollmentForm.addEventListener('submit', async (event) => {
-                event.preventDefault();
-                showFormMessage(enrollFormMessage, 'Enviando inscripción...', 'loading');
+                const isWaitlist = enrollIsWaitlist.value === 'true';
+                const newStudentCode = generateStudentCode(); // <--- AQUÍ CREAMOS EL CÓDIGO
+                const enrollPassword = document.getElementById('enrollPassword').value; // <--- Capturamos la contraseña
 
                 const enrollmentData = {
+                    studentCode: newStudentCode, 
                     courseId: enrollCourseId.value,
                     courseName: enrollCourseName.textContent.replace('Curso: ', ''),
+                    type: isWaitlist ? 'Lista de Espera' : 'Matrícula',
                     fullName: enrollFullName.value,
                     email: enrollEmail.value,
                     phone: enrollPhone.value,
                     comments: enrollComments.value,
+                    voucherUrl: enrollVoucherUrl ? enrollVoucherUrl.value : null,
                     timestamp: new Date(),
                     status: 'Pendiente'
                 };
 
                 try {
-                    if (!db || !appId) {
-                        throw new Error("Firebase Firestore no está inicializado.");
-                    }
-                    const enrollmentsCollectionRef = collection(db, `/artifacts/${appId}/public/data/course_enrollments`);
-                    await addDoc(enrollmentsCollectionRef, enrollmentData);
-                    showFormMessage(enrollFormMessage, 'Inscripción enviada con éxito. ¡Pronto nos pondremos en contacto!', 'success');
-                    enrollmentForm.reset();
-                    setTimeout(() => closeModal(enrollCourseModal), 2000);
+                    // 1. Crear el usuario en Firebase Auth silenciosamente
+                    const userCredential = await createUserWithEmailAndPassword(auth, enrollEmail.value, enrollPassword);
+                    const user = userCredential.user;
+
+                    // 2. Guardar su Rol y Estado de Cuarentena (pending)
+                    await setDoc(doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`), {
+                        role: 'student',
+                        status: 'pending', // ¡Este es el candado!
+                        studentCode: newStudentCode,
+                        fullName: enrollFullName.value,
+                        email: enrollEmail.value
+                    });
+
+                    // 3. Guardar la matrícula en tu Panel Admin
+                    await addDoc(collection(db, `/artifacts/${appId}/public/data/course_enrollments`), enrollmentData);
+                    
+                    // 4. Cerramos la sesión automática por seguridad
+                    await signOut(auth);
+                    
+                    // Mensaje de éxito mostrando el código
+                    const successMsg = `¡Todo Listo! Tu código de alumno es: <br><strong style="font-size:1.5em; color:#fff; display:block; margin-top:10px;">${newStudentCode}</strong><br><span style="font-size:0.8em;">Haz una captura. Ya puedes Iniciar Sesión con tu correo y contraseña.</span>`;
+                    showFormMessage(enrollFormMessage, successMsg, 'success');
+                    
+                    setTimeout(() => {
+                        enrollCourseModal.style.display = 'none';
+                        document.body.style.overflow = 'auto';
+                        submitBtn.disabled = false;
+                        window.location.href = 'login.html'; // Lo enviamos directo a Iniciar Sesión
+                    }, 7000); 
                 } catch (error) {
-                    console.error("Cursos.html: Error al enviar la inscripción:", error);
-                    showFormMessage(enrollFormMessage, `Error al enviar la inscripción: ${error.message}`, 'error');
+                    let errorText = error.message;
+                    if(error.code === 'auth/email-already-in-use') errorText = "Este correo ya está registrado. Por favor, inicia sesión.";
+                    if(error.code === 'auth/weak-password') errorText = "La contraseña debe tener al menos 6 caracteres.";
+                    
+                    showFormMessage(enrollFormMessage, `Error: ${errorText}`, 'error');
+                    submitBtn.disabled = false;
                 }
             });
 
-            // Lógica para el Announce Bar
-            if (db && appId) {
-                const announceDocRef = doc(db, `/artifacts/${appId}/public/data/config/announceBar`);
-
-                onSnapshot(announceDocRef, (docSnapshot) => {
-                    if (docSnapshot.exists()) {
-                        const data = docSnapshot.data();
-                        if (data.status === 'active' && data.text) {
-                            announceTextElement.textContent = data.text;
-                            announceBar.style.display = 'flex';
-                        } else {
-                            announceBar.style.display = 'none';
-                        }
-                    } else {
-                        announceBar.style.display = 'none';
-                        console.log("Cursos.html: Documento 'announceBar' no encontrado en Firestore.");
-                    }
-                }, (error) => {
-                    console.error("Cursos.html: Error al escuchar el announce bar desde Firestore:", error);
-                    announceBar.style.display = 'none';
-                });
-            } else {
-                console.error("Cursos.html: Firebase Firestore no está completamente inicializado para el announce bar.");
-                announceBar.style.display = 'none';
-            }
-
-            closeAnnounceBarBtn.addEventListener('click', () => {
-                announceBar.style.display = 'none';
-            });
-
-            // Cargar los cursos al inicio
-            loadCourses();
+            loadCourses(); // Inicializar
         });
     </script>
 </body>
-
 </html>
+
+<!--
+-Darle dimanismo e intuicion a la Cursos al inscribirse.
+-Por cada estudiante registrado, asignarle un codigo unico, el cual le servira para recomendar 
+a mas personas que se unan, y por cada referido con su codigo,
+ellos obtienen S/50 en efectivo o canje de Merchandise.
+-GENERAR Y ALMACENAR usuario con su respectivo codigo unico.
+-Al no tener un metodo de pago por la misma web(y no se si anadirla), me rompo la cabeza pensando como hacer 
+que se registren unicamente tras haber efectuado el pago del curso a la cuenta bancaria de empresa.
+-Bloqueo de "boton de inscripcion" mientras este cerrado el curso, pero brindar una opcion de 
+"reservar cupo", donde coloca cierta informacion para que le llegue una notificacion cuando se reaperture 
+el curso de su interes.
+-Poner etiquetas estrategicas para vender los cursos mas solicitados y que me convengan ofrecer. (mas solicitado)
+-Trabajar en el panel de usuario.
+-Recuperar announcebar en todas las pestanas.
+-->

@@ -16,6 +16,12 @@
 </head>
 
 <body>
+    <!-- ANNOUNCE BAR -->
+    <div id="announce-bar" class="announce-bar" style="display: none;">
+        <p id="announce-text"></p>
+        <button id="close-announce-bar"><i class="fas fa-times"></i></button>
+    </div>
+    
     <!-- HEADER: Contenedor principal con la imagen de fondo para el hero -->
     <header class="hero-section">
         <nav class="navbar">
@@ -215,7 +221,7 @@
                         </div>
                         
                         <div class="item-card" data-type="Mesa" data-name="Texas Hold'em">
-                            <span class="item-name">Texas Hold'em</span>
+                            <span class="item-name">Póker Texas Hold'em (Torneo)</span>
                         </div>
                         <div class="item-card" data-type="Mesa" data-name="Craps">
                             <span class="item-name">Mesa de Craps</span>
@@ -385,5 +391,12 @@
     <!-- TU SCRIPT JS DE LÓGICA DE PÁGINA (debe ir DESPUÉS del script de Firebase) -->
     <script type="module" src="../assets/js/servicios.js"></script>
 </body>
-
 </html>
+
+<!--
+En servicios, ENLAZAR dealers destacados O CAMBIAR dealers destacados por exhibicion de videos propios o fotos de eventos realizados
+// En Arma tu experiencia numero de jugadores maximo por cada mesa
+// Seria genial anadir las dimensiones reales de cada mesa y el espacio recomendado para cada una, 
+asi como un plano de ejemplo de distribucion de mesas para eventos de diferentes tamaños 
+(ejemplo: 10x10m, 20x20m, etc)
+-->

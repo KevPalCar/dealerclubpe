@@ -1,7 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const coursesGridContainer = document.getElementById('courses-grid-container');
     const loadingCourses = document.getElementById('loading-courses');
-
+    const announceBar = document.getElementById('announce-bar');
+    const announceText = document.getElementById('announce-text');
+    const closeAnnounceBtn = document.getElementById('close-announce-bar');
     const enrollCourseModal = document.getElementById('enrollCourseModal');
     const closeEnrollModalBtn = document.getElementById('closeEnrollModalBtn');
     const enrollCourseNameDisplay = document.getElementById('enrollCourseName');
@@ -157,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadingCourses.style.color = '#dc3545';
         }
     };
-
+    
     const openEnrollmentModal = (courseName, courseId) => { // Recibir courseId
         enrollCourseNameDisplay.textContent = `Curso: ${courseName}`;
         enrollCourseModal.style.display = 'flex';

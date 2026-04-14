@@ -147,8 +147,8 @@
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Curso</th><th>Nombre</th><th>Email</th><th>Teléfono</th>
-                                <th>Comentarios</th><th>Fecha</th><th>Acciones</th>
+                                <th>Fecha</th><th>Curso</th><th>Estudiante</th><th>Contacto</th>
+                                <th>Voucher</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="enrollments-table-body">
@@ -157,7 +157,6 @@
                     </table>
                 </div>
             </section>
-
             <section id="requests-management" class="content-section">
                 <div class="section-header">
                     <h2>Solicitudes de Contacto</h2>
@@ -210,6 +209,10 @@
             <form id="courseForm">
                 <input type="hidden" id="courseId">
                 <div class="form-group"><label>Nombre del Curso:</label><input type="text" id="courseName" required></div>
+                <div class="form-group">
+                    <label>Etiqueta Estratégica (Opcional):</label>
+                    <input type="text" id="courseTag" placeholder="Ej: MÁS SOLICITADO 🔥, NUEVO, ÚLTIMOS CUPOS">
+                </div>
                 <div class="form-group"><label>Orden de Visualización:</label><input type="number" id="courseOrder" value="0" required></div>
                 <div class="form-group"><label>Descripción:</label><textarea id="courseDescription" rows="3" required></textarea></div>
                 <div class="form-group"><label>Precio:</label><input type="text" id="coursePrice" placeholder="Ej: S/ 4,500" required></div>
