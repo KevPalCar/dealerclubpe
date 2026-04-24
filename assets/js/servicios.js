@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(studentAccessLink && auth) {
             onAuthStateChanged(auth, (user) => {
                 if (user) {
-                    studentAccessLink.textContent = 'Mi Dashboard';
+                    studentAccessLink.textContent = 'Iniciar Sesión';
                     studentAccessLink.href = 'student_dashboard.html';
                 } else {
                     studentAccessLink.textContent = 'Iniciar Sesión';

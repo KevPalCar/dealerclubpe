@@ -33,11 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         studentAccessLink.textContent = 'Panel Admin';
                         studentAccessLink.href = 'admin.html';
                     } else {
-                        studentAccessLink.textContent = 'Mi Dashboard';
+                        studentAccessLink.textContent = 'Iniciar Sesión';
                         studentAccessLink.href = 'student_dashboard.html';
                     }
                 } catch (e) {
-                    studentAccessLink.textContent = 'Mi Dashboard';
+                    studentAccessLink.textContent = 'Iniciar Sesión';
                     studentAccessLink.href = 'student_dashboard.html';
                 }
             } else {
