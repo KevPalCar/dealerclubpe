@@ -584,29 +584,65 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('closeServiceModalBtn').addEventListener('click', () => closeModal(document.getElementById('serviceModal')));
 
 
+    // ==========================================
     // Anuncios
+    // ==========================================
     const loadAnnouncements = () => {
         unsubscribeListeners.announcements = onSnapshot(doc(db, `/artifacts/${appId}/public/data/config/announceBar`), (docSnap) => {
             if (docSnap.exists()) {
-                document.getElementById('announceText').value = docSnap.data().text || '';
-                document.getElementById('announceStatus').value = docSnap.data().status || 'inactive';
+                const data = docSnap.data();
+                document.getElementById('announceInicio').value = data.inicio || '';
+                document.getElementById('announceCursos').value = data.cursos || '';
+                document.getElementById('announceServicios').value = data.servicios || '';
+                document.getElementById('announceNosotros').value = data.nosotros || '';
+                document.getElementById('announceLogin').value = data.login || '';
+                document.getElementById('announceDashboard').value = data.dashboard || '';
             }
         });
     };
 
-    document.getElementById('announceBarForm').addEventListener('submit', async (e) => {
+    document.getElementById('announceBarForm').onsubmit = async (e) => {
         e.preventDefault();
         const msg = document.getElementById('announceFormMessage');
-        showMsg(msg, 'Guardando...', 'loading');
+        
+        // 1. Estado de carga visual limpio
+        msg.className = 'form-message loading';
+        msg.textContent = 'Guardando...';
+        msg.style.display = 'block';
+
         try {
             await setDoc(doc(db, `/artifacts/${appId}/public/data/config/announceBar`), {
-                text: document.getElementById('announceText').value,
-                status: document.getElementById('announceStatus').value,
+                inicio: document.getElementById('announceInicio').value,
+                cursos: document.getElementById('announceCursos').value,
+                servicios: document.getElementById('announceServicios').value,
+                nosotros: document.getElementById('announceNosotros').value,
+                login: document.getElementById('announceLogin').value,
+                dashboard: document.getElementById('announceDashboard').value,
                 lastUpdated: new Date()
             }, { merge: true });
-            showMsg(msg, 'Anuncio guardado.', 'success');
-        } catch (err) { showMsg(msg, 'Error guardando.', 'error'); }
-    });
+            
+            // 2. Éxito
+            msg.className = 'form-message success';
+            msg.textContent = 'Anuncios actualizados.';
+            
+            // 3. Ocultar mensaje limpiamente después de 3 segundos
+            setTimeout(() => {
+                msg.style.display = 'none';
+                msg.className = 'form-message'; // Reseteamos las clases
+            }, 3000);
+
+        } catch (err) { 
+            // 4. Error real
+            msg.className = 'form-message error';
+            msg.textContent = 'Error guardando. Revisa tu conexión.';
+            console.error("Error en AnnounceBar:", err);
+            
+            setTimeout(() => {
+                msg.style.display = 'none';
+                msg.className = 'form-message';
+            }, 5000);
+        }
+    };
 
     // Cerrar cualquier modal al dar clic fuera de él
     window.addEventListener('click', (e) => {

@@ -15,7 +15,7 @@
     <!-- NOTA: Las importaciones de fuentes y Font Awesome ya están en main.css -->
 </head>
 
-<body>
+<body data-page="servicios">
     <!-- ANNOUNCE BAR -->
     <div id="announce-bar" class="announce-bar" style="display: none;">
         <p id="announce-text"></p>
@@ -326,70 +326,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE INICIALIZACIÓN DE FIREBASE (mantener al final del body) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        // Añadir importación de onAuthStateChanged para el enlace de Mi Cuenta
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // Añadir importación de getDocs para cargar los dealers
-        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // 🚨 IMPORTANTE: Pega aquí TU configuración real de Firebase SDK (sin el operador ternario).
-        // Asegúrate de copiar el OBJETO COMPLETO desde tu Consola de Firebase -> Configuración del proyecto (⚙️) -> Tus apps -> "Firebase SDK snippet" -> Config
-        const firebaseConfig = {
-            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY",
-            authDomain: "dealerclubpe.firebaseapp.com",
-            projectId: "dealerclubpe",
-            storageBucket: "dealerclubpe.firebasestorage.app",
-            messagingSenderId: "330568352415",
-            appId: "1:330568352415:web:9fcd7651698bfafac998aa",
-            measurementId: "G-PF3W9NDSDP"
-        };
-
-        const appIdForFirestorePath = 'default-app-id';
-        const initialAuthToken = null;
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        window.firebaseApp = app;
-        window.firebaseDb = db;
-        window.firebaseAuth = auth;
-        window.firebaseAddDoc = addDoc;
-        window.firebaseCollection = collection;
-        window.firebaseGetDocs = getDocs; // Exportar getDocs
-        window.appId = appIdForFirestorePath;
-        window.initialAuthToken = initialAuthToken;
-        window.signInAnonymously = signInAnonymously;
-        window.signInWithCustomToken = signInWithCustomToken;
-        window.firebaseOnAuthStateChanged = onAuthStateChanged; // Exportar onAuthStateChanged
-    </script>
-
-    <!-- Script para el enlace de Mi Cuenta en la barra de navegación -->
-    <script type="module">
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
-        // Asumiendo que `app` y `auth` ya están inicializados globalmente por el script anterior
-        const authInstance = window.firebaseAuth || getAuth(window.firebaseApp);
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const studentAccessLink = document.getElementById('student-access-link');
-
-            onAuthStateChanged(authInstance, (user) => {
-                if (user) {
-                    studentAccessLink.textContent = 'Iniciar Sesión';
-                    studentAccessLink.href = 'student_dashboard.html';
-                } else {
-                    studentAccessLink.textContent = 'Iniciar Sesión';
-                    studentAccessLink.href = 'login.html';
-                }
-            });
-        });
-    </script>
-
-    <!-- TU SCRIPT JS DE LÓGICA DE PÁGINA (debe ir DESPUÉS del script de Firebase) -->
-    <script type="module" src="../assets/js/servicios.js"></script>
+<script type="module" src="../assets/js/servicios.js"></script>
 </body>
 </html>
 

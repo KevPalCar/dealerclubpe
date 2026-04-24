@@ -1,6 +1,7 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+// Importamos todas las herramientas necesarias, incluyendo las nuevas para el AnnounceBar (doc, getDoc, onSnapshot)
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Tu configuración de Firebase
 const firebaseConfig = {
@@ -12,21 +13,33 @@ const firebaseConfig = {
     appId: "1:330568352415:web:9fcd7651698bfafac998aa"
 };
 
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig);
+// Inicialización segura (evita el error de "App already exists")
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId = 'default-app-id';
+const appId = 'default-app-id'; // Mantenemos tu bóveda original para que carguen los profes
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 1. Lógica de la Barra de Navegación (Cambiar a "Mi Dashboard" si está logueado)
+    // 1. Lógica Inteligente del Header (Mi Cuenta / Admin)
     const studentAccessLink = document.getElementById('student-access-link');
     if (studentAccessLink) {
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
-                studentAccessLink.textContent = 'Mi Dashboard';
-                studentAccessLink.href = 'student_dashboard.html';
+                const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
+                try {
+                    const userRoleSnap = await getDoc(userRoleRef);
+                    if (userRoleSnap.exists() && userRoleSnap.data().role === 'admin') {
+                        studentAccessLink.textContent = 'Panel Admin';
+                        studentAccessLink.href = 'admin.html';
+                    } else {
+                        studentAccessLink.textContent = 'Mi Dashboard';
+                        studentAccessLink.href = 'student_dashboard.html';
+                    }
+                } catch (e) {
+                    studentAccessLink.textContent = 'Mi Dashboard';
+                    studentAccessLink.href = 'student_dashboard.html';
+                }
             } else {
                 studentAccessLink.textContent = 'Iniciar Sesión';
                 studentAccessLink.href = 'login.html';
@@ -34,15 +47,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. Carga dinámica de Profesores desde la Base de Datos
+    // 2. Lógica de la Barra de Anuncios (Announce Bar) - 🔥 PERSONALIZADO PARA 'NOSOTROS'
+    const announceBar = document.getElementById('announce-bar');
+    const announceTextElement = document.getElementById('announce-text');
+    const closeAnnounceBarBtn = document.getElementById('close-announce-bar');
+
+    if (announceBar && db) {
+        const announceDocRef = doc(db, `/artifacts/${appId}/public/data/config/announceBar`);
+        onSnapshot(announceDocRef, (docSnapshot) => {
+            if (docSnapshot.exists()) {
+                const data = docSnapshot.data();
+                // Aquí le indicamos que busque el campo específico de 'nosotros'
+                const mensajeNosotros = data.nosotros;
+
+                if (data.status === 'active' && mensajeNosotros) {
+                    announceTextElement.textContent = mensajeNosotros;
+                    announceBar.style.display = 'flex';
+                } else {
+                    announceBar.style.display = 'none';
+                }
+            } else {
+                announceBar.style.display = 'none';
+            }
+        }, (error) => {
+            console.error("Error cargando AnnounceBar:", error);
+            announceBar.style.display = 'none';
+        });
+
+        if (closeAnnounceBarBtn) {
+            closeAnnounceBarBtn.addEventListener('click', () => {
+                announceBar.style.display = 'none';
+            });
+        }
+    }
+
+    // 3. Carga dinámica de Profesores desde la Base de Datos
     const gridContainer = document.getElementById('professors-grid-container');
-    
     const loadProfessors = async () => {
         try {
             const profCollection = collection(db, `/artifacts/${appId}/public/data/professors`);
             const profSnapshot = await getDocs(profCollection);
 
-            // Limpiamos el texto de "Cargando..."
             gridContainer.innerHTML = ''; 
 
             if (profSnapshot.empty) {
@@ -50,16 +95,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Extraemos los datos y los ordenamos por el número que pusiste en el Admin
             const profs = profSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             profs.sort((a, b) => (a.order || 99) - (b.order || 99));
 
-            // Dibujamos a cada profesor en la pantalla
             profs.forEach(p => {
                 const card = document.createElement('div');
-                card.className = 'profesor-card'; // Usa la misma clase CSS que ya tenías
+                card.className = 'profesor-card'; 
                 
-                // Si no pusiste URL de imagen en el admin, pone un cuadro gris por defecto
                 const imgUrl = p.imageUrl || 'https://placehold.co/400x400/333333/ffffff?text=Top';
 
                 card.innerHTML = `
@@ -77,9 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 3. Carga dinámica de Egresados desde la Base de Datos
+    // 4. Carga dinámica de Egresados desde la Base de Datos
     const gridAlumniContainer = document.getElementById('alumni-grid-container');
-    
     const loadAlumni = async () => {
         try {
             const alumniCollection = collection(db, `/artifacts/${appId}/public/data/alumni`);

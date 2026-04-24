@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - DealerClub</title>
+    <link rel="icon" href="../assets/images/favicon_pokerchips.png" type="image/png">
     <link rel="stylesheet" href="../assets/css/main.css">
-    <link rel="stylesheet" href="../assets/css/auth.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/auth.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-<body>
-    <!-- ANNOUNCE BAR -->
+
+<body data-page="login">
     <div id="announce-bar" class="announce-bar" style="display: none;">
         <p id="announce-text"></p>
         <button id="close-announce-bar"><i class="fas fa-times"></i></button>
@@ -61,153 +63,6 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = {
-            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
-            authDomain: "dealerclubpe.firebaseapp.com",
-            projectId: "dealerclubpe",
-            storageBucket: "dealerclubpe.firebasestorage.app",
-            messagingSenderId: "330568352415",
-            appId: "1:330568352415:web:9fcd7651698bfafac998aa",
-            measurementId: "G-PF3W9NDSDP"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginForm = document.getElementById('login-form');
-            const loginEmailInput = document.getElementById('loginEmail');
-            const loginPasswordInput = document.getElementById('loginPassword');
-            const loginMessage = document.getElementById('login-message');
-            const forgotPasswordLink = document.getElementById('forgot-password-link');
-
-            const resetPasswordModal = document.getElementById('resetPasswordModal');
-            const closeResetPasswordModalBtn = document.getElementById('closeResetPasswordModalBtn');
-            const resetPasswordForm = document.getElementById('reset-password-form');
-            const resetEmailInput = document.getElementById('resetEmail');
-            const resetMessage = document.getElementById('reset-message');
-
-            const showMessage = (element, message, type) => {
-                element.textContent = message;
-                element.className = `message ${type}`; 
-            };
-
-            const openModal = (modalElement) => {
-                modalElement.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-            };
-
-            const closeModal = (modalElement) => {
-                modalElement.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            };
-
-            // --- LA CORRECCIÓN DEL BUG ESTÁ AQUÍ (!user.isAnonymous) ---
-            onAuthStateChanged(auth, async (user) => {
-                if (user && !user.isAnonymous) {
-                    showMessage(loginMessage, 'Sesión activa. Redirigiendo...', 'loading');
-                    const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
-                    try {
-                        const userRoleSnap = await getDoc(userRoleRef);
-                        if (userRoleSnap.exists()) {
-                            const role = userRoleSnap.data().role;
-                            if (role === 'admin') {
-                                window.location.href = 'admin.html';
-                            } else if (role === 'student') {
-                                window.location.href = 'student_dashboard.html';
-                            } else {
-                                await signOut(auth);
-                                showMessage(loginMessage, 'Rol de usuario desconocido.', 'error');
-                            }
-                        } else {
-                            await signOut(auth);
-                            showMessage(loginMessage, 'No se pudo verificar tu rol.', 'error');
-                        }
-                    } catch (error) {
-                        await signOut(auth);
-                        showMessage(loginMessage, `Error de autenticación.`, 'error');
-                    }
-                } else {
-                    // Si no hay usuario, O si el usuario es ANÓNIMO, limpiamos el mensaje.
-                    showMessage(loginMessage, '', ''); 
-                }
-            });
-
-            // --- Manejo del Formulario de Login ---
-            loginForm.addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const email = loginEmailInput.value;
-                const password = loginPasswordInput.value;
-                showMessage(loginMessage, 'Iniciando sesión...', 'loading');
-
-                try {
-                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                    const user = userCredential.user;
-
-                    const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
-                    const userRoleSnap = await getDoc(userRoleRef);
-
-                    if (userRoleSnap.exists()) {
-                        const role = userRoleSnap.data().role;
-                        if (role === 'admin') {
-                            showMessage(loginMessage, 'Redirigiendo...', 'success');
-                            window.location.href = 'admin.html';
-                        } else if (role === 'student') {
-                            showMessage(loginMessage, 'Redirigiendo...', 'success');
-                            window.location.href = 'student_dashboard.html';
-                        } else {
-                            await signOut(auth);
-                            showMessage(loginMessage, 'Rol de usuario desconocido.', 'error');
-                        }
-                    } else {
-                        await signOut(auth);
-                        showMessage(loginMessage, 'No se pudo verificar tu rol.', 'error');
-                    }
-                } catch (error) {
-                    let errorMessage = 'Error al iniciar sesión.';
-                    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                        errorMessage = 'Correo o contraseña incorrectos.';
-                    } else if (error.code === 'auth/too-many-requests') {
-                        errorMessage = 'Demasiados intentos fallidos. Inténtalo más tarde.';
-                    }
-                    showMessage(loginMessage, errorMessage, 'error');
-                }
-            });
-
-            // --- Modal "¿Olvidaste tu contraseña?" ---
-            forgotPasswordLink.addEventListener('click', (event) => {
-                event.preventDefault();
-                resetEmailInput.value = ''; 
-                showMessage(resetMessage, '', ''); 
-                openModal(resetPasswordModal);
-            });
-
-            resetPasswordForm.addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const email = resetEmailInput.value;
-                showMessage(resetMessage, 'Enviando enlace...', 'loading');
-
-                try {
-                    await sendPasswordResetEmail(auth, email);
-                    showMessage(resetMessage, `Enlace enviado a ${email}. Revisa tu correo.`, 'success');
-                    setTimeout(() => closeModal(resetPasswordModal), 3000); 
-                } catch (error) {
-                    showMessage(resetMessage, 'Error al enviar el enlace.', 'error');
-                }
-            });
-
-            closeResetPasswordModalBtn.addEventListener('click', () => closeModal(resetPasswordModal));
-            window.addEventListener('click', (event) => {
-                if (event.target === resetPasswordModal) closeModal(resetPasswordModal);
-            });
-        });
-    </script>
+    <script type="module" src="../assets/js/login.js"></script>
 </body>
 </html>

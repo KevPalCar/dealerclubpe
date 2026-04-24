@@ -178,23 +178,36 @@
 
             <section id="announcements-management" class="content-section">
                 <div class="section-header">
-                    <h2>Gestión de Anuncios Web</h2>
+                    <h2>Gestión de Anuncios por Pestaña</h2>
                 </div>
                 <div class="admin-form-card">
-                    <h3>Anuncio en la Barra Superior</h3>
+                    <h3>Textos del AnnounceBar (Deja en blanco para ocultar)</h3>
                     <form id="announceBarForm">
                         <div class="form-group">
-                            <label for="announceText">Texto del Anuncio:</label>
-                            <input type="text" id="announceText" placeholder="Ej: ¡Inicio de Clases: 15 de Septiembre!" required>
+                            <label for="announceInicio">Inicio:</label>
+                            <input type="text" id="announceInicio" placeholder="Ej: ¡Bienvenidos a DealerClub!">
                         </div>
                         <div class="form-group">
-                            <label for="announceStatus">Estado del Anuncio:</label>
-                            <select id="announceStatus" required>
-                                <option value="active">Activo</option>
-                                <option value="inactive">Inactivo</option>
-                            </select>
+                            <label for="announceCursos">Cursos:</label>
+                            <input type="text" id="announceCursos" placeholder="Ej: ¡Últimos cupos con 20% de descuento!">
                         </div>
-                        <button type="submit" class="btn btn-primary">Guardar Anuncio</button>
+                        <div class="form-group">
+                            <label for="announceServicios">Servicios:</label>
+                            <input type="text" id="announceServicios" placeholder="Ej: Cotiza tu Casino de Fantasía hoy.">
+                        </div>
+                        <div class="form-group">
+                            <label for="announceNosotros">Nosotros:</label>
+                            <input type="text" id="announceNosotros" placeholder="Ej: Conoce a nuestros profesores expertos.">
+                        </div>
+                        <div class="form-group">
+                            <label for="announceLogin">Iniciar Sesión:</label>
+                            <input type="text" id="announceLogin" placeholder="Ej: Ingresa a tu plataforma.">
+                        </div>
+                        <div class="form-group">
+                            <label for="announceDashboard">Dashboard (Alumnos):</label>
+                            <input type="text" id="announceDashboard" placeholder="Ej: ¡Nuevo material subido!">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Guardar Todos los Anuncios</button>
                         <div id="announceFormMessage" class="form-message"></div>
                     </form>
                 </div>
