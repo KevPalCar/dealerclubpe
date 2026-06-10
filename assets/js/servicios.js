@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     card.className = 'mesa-card';
                     card.innerHTML = `
                         <img src="${imageUrl}" alt="${mesa.name || 'Mesa'}"
-                             onerror="this.onerror=null;this.src='https://placehold.co/400x200/333333/ffffff?text=Mesa'">
+                             onerror="this.onerror=null;this.src='https://eidk95seyu2.exactdn.com/en/blog/wp-content/uploads/2024/02/BetMGMCasino_Header_Apr01_Craps-Dice-Setting-and-Control-min.jpg?strip=all'">
                         <h3>${mesa.name || 'Mesa'}</h3>
                         <p>${mesa.description || 'Consulta para más detalles.'}</p>
                         <button type="button" class="btn btn-primary open-quote-modal"
