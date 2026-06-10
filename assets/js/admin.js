@@ -1,429 +1,311 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, setDoc, doc, updateDoc, deleteDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+// ============================================================
+// PANEL DE ADMINISTRACIÓN — DealerClub
+// ============================================================
+// Depende de firebase.js para la inicialización de Firebase.
+// Nunca dupliques la config ni llames initializeApp aquí.
+// ============================================================
 
-// Configuración de Firebase
-const firebaseConfig = {
-    apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
-    authDomain: "dealerclubpe.firebaseapp.com",
-    projectId: "dealerclubpe",
-    storageBucket: "dealerclubpe.firebasestorage.app",
-    messagingSenderId: "330568352415",
-    appId: "1:330568352415:web:9fcd7651698bfafac998aa"
+import { auth, db, dbPath } from './firebase.js';
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import {
+    collection, addDoc, setDoc, doc, updateDoc, deleteDoc,
+    onSnapshot, getDoc, query, where, getDocs
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// ── EMAILJS — notificaciones automáticas al aprobar inscripciones ──
+// Credenciales del proyecto DealerClub en emailjs.com (cuenta gratuita, 200/mes).
+// Si necesitas cambiar la plantilla o el servicio, actualiza solo estas 3 constantes.
+import emailjs from 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/+esm';
+const EJS_SERVICE  = 'service_w76xi5m';
+const EJS_TEMPLATE = 'template_n6t2bx8';
+emailjs.init('_S-T8AGnU-LZveZ7y');
+
+// ── SISTEMA DE NOTIFICACIONES TOAST ─────────────────────────
+// Reemplaza todos los alert() con mensajes no bloqueantes.
+const showToast = (message, type = 'success') => {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i><span>${message}</span>`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('visible')));
+    setTimeout(() => { toast.classList.remove('visible'); setTimeout(() => toast.remove(), 350); }, 4000);
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const appId = 'default-app-id'; 
+// ── COMPRESIÓN DE IMAGEN (Canvas API) ───────────────────────
+// Reduce imágenes de la PC antes de guardarlas en Firestore como
+// Base64. Limita a 800px de ancho y 80% de calidad JPEG.
+// Evita documentos de varios MB que degradan la carga.
+const compressImage = (file, maxWidth = 800, quality = 0.8) =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const scale  = Math.min(1, maxWidth / img.width);
+                canvas.width  = Math.round(img.width  * scale);
+                canvas.height = Math.round(img.height * scale);
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 
+// ── PAGINACIÓN GENÉRICA ──────────────────────────────────────
+// Un objeto de estado por sección (key = nombre de sección).
+// renderPaged() dibuja la página actual y actualiza controles.
+// initSearch() conecta el input de búsqueda y los botones de página.
+const PAGE_SIZE = 20;
+const pState = {};
+
+const renderPaged = (key, renderRowFn, emptyMsg = 'Sin resultados.') => {
+    const cfg = pState[key];
+    if (!cfg) return;
+
+    const term = cfg.term || '';
+    cfg.filtered = term
+        ? cfg.data.filter(item => JSON.stringify(item).toLowerCase().includes(term))
+        : [...cfg.data];
+
+    const total      = cfg.filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (cfg.page > totalPages) cfg.page = 1;
+
+    const start    = (cfg.page - 1) * PAGE_SIZE;
+    const pageData = cfg.filtered.slice(start, start + PAGE_SIZE);
+    const tbody    = document.getElementById(`${key}-table-body`);
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    if (pageData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="20" class="empty-msg">${emptyMsg}</td></tr>`;
+    } else {
+        pageData.forEach((item, i) => renderRowFn(item, i));
+    }
+
+    const countEl    = document.getElementById(`count-${key}`);
+    const pageInfoEl = document.getElementById(`page-info-${key}`);
+    const prevBtn    = document.getElementById(`prev-${key}`);
+    const nextBtn    = document.getElementById(`next-${key}`);
+    const bar        = document.getElementById(`pagination-${key}`);
+
+    if (countEl)    countEl.textContent    = `${total} registro${total !== 1 ? 's' : ''}`;
+    if (pageInfoEl) pageInfoEl.textContent = `Página ${cfg.page} de ${totalPages}`;
+    if (prevBtn)    prevBtn.disabled       = cfg.page <= 1;
+    if (nextBtn)    nextBtn.disabled       = cfg.page >= totalPages;
+    if (bar)        bar.style.display      = total > PAGE_SIZE ? 'flex' : 'none';
+};
+
+const initSearch = (key, renderRowFn, emptyMsg) => {
+    pState[key] = { page: 1, data: [], filtered: [], term: '' };
+
+    const input = document.getElementById(`search-${key}`);
+    if (input) {
+        input.addEventListener('input', () => {
+            pState[key].term = input.value.toLowerCase().trim();
+            pState[key].page = 1;
+            renderPaged(key, renderRowFn, emptyMsg);
+        });
+    }
+    const prevBtn = document.getElementById(`prev-${key}`);
+    const nextBtn = document.getElementById(`next-${key}`);
+    if (prevBtn) prevBtn.addEventListener('click', () => { pState[key].page--; renderPaged(key, renderRowFn, emptyMsg); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { pState[key].page++; renderPaged(key, renderRowFn, emptyMsg); });
+};
+
+// ── INICIALIZACIÓN DEL DOM ───────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    const adminUserInfo = document.getElementById('admin-user-info');
-    const adminMainTitle = document.getElementById('admin-main-title');
-    const sidebarNav = document.querySelector('.sidebar-nav ul');
-    
+
     let unsubscribeListeners = {};
 
-    // --- SEGURIDAD ESTRICTA (PUNTO 2) ---
+    // ── AUTENTICACIÓN Y SEGURIDAD ────────────────────────────
     onAuthStateChanged(auth, async (user) => {
         if (user && !user.isAnonymous) {
-            const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
             try {
-                const userRoleSnap = await getDoc(userRoleRef);
-                if (userRoleSnap.exists() && userRoleSnap.data().role === 'admin') {
-                    adminUserInfo.innerHTML = `<span>Bienvenido, Admin</span><i class="fas fa-user-circle"></i>`;
+                const snap = await getDoc(doc(db, dbPath(`user_roles/${user.uid}`)));
+                if (snap.exists() && snap.data().role === 'admin') {
+                    document.getElementById('admin-user-info').innerHTML =
+                        `<span>Bienvenido, Admin</span><i class="fas fa-user-circle"></i>`;
+                    initSearches();
                     loadSection('courses');
                 } else {
                     await signOut(auth);
-                    window.location.replace('login.html'); // Evita historial
+                    window.location.replace('login.html');
                 }
-            } catch (error) {
+            } catch {
                 await signOut(auth);
                 window.location.replace('login.html');
             }
         } else {
-            window.location.replace('login.html'); // Si no hay sesión, expulsa sin dejar historial
+            window.location.replace('login.html');
         }
     });
 
-    // --- UTILIDADES ---
-    const openModal = (modal) => { modal.style.display = 'flex'; document.body.style.overflow = 'hidden'; };
+    // ── UTILIDADES MODALES ───────────────────────────────────
+    const openModal  = (modal) => { modal.style.display = 'flex'; document.body.style.overflow = 'hidden'; };
     const closeModal = (modal) => { modal.style.display = 'none'; document.body.style.overflow = 'auto'; };
-    const showMsg = (element, msg, type) => { element.textContent = msg; element.className = `form-message ${type}`; };
+    const showMsg    = (el, msg, type) => {
+        if (!el) return;
+        el.textContent  = msg;
+        el.className    = `form-message${type ? ` ${type}` : ''}`;
+        el.style.display = msg ? 'block' : 'none';
+    };
 
-    // --- FUNCIÓN GENÉRICA PARA ELIMINAR ---
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) closeModal(e.target);
+    });
+
+    // ── MODAL DE CONFIRMACIÓN ────────────────────────────────
     let deleteCallback = null;
-    const confirmationModal = document.getElementById('confirmationModal');
-    
-    const openConfirmationModal = (message, callback) => {
+    const confirmModal = document.getElementById('confirmationModal');
+
+    const confirmDelete = (message, callback) => {
         document.getElementById('confirmationMessage').textContent = message;
         deleteCallback = callback;
         showMsg(document.getElementById('deleteFormMessage'), '', '');
-        openModal(confirmationModal);
+        openModal(confirmModal);
     };
 
     const deleteItem = async (collectionName, itemId) => {
         showMsg(document.getElementById('deleteFormMessage'), 'Eliminando...', 'loading');
         try {
-            await deleteDoc(doc(db, `/artifacts/${appId}/public/data/${collectionName}/${itemId}`));
-            showMsg(document.getElementById('deleteFormMessage'), 'Eliminado con éxito.', 'success');
-            setTimeout(() => closeModal(confirmationModal), 1000);
-        } catch (error) {
-            showMsg(document.getElementById('deleteFormMessage'), `Error: ${error.message}`, 'error');
+            await deleteDoc(doc(db, dbPath(`${collectionName}/${itemId}`)));
+            showMsg(document.getElementById('deleteFormMessage'), 'Eliminado.', 'success');
+            setTimeout(() => closeModal(confirmModal), 900);
+        } catch (err) {
+            showMsg(document.getElementById('deleteFormMessage'), `Error: ${err.message}`, 'error');
         }
     };
 
     document.getElementById('confirmActionBtn').addEventListener('click', () => { if (deleteCallback) deleteCallback(); });
-    document.getElementById('cancelConfirmBtn').addEventListener('click', () => closeModal(confirmationModal));
-    document.getElementById('closeConfirmationModalBtn').addEventListener('click', () => closeModal(confirmationModal));
+    document.getElementById('cancelConfirmBtn').addEventListener('click', () => closeModal(confirmModal));
+    document.getElementById('closeConfirmationModalBtn').addEventListener('click', () => closeModal(confirmModal));
 
-    // --- NAVEGACIÓN ---
+    // ── NAVEGACIÓN ───────────────────────────────────────────
     const loadSection = (sectionName) => {
-        Object.values(unsubscribeListeners).forEach(unsub => unsub());
-        document.querySelectorAll('.admin-content .content-section').forEach(sec => sec.style.display = 'none');
-        document.querySelectorAll('.sidebar-nav a').forEach(link => link.classList.remove('active'));
+        Object.values(unsubscribeListeners).forEach(fn => fn());
+        unsubscribeListeners = {};
 
-        const activeSection = document.getElementById(`${sectionName}-management`);
-        const activeLink = document.getElementById(`nav-${sectionName}`);
-        
-        if (activeSection && activeLink) {
-            activeSection.style.display = 'block';
-            activeLink.classList.add('active');
+        document.querySelectorAll('.admin-content .content-section').forEach(s => s.style.display = 'none');
+        document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
 
-            switch (sectionName) {
-                case 'courses': adminMainTitle.textContent = 'Gestión de Cursos'; loadCourses(); break;
-                case 'professors': adminMainTitle.textContent = 'Gestión de Profesores'; loadProfessors(); break;
-                case 'alumni': adminMainTitle.textContent = 'Gestión de Egresados'; loadAlumni(); break;
-                case 'dealers': adminMainTitle.textContent = 'Gestión de Dealers'; loadDealers(); break;
-                case 'services': adminMainTitle.textContent = 'Gestión de Servicios'; loadServices(); break;
-                case 'enrollments': adminMainTitle.textContent = 'Gestión de Inscripciones'; loadEnrollments(); break;
-                case 'requests': adminMainTitle.textContent = 'Gestión de Solicitudes'; loadRequests(); break;
-                case 'announcements': adminMainTitle.textContent = 'Gestión de Anuncios'; loadAnnouncements(); break;
-            }
-        }
+        const section = document.getElementById(`${sectionName}-management`);
+        const link    = document.getElementById(`nav-${sectionName}`);
+        if (!section || !link) return;
+
+        section.style.display = 'block';
+        link.classList.add('active');
+
+        const titles = {
+            courses: 'Gestión de Cursos',         professors: 'Gestión de Profesores',
+            alumni: 'Gestión de Egresados',        dealers: 'Gestión de Dealers',
+            services: 'Gestión de Servicios',      enrollments: 'Inscripciones',
+            requests: 'Solicitudes de Contacto',   announcements: 'Config & Anuncios',
+            materials: 'Material Didáctico',        tasks: 'Asignar Tareas',
+            progress: 'Progreso de Alumnos'
+        };
+        document.getElementById('admin-main-title').textContent = titles[sectionName] || sectionName;
+
+        const loaders = {
+            courses: loadCourses,      professors: loadProfessors,
+            alumni: loadAlumni,        dealers: loadDealers,
+            services: loadServices,    enrollments: loadEnrollments,
+            requests: loadRequests,    announcements: loadAnnouncements,
+            materials: loadMaterials,  tasks: loadTasks,
+            progress: loadProgress
+        };
+        if (loaders[sectionName]) loaders[sectionName]();
     };
 
-    sidebarNav.addEventListener('click', async (e) => {
+    document.querySelector('.sidebar-nav ul').addEventListener('click', async (e) => {
         e.preventDefault();
         const target = e.target.closest('a');
         if (!target) return;
-
         if (target.id === 'admin-logout-btn') {
             await signOut(auth);
-            window.location.replace('login.html'); // Destruye el historial al salir
+            window.location.replace('login.html');
             return;
         }
         loadSection(target.id.replace('nav-', ''));
     });
 
-    // ==========================================
-    // CRUD: INSCRIPCIONES (ACTUALIZADO MASTER PLAN)
-    // ==========================================
-    const loadEnrollments = () => {
-        const tbody = document.getElementById('enrollments-table-body');
-        unsubscribeListeners.enrollments = onSnapshot(collection(db, `/artifacts/${appId}/public/data/course_enrollments`), (snap) => {
-            if (snap.empty) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#ccc;">🎉 No hay inscripciones pendientes.</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = '';
-            
-            // Ordenar para ver las más recientes primero
-            const enrollments = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => {
-                const timeA = a.timestamp ? a.timestamp.seconds : 0;
-                const timeB = b.timestamp ? b.timestamp.seconds : 0;
-                return timeB - timeA;
-            });
-
-            enrollments.forEach(e => {
-                const tr = tbody.insertRow();
-                
-                // Formato de Estado
-                const statusBadge = e.status === 'Aprobado' 
-                    ? `<span style="background:#28a745; color:white; padding:3px 8px; border-radius:12px; font-size:0.8em;">Aprobado</span><br><small style="color:#ffc107; font-weight:bold;">Cód: ${e.referralCode || 'N/A'}</small>` 
-                    : `<span style="background:#ffc107; color:black; padding:3px 8px; border-radius:12px; font-size:0.8em;">Pendiente</span>`;
-
-                // Link del Voucher o texto WhatsApp
-                const voucherLink = e.voucherUrl 
-                    ? `<a href="${e.voucherUrl}" target="_blank" style="color:#007bff; text-decoration:underline;">Ver Comprobante</a>` 
-                    : `<span style="color:#888;">Por WhatsApp</span>`;
-
-                // Botón de aprobar (solo visible si está pendiente)
-                const approveBtn = e.status !== 'Aprobado' 
-                    ? `<button class="btn btn-primary btn-approve" data-id="${e.id}" data-name="${e.fullName}" style="padding:5px 10px; font-size:0.8em; margin-right:5px; background-color:#28a745; border-color:#28a745;"><i class="fas fa-check"></i> Aprobar</button>` 
-                    : '';
-
-                tr.innerHTML = `
-                    <td>${e.timestamp ? new Date(e.timestamp.seconds * 1000).toLocaleDateString() : '-'}</td>
-                    <td><strong>${e.courseName || '-'}</strong></td>
-                    <td>${e.fullName || '-'}<br><small>${e.email || '-'}</small></td>
-                    <td>${e.phone || '-'}</td>
-                    <td>${voucherLink}</td>
-                    <td>${statusBadge}</td>
-                    <td class="action-buttons">
-                        ${approveBtn}
-                        <button class="btn btn-danger btn-delete" data-id="${e.id}" style="padding:5px 10px; font-size:0.8em;"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-            });
-
-            // Acción: Aprobar Inscripción y generar código de referido
-            tbody.querySelectorAll('.btn-approve').forEach(btn => btn.addEventListener('click', async (event) => {
-                const button = event.target.closest('button');
-                const id = button.dataset.id;
-                const name = button.dataset.name || 'Estudiante';
-                
-                // Generar código único usando el primer nombre y un número aleatorio
-                const firstName = name.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '');
-                const randomNum = Math.floor(100 + Math.random() * 900);
-                const uniqueCode = `${firstName}-${randomNum}`;
-
-                if(confirm(`¿Confirmas que recibiste el pago de ${name}?\nSe le generará y asignará el código de referido: ${uniqueCode}`)) {
-                    try {
-                        const enrollmentRef = doc(db, `/artifacts/${appId}/public/data/course_enrollments/${id}`);
-                        await updateDoc(enrollmentRef, { 
-                            status: 'Aprobado',
-                            referralCode: uniqueCode,
-                            approvedAt: new Date()
-                        });
-                    } catch (error) { 
-                        alert("Error al aprobar: " + error.message); 
-                    }
-                }
-            }));
-
-            // Acción: Eliminar Inscripción
-            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
-                openConfirmationModal('¿Eliminar inscripción?', () => deleteItem('course_enrollments', e.target.closest('button').dataset.id));
-            }));
-        });
+    // ── INIT BÚSQUEDAS + PAGINACIÓN (llamado al autenticar) ──
+    const initSearches = () => {
+        initSearch('courses',     renderCourseRow,     'No hay cursos registrados.');
+        initSearch('professors',  renderProfRow,       'No hay profesores registrados.');
+        initSearch('alumni',      renderAlumniRow,     'No hay egresados registrados.');
+        initSearch('dealers',     renderDealerRow,     'No hay dealers registrados.');
+        initSearch('services',    renderServiceRow,    'No hay servicios registrados.');
+        initSearch('enrollments', renderEnrollmentRow, 'No hay inscripciones.');
+        initSearch('requests',    renderRequestRow,    'No hay solicitudes.');
+        initSearch('materials',   renderMaterialRow,   'No hay materiales subidos aún.');
+        initSearch('tasks',       renderTaskRow,       'No hay tareas asignadas.');
+        initSearch('progress',    renderProgressRow,   'No hay alumnos registrados.');
     };
 
-    const loadRequests = () => {
-        const tbody = document.getElementById('requests-table-body');
-        unsubscribeListeners.requests = onSnapshot(collection(db, `/artifacts/${appId}/public/data/service_requests`), (snap) => {
-            if (snap.empty) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#ccc;">📬 No tienes solicitudes nuevas.</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = '';
-            snap.docs.forEach(docSnap => {
-                const r = docSnap.data();
-                const tr = tbody.insertRow();
-                tr.innerHTML = `
-                    <td>${docSnap.id.substring(0,8)}</td><td>${r.fullName || '-'}</td><td>${r.email || '-'}</td>
-                    <td>${r.eventType || r.subject || '-'}</td><td>${(r.details || r.message || '').substring(0,40)}...</td>
-                    <td>${r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleDateString() : '-'}</td>
-                    <td><button class="btn btn-danger btn-delete" data-id="${docSnap.id}"><i class="fas fa-trash"></i></button></td>
-                `;
-            });
-            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
-                openConfirmationModal('¿Eliminar solicitud?', () => deleteItem('service_requests', e.target.closest('button').dataset.id));
-            }));
-        });
-    };
 
-    // ==========================================
-    // CRUD: PROFESORES
-    // ==========================================
-    const loadProfessors = () => {
-        const tbody = document.getElementById('professors-table-body');
-        unsubscribeListeners.professors = onSnapshot(collection(db, `/artifacts/${appId}/public/data/professors`), (snap) => {
-            if (snap.empty) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ccc;">No hay profesores registrados.</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = '';
-            const profs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
-            
-            profs.forEach(p => {
-                const tr = tbody.insertRow();
-                tr.innerHTML = `
-                    <td>${p.order || '-'}</td><td>${p.name}</td><td>${p.specialty}</td>
-                    <td>${(p.bio || '').substring(0,40)}...</td>
-                    <td>
-                        <button class="btn btn-secondary btn-edit" data-id="${p.id}"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-danger btn-delete" data-id="${p.id}"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-            });
-
-            tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
-                const p = profs.find(x => x.id === e.target.closest('button').dataset.id);
-                document.getElementById('professorId').value = p.id;
-                document.getElementById('professorName').value = p.name || '';
-                document.getElementById('professorOrder').value = p.order || 0;
-                document.getElementById('professorSpecialty').value = p.specialty || '';
-                document.getElementById('professorBio').value = p.bio || '';
-                document.getElementById('professorImageUrl').value = p.imageUrl || '';
-                document.getElementById('professor-modal-title-action').textContent = 'Editar';
-                openModal(document.getElementById('professorModal'));
-            }));
-
-            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
-                openConfirmationModal('¿Eliminar profesor?', () => deleteItem('professors', e.target.closest('button').dataset.id));
-            }));
-        });
-    };
-
-    document.getElementById('add-professor-btn').addEventListener('click', () => {
-        document.getElementById('professorForm').reset();
-        document.getElementById('professorId').value = '';
-        document.getElementById('professor-modal-title-action').textContent = 'Añadir';
-        openModal(document.getElementById('professorModal'));
-    });
-
-    document.getElementById('professorForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const msgBox = document.getElementById('professorFormMessage');
-        showMsg(msgBox, 'Guardando...', 'loading');
-        
-        const id = document.getElementById('professorId').value;
-        const data = {
-            name: document.getElementById('professorName').value,
-            order: parseInt(document.getElementById('professorOrder').value),
-            specialty: document.getElementById('professorSpecialty').value,
-            bio: document.getElementById('professorBio').value,
-            imageUrl: document.getElementById('professorImageUrl').value,
-            lastUpdated: new Date()
-        };
-
-        try {
-            if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/professors/${id}`), data);
-            else await addDoc(collection(db, `/artifacts/${appId}/public/data/professors`), data);
-            closeModal(document.getElementById('professorModal'));
-            showMsg(msgBox, '', '');
-        } catch (err) { showMsg(msgBox, "Error guardando", "error"); }
-    });
-    document.getElementById('closeProfessorModalBtn').addEventListener('click', () => closeModal(document.getElementById('professorModal')));
-
-    // ==========================================
-    // CRUD: EGRESADOS
-    // ==========================================
-    const loadAlumni = () => {
-        const tbody = document.getElementById('alumni-table-body');
-        unsubscribeListeners.alumni = onSnapshot(collection(db, `/artifacts/${appId}/public/data/alumni`), (snap) => {
-            if (snap.empty) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ccc;">No hay egresados registrados.</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = '';
-            const alumni = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
-            
-            alumni.forEach(a => {
-                const tr = tbody.insertRow();
-                tr.innerHTML = `
-                    <td>${a.order || '-'}</td><td>${a.name}</td><td>${a.info}</td>
-                    <td>"${(a.testimonial || '').substring(0,40)}..."</td>
-                    <td>
-                        <button class="btn btn-secondary btn-edit" data-id="${a.id}"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-danger btn-delete" data-id="${a.id}"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-            });
-
-            tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
-                const a = alumni.find(x => x.id === e.target.closest('button').dataset.id);
-                document.getElementById('alumniId').value = a.id;
-                document.getElementById('alumniName').value = a.name || '';
-                document.getElementById('alumniOrder').value = a.order || 0;
-                document.getElementById('alumniInfo').value = a.info || '';
-                document.getElementById('alumniTestimonial').value = a.testimonial || '';
-                document.getElementById('alumniImageUrl').value = a.imageUrl || '';
-                document.getElementById('alumni-modal-title-action').textContent = 'Editar';
-                openModal(document.getElementById('alumniModal'));
-            }));
-
-            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
-                openConfirmationModal('¿Eliminar egresado?', () => deleteItem('alumni', e.target.closest('button').dataset.id));
-            }));
-        });
-    };
-
-    document.getElementById('add-alumni-btn').addEventListener('click', () => {
-        document.getElementById('alumniForm').reset();
-        document.getElementById('alumniId').value = '';
-        document.getElementById('alumni-modal-title-action').textContent = 'Añadir';
-        openModal(document.getElementById('alumniModal'));
-    });
-
-    document.getElementById('alumniForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const msgBox = document.getElementById('alumniFormMessage');
-        showMsg(msgBox, 'Guardando...', 'loading');
-        
-        const id = document.getElementById('alumniId').value;
-        const data = {
-            name: document.getElementById('alumniName').value,
-            order: parseInt(document.getElementById('alumniOrder').value),
-            info: document.getElementById('alumniInfo').value,
-            testimonial: document.getElementById('alumniTestimonial').value,
-            imageUrl: document.getElementById('alumniImageUrl').value,
-            lastUpdated: new Date()
-        };
-
-        try {
-            if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/alumni/${id}`), data);
-            else await addDoc(collection(db, `/artifacts/${appId}/public/data/alumni`), data);
-            closeModal(document.getElementById('alumniModal'));
-            showMsg(msgBox, '', '');
-        } catch (err) { showMsg(msgBox, "Error guardando", "error"); }
-    });
-    document.getElementById('closeAlumniModalBtn').addEventListener('click', () => closeModal(document.getElementById('alumniModal')));
-    
-   // ==========================================
-    // RESTO DE CRUDS (Cursos, Dealers, Servicios, Anuncios)
-    // ==========================================
-    
-    // Cursos (ACTUALIZADO MASTER PLAN - ETIQUETAS)
-    const loadCourses = () => {
+    // ══════════════════════════════════════════════════════════
+    // CRUD: CURSOS
+    // ══════════════════════════════════════════════════════════
+    const renderCourseRow = (c) => {
         const tbody = document.getElementById('courses-table-body');
-        unsubscribeListeners.courses = onSnapshot(collection(db, `/artifacts/${appId}/public/data/courses`), (snap) => {
-            if (snap.empty) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">No hay cursos.</td></tr>`; return; }
-            tbody.innerHTML = '';
-            const courses = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
-            courses.forEach(c => {
-                const tr = tbody.insertRow();
-                tr.innerHTML = `
-                    <td>${c.order || '-'}</td>
-                    <td>${c.name} <br> <small style="color:#ffc107;">${c.tag || ''}</small></td>
-                    <td>${(c.description||'').substring(0,30)}...</td>
-                    <td>${c.price}</td><td>${c.schedule}</td><td>${c.duration}</td>
-                    <td>
-                        <select class="status-select" data-id="${c.id}">
-                            <option value="Abierto" ${c.status==='Abierto'?'selected':''}>Abierto</option>
-                            <option value="En Progreso" ${c.status==='En Progreso'?'selected':''}>En Progreso</option>
-                            <option value="Próximamente" ${c.status==='Próximamente'?'selected':''}>Próximamente</option>
-                            <option value="Cerrado" ${c.status==='Cerrado'?'selected':''}>Cerrado</option>
-                        </select>
-                    </td>
-                    <td>
-                        <button class="btn btn-secondary btn-edit" data-id="${c.id}"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-danger btn-delete" data-id="${c.id}"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-            });
-            tbody.querySelectorAll('.status-select').forEach(sel => sel.addEventListener('change', async (e) => {
-                await updateDoc(doc(db, `/artifacts/${appId}/public/data/courses/${e.target.dataset.id}`), { status: e.target.value });
-            }));
-            tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
-                const c = courses.find(x => x.id === e.target.closest('button').dataset.id);
-                document.getElementById('courseId').value = c.id;
-                document.getElementById('courseName').value = c.name;
-                document.getElementById('courseTag').value = c.tag || ''; // NUEVO: Lee la etiqueta
-                document.getElementById('courseOrder').value = c.order;
-                document.getElementById('courseDescription').value = c.description;
-                document.getElementById('coursePrice').value = c.price;
-                document.getElementById('courseSchedule').value = c.schedule;
-                document.getElementById('courseDuration').value = c.duration;
-                document.getElementById('courseGames').value = (c.gamesIncluded || []).join(', ');
-                document.getElementById('courseStatus').value = c.status;
-                document.getElementById('modal-title-action').textContent = 'Editar';
-                openModal(document.getElementById('courseModal'));
-            }));
-            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
-                openConfirmationModal('¿Eliminar curso?', () => deleteItem('courses', e.target.closest('button').dataset.id));
-            }));
+        const tr = tbody.insertRow();
+        tr.innerHTML = `
+            <td>${c.order ?? '-'}</td>
+            <td><strong>${c.name}</strong><br><small style="color:#ffc107;">${c.tag || ''}</small></td>
+            <td>${(c.description || '').substring(0, 35)}…</td>
+            <td>${c.price}</td><td>${c.schedule}</td><td>${c.duration}</td>
+            <td>
+                <select class="status-select" data-id="${c.id}">
+                    <option value="Abierto"      ${c.status === 'Abierto'       ? 'selected' : ''}>Abierto</option>
+                    <option value="En Progreso"  ${c.status === 'En Progreso'   ? 'selected' : ''}>En Progreso</option>
+                    <option value="Próximamente" ${c.status === 'Próximamente'  ? 'selected' : ''}>Próximamente</option>
+                    <option value="Cerrado"      ${c.status === 'Cerrado'       ? 'selected' : ''}>Cerrado</option>
+                </select>
+            </td>
+            <td class="action-buttons">
+                <button class="btn btn-secondary btn-edit" data-id="${c.id}"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-delete" data-id="${c.id}"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        tr.querySelector('.status-select').addEventListener('change', async (e) => {
+            await updateDoc(doc(db, dbPath(`courses/${e.target.dataset.id}`)), { status: e.target.value });
+            showToast('Estado del curso actualizado.', 'success');
+        });
+        tr.querySelector('.btn-edit').addEventListener('click', () => {
+            document.getElementById('courseId').value          = c.id;
+            document.getElementById('courseName').value        = c.name;
+            document.getElementById('courseTag').value         = c.tag || '';
+            document.getElementById('courseOrder').value       = c.order;
+            document.getElementById('courseDescription').value = c.description;
+            document.getElementById('coursePrice').value       = c.price;
+            document.getElementById('courseSchedule').value    = c.schedule;
+            document.getElementById('courseDuration').value    = c.duration;
+            document.getElementById('courseGames').value       = (c.gamesIncluded || []).join(', ');
+            document.getElementById('courseStatus').value      = c.status;
+            document.getElementById('modal-title-action').textContent = 'Editar';
+            openModal(document.getElementById('courseModal'));
+        });
+        tr.querySelector('.btn-delete').addEventListener('click', () =>
+            confirmDelete(`¿Eliminar el curso "${c.name}"?`, () => deleteItem('courses', c.id))
+        );
+    };
+
+    const loadCourses = () => {
+        document.getElementById('courses-table-body').innerHTML =
+            `<tr><td colspan="8" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        unsubscribeListeners.courses = onSnapshot(collection(db, dbPath('courses')), (snap) => {
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+            pState.courses.data = data;
+            renderPaged('courses', renderCourseRow, 'No hay cursos registrados.');
         });
     };
 
@@ -439,58 +321,250 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = document.getElementById('courseId').value;
         const data = {
             name: document.getElementById('courseName').value,
-            tag: document.getElementById('courseTag').value, // NUEVO: Guarda la etiqueta
-            order: parseInt(document.getElementById('courseOrder').value),
+            tag: document.getElementById('courseTag').value,
+            order: parseInt(document.getElementById('courseOrder').value) || 0,
             description: document.getElementById('courseDescription').value,
             price: document.getElementById('coursePrice').value,
             schedule: document.getElementById('courseSchedule').value,
             duration: document.getElementById('courseDuration').value,
-            gamesIncluded: document.getElementById('courseGames').value.split(',').map(g => g.trim()),
+            gamesIncluded: document.getElementById('courseGames').value.split(',').map(g => g.trim()).filter(Boolean),
             status: document.getElementById('courseStatus').value,
             lastUpdated: new Date()
         };
         try {
-            if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/courses/${id}`), data);
-            else await addDoc(collection(db, `/artifacts/${appId}/public/data/courses`), data);
+            if (id) await updateDoc(doc(db, dbPath(`courses/${id}`)), data);
+            else     await addDoc(collection(db, dbPath('courses')), data);
             closeModal(document.getElementById('courseModal'));
-        } catch (err) { alert("Error guardando curso"); }
+            showToast(id ? 'Curso actualizado.' : 'Curso añadido correctamente.', 'success');
+        } catch (err) { showToast(`Error guardando curso: ${err.message}`, 'error'); }
     });
-    document.getElementById('closeCourseModalBtn').addEventListener('click', () => closeModal(document.getElementById('courseModal')));
+    document.getElementById('closeCourseModalBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('courseModal'))
+    );
 
 
-    // Dealers
-    const loadDealers = () => {
+    // ══════════════════════════════════════════════════════════
+    // CRUD: PROFESORES
+    // ══════════════════════════════════════════════════════════
+    const renderProfRow = (p) => {
+        const tbody = document.getElementById('professors-table-body');
+        const tr = tbody.insertRow();
+        tr.innerHTML = `
+            <td>${p.order ?? '-'}</td><td>${p.name}</td><td>${p.specialty}</td>
+            <td>${(p.bio || '').substring(0, 40)}…</td>
+            <td class="action-buttons">
+                <button class="btn btn-secondary btn-edit" data-id="${p.id}"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-delete" data-id="${p.id}"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        tr.querySelector('.btn-edit').addEventListener('click', () => {
+            document.getElementById('professorId').value       = p.id;
+            document.getElementById('professorName').value     = p.name || '';
+            document.getElementById('professorOrder').value    = p.order || 0;
+            document.getElementById('professorSpecialty').value= p.specialty || '';
+            document.getElementById('professorBio').value      = p.bio || '';
+            document.getElementById('professorImageUrl').value = p.imageUrl || '';
+            document.getElementById('professorImageFile').value= '';
+            const preview = document.getElementById('prof-img-preview');
+            preview.src          = p.imageUrl || '';
+            preview.style.display= p.imageUrl ? 'block' : 'none';
+            document.getElementById('professor-modal-title-action').textContent = 'Editar';
+            openModal(document.getElementById('professorModal'));
+        });
+        tr.querySelector('.btn-delete').addEventListener('click', () =>
+            confirmDelete(`¿Eliminar al profesor "${p.name}"?`, () => deleteItem('professors', p.id))
+        );
+    };
+
+    const loadProfessors = () => {
+        document.getElementById('professors-table-body').innerHTML =
+            `<tr><td colspan="5" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        unsubscribeListeners.professors = onSnapshot(collection(db, dbPath('professors')), (snap) => {
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+            pState.professors.data = data;
+            renderPaged('professors', renderProfRow, 'No hay profesores registrados.');
+        });
+    };
+
+    // Previsualización de imagen (archivo local)
+    document.getElementById('professorImageFile').addEventListener('change', (e) => {
+        const file    = e.target.files[0];
+        const preview = document.getElementById('prof-img-preview');
+        const urlInput= document.getElementById('professorImageUrl');
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                preview.src = ev.target.result;
+                preview.style.display = 'block';
+                urlInput.value = '';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+
+    // Previsualización de imagen (URL manual)
+    document.getElementById('professorImageUrl').addEventListener('input', (e) => {
+        const preview = document.getElementById('prof-img-preview');
+        preview.src          = e.target.value;
+        preview.style.display= e.target.value.trim() ? 'block' : 'none';
+    });
+
+    document.getElementById('add-professor-btn').addEventListener('click', () => {
+        document.getElementById('professorForm').reset();
+        document.getElementById('professorId').value = '';
+        document.getElementById('prof-img-preview').style.display = 'none';
+        document.getElementById('professor-modal-title-action').textContent = 'Añadir';
+        openModal(document.getElementById('professorModal'));
+    });
+
+    document.getElementById('professorForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msgBox = document.getElementById('professorFormMessage');
+        showMsg(msgBox, 'Procesando imagen…', 'loading');
+
+        const id        = document.getElementById('professorId').value;
+        const fileInput = document.getElementById('professorImageFile');
+        let finalUrl    = document.getElementById('professorImageUrl').value.trim();
+
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            if (file.size > 8 * 1024 * 1024) {
+                showMsg(msgBox, 'Imagen demasiado grande (máx 8MB).', 'error');
+                return;
+            }
+            try { finalUrl = await compressImage(file); }
+            catch { showMsg(msgBox, 'Error al procesar la imagen.', 'error'); return; }
+        }
+
+        const data = {
+            name:        document.getElementById('professorName').value,
+            order:       parseInt(document.getElementById('professorOrder').value) || 0,
+            specialty:   document.getElementById('professorSpecialty').value,
+            bio:         document.getElementById('professorBio').value,
+            imageUrl:    finalUrl,
+            lastUpdated: new Date()
+        };
+
+        try {
+            if (id) await updateDoc(doc(db, dbPath(`professors/${id}`)), data);
+            else     await addDoc(collection(db, dbPath('professors')), data);
+            closeModal(document.getElementById('professorModal'));
+            showMsg(msgBox, '', '');
+            showToast(id ? 'Profesor actualizado.' : 'Profesor añadido.', 'success');
+        } catch (err) { showMsg(msgBox, `Error: ${err.message}`, 'error'); }
+    });
+    document.getElementById('closeProfessorModalBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('professorModal'))
+    );
+
+
+    // ══════════════════════════════════════════════════════════
+    // CRUD: EGRESADOS
+    // ══════════════════════════════════════════════════════════
+    const renderAlumniRow = (a) => {
+        const tbody = document.getElementById('alumni-table-body');
+        const tr = tbody.insertRow();
+        tr.innerHTML = `
+            <td>${a.order ?? '-'}</td><td>${a.name}</td><td>${a.info}</td>
+            <td>"${(a.testimonial || '').substring(0, 40)}…"</td>
+            <td class="action-buttons">
+                <button class="btn btn-secondary btn-edit" data-id="${a.id}"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-delete" data-id="${a.id}"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        tr.querySelector('.btn-edit').addEventListener('click', () => {
+            document.getElementById('alumniId').value          = a.id;
+            document.getElementById('alumniName').value        = a.name || '';
+            document.getElementById('alumniOrder').value       = a.order || 0;
+            document.getElementById('alumniInfo').value        = a.info || '';
+            document.getElementById('alumniTestimonial').value = a.testimonial || '';
+            document.getElementById('alumniImageUrl').value    = a.imageUrl || '';
+            document.getElementById('alumni-modal-title-action').textContent = 'Editar';
+            openModal(document.getElementById('alumniModal'));
+        });
+        tr.querySelector('.btn-delete').addEventListener('click', () =>
+            confirmDelete(`¿Eliminar al egresado "${a.name}"?`, () => deleteItem('alumni', a.id))
+        );
+    };
+
+    const loadAlumni = () => {
+        document.getElementById('alumni-table-body').innerHTML =
+            `<tr><td colspan="5" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        unsubscribeListeners.alumni = onSnapshot(collection(db, dbPath('alumni')), (snap) => {
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+            pState.alumni.data = data;
+            renderPaged('alumni', renderAlumniRow, 'No hay egresados registrados.');
+        });
+    };
+
+    document.getElementById('add-alumni-btn').addEventListener('click', () => {
+        document.getElementById('alumniForm').reset();
+        document.getElementById('alumniId').value = '';
+        document.getElementById('alumni-modal-title-action').textContent = 'Añadir';
+        openModal(document.getElementById('alumniModal'));
+    });
+    document.getElementById('alumniForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('alumniId').value;
+        const data = {
+            name: document.getElementById('alumniName').value, order: parseInt(document.getElementById('alumniOrder').value) || 0,
+            info: document.getElementById('alumniInfo').value, testimonial: document.getElementById('alumniTestimonial').value,
+            imageUrl: document.getElementById('alumniImageUrl').value, lastUpdated: new Date()
+        };
+        try {
+            if (id) await updateDoc(doc(db, dbPath(`alumni/${id}`)), data);
+            else     await addDoc(collection(db, dbPath('alumni')), data);
+            closeModal(document.getElementById('alumniModal'));
+            showToast(id ? 'Egresado actualizado.' : 'Egresado añadido.', 'success');
+        } catch (err) { showToast(`Error: ${err.message}`, 'error'); }
+    });
+    document.getElementById('closeAlumniModalBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('alumniModal'))
+    );
+
+
+    // ══════════════════════════════════════════════════════════
+    // CRUD: DEALERS
+    // ══════════════════════════════════════════════════════════
+    const renderDealerRow = (d) => {
         const tbody = document.getElementById('dealers-table-body');
-        unsubscribeListeners.dealers = onSnapshot(collection(db, `/artifacts/${appId}/public/data/dealers`), (snap) => {
-            if (snap.empty) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No hay dealers.</td></tr>`; return; }
-            tbody.innerHTML = '';
-            const dealers = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
-            dealers.forEach(d => {
-                const tr = tbody.insertRow();
-                tr.innerHTML = `
-                    <td>${d.order || '-'}</td><td>${d.name}</td><td>${d.specialty}</td>
-                    <td>${d.experience} años</td><td>${(d.bio||'').substring(0,30)}...</td>
-                    <td>
-                        <button class="btn btn-secondary btn-edit" data-id="${d.id}"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-danger btn-delete" data-id="${d.id}"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-            });
-            tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
-                const d = dealers.find(x => x.id === e.target.closest('button').dataset.id);
-                document.getElementById('dealerId').value = d.id;
-                document.getElementById('dealerName').value = d.name;
-                document.getElementById('dealerOrder').value = d.order;
-                document.getElementById('dealerSpecialty').value = d.specialty;
-                document.getElementById('dealerExperience').value = d.experience;
-                document.getElementById('dealerBio').value = d.bio;
-                document.getElementById('dealerImageUrl').value = d.imageUrl || '';
-                document.getElementById('dealer-modal-title-action').textContent = 'Editar';
-                openModal(document.getElementById('dealerModal'));
-            }));
-            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
-                openConfirmationModal('¿Eliminar dealer?', () => deleteItem('dealers', e.target.closest('button').dataset.id));
-            }));
+        const tr = tbody.insertRow();
+        tr.innerHTML = `
+            <td>${d.order ?? '-'}</td><td>${d.name}</td><td>${d.specialty}</td>
+            <td>${d.experience} años</td><td>${(d.bio || '').substring(0, 30)}…</td>
+            <td class="action-buttons">
+                <button class="btn btn-secondary btn-edit" data-id="${d.id}"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-delete" data-id="${d.id}"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        tr.querySelector('.btn-edit').addEventListener('click', () => {
+            document.getElementById('dealerId').value        = d.id;
+            document.getElementById('dealerName').value      = d.name;
+            document.getElementById('dealerOrder').value     = d.order;
+            document.getElementById('dealerSpecialty').value = d.specialty;
+            document.getElementById('dealerExperience').value= d.experience;
+            document.getElementById('dealerBio').value       = d.bio;
+            document.getElementById('dealerImageUrl').value  = d.imageUrl || '';
+            document.getElementById('dealer-modal-title-action').textContent = 'Editar';
+            openModal(document.getElementById('dealerModal'));
+        });
+        tr.querySelector('.btn-delete').addEventListener('click', () =>
+            confirmDelete(`¿Eliminar al dealer "${d.name}"?`, () => deleteItem('dealers', d.id))
+        );
+    };
+
+    const loadDealers = () => {
+        document.getElementById('dealers-table-body').innerHTML =
+            `<tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        unsubscribeListeners.dealers = onSnapshot(collection(db, dbPath('dealers')), (snap) => {
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+            pState.dealers.data = data;
+            renderPaged('dealers', renderDealerRow, 'No hay dealers registrados.');
         });
     };
 
@@ -500,60 +574,64 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('dealer-modal-title-action').textContent = 'Añadir';
         openModal(document.getElementById('dealerModal'));
     });
-
     document.getElementById('dealerForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('dealerId').value;
         const data = {
-            name: document.getElementById('dealerName').value,
-            order: parseInt(document.getElementById('dealerOrder').value),
-            specialty: document.getElementById('dealerSpecialty').value,
-            experience: parseInt(document.getElementById('dealerExperience').value),
-            bio: document.getElementById('dealerBio').value,
-            imageUrl: document.getElementById('dealerImageUrl').value,
-            lastUpdated: new Date()
+            name: document.getElementById('dealerName').value, order: parseInt(document.getElementById('dealerOrder').value) || 0,
+            specialty: document.getElementById('dealerSpecialty').value, experience: parseInt(document.getElementById('dealerExperience').value),
+            bio: document.getElementById('dealerBio').value, imageUrl: document.getElementById('dealerImageUrl').value, lastUpdated: new Date()
         };
         try {
-            if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/dealers/${id}`), data);
-            else await addDoc(collection(db, `/artifacts/${appId}/public/data/dealers`), data);
+            if (id) await updateDoc(doc(db, dbPath(`dealers/${id}`)), data);
+            else     await addDoc(collection(db, dbPath('dealers')), data);
             closeModal(document.getElementById('dealerModal'));
-        } catch (err) { alert("Error guardando dealer"); }
+            showToast(id ? 'Dealer actualizado.' : 'Dealer añadido.', 'success');
+        } catch (err) { showToast(`Error: ${err.message}`, 'error'); }
     });
-    document.getElementById('closeDealerModalBtn').addEventListener('click', () => closeModal(document.getElementById('dealerModal')));
+    document.getElementById('closeDealerModalBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('dealerModal'))
+    );
 
 
-    // Servicios
-    const loadServices = () => {
+    // ══════════════════════════════════════════════════════════
+    // CRUD: SERVICIOS
+    // ══════════════════════════════════════════════════════════
+    const renderServiceRow = (s) => {
         const tbody = document.getElementById('services-table-body');
-        unsubscribeListeners.services = onSnapshot(collection(db, `/artifacts/${appId}/public/data/services`), (snap) => {
-            if (snap.empty) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No hay servicios.</td></tr>`; return; }
-            tbody.innerHTML = '';
-            const services = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order || 99) - (b.order || 99));
-            services.forEach(s => {
-                const tr = tbody.insertRow();
-                tr.innerHTML = `
-                    <td>${s.order || '-'}</td><td>${s.name}</td><td>${(s.description||'').substring(0,30)}...</td>
-                    <td>${s.price || 'Consultar'}</td><td>${s.status || 'Activo'}</td>
-                    <td>
-                        <button class="btn btn-secondary btn-edit" data-id="${s.id}"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-danger btn-delete" data-id="${s.id}"><i class="fas fa-trash"></i></button>
-                    </td>
-                `;
-            });
-            tbody.querySelectorAll('.btn-edit').forEach(btn => btn.addEventListener('click', (e) => {
-                const s = services.find(x => x.id === e.target.closest('button').dataset.id);
-                document.getElementById('serviceId').value = s.id;
-                document.getElementById('serviceName').value = s.name || '';
-                document.getElementById('serviceOrder').value = s.order || 0;
-                document.getElementById('serviceDescription').value = s.description || '';
-                document.getElementById('servicePrice').value = s.price || '';
-                document.getElementById('serviceStatus').value = s.status || 'Activo';
-                document.getElementById('service-modal-title-action').textContent = 'Editar';
-                openModal(document.getElementById('serviceModal'));
-            }));
-            tbody.querySelectorAll('.btn-delete').forEach(btn => btn.addEventListener('click', (e) => {
-                openConfirmationModal('¿Eliminar servicio?', () => deleteItem('services', e.target.closest('button').dataset.id));
-            }));
+        const tr = tbody.insertRow();
+        tr.innerHTML = `
+            <td>${s.order ?? '-'}</td><td>${s.name}</td>
+            <td>${(s.description || '').substring(0, 30)}…</td>
+            <td>${s.price || 'Consultar'}</td><td>${s.status || 'Activo'}</td>
+            <td class="action-buttons">
+                <button class="btn btn-secondary btn-edit" data-id="${s.id}"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-delete" data-id="${s.id}"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        tr.querySelector('.btn-edit').addEventListener('click', () => {
+            document.getElementById('serviceId').value          = s.id;
+            document.getElementById('serviceName').value        = s.name || '';
+            document.getElementById('serviceOrder').value       = s.order || 0;
+            document.getElementById('serviceDescription').value = s.description || '';
+            document.getElementById('servicePrice').value       = s.price || '';
+            document.getElementById('serviceStatus').value      = s.status || 'Activo';
+            document.getElementById('service-modal-title-action').textContent = 'Editar';
+            openModal(document.getElementById('serviceModal'));
+        });
+        tr.querySelector('.btn-delete').addEventListener('click', () =>
+            confirmDelete(`¿Eliminar el servicio "${s.name}"?`, () => deleteItem('services', s.id))
+        );
+    };
+
+    const loadServices = () => {
+        document.getElementById('services-table-body').innerHTML =
+            `<tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        unsubscribeListeners.services = onSnapshot(collection(db, dbPath('services')), (snap) => {
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+            pState.services.data = data;
+            renderPaged('services', renderServiceRow, 'No hay servicios registrados.');
         });
     };
 
@@ -563,91 +641,515 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('service-modal-title-action').textContent = 'Añadir';
         openModal(document.getElementById('serviceModal'));
     });
-
     document.getElementById('serviceForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('serviceId').value;
         const data = {
-            name: document.getElementById('serviceName').value,
-            order: parseInt(document.getElementById('serviceOrder').value),
-            description: document.getElementById('serviceDescription').value,
-            price: document.getElementById('servicePrice').value,
-            status: document.getElementById('serviceStatus').value,
-            lastUpdated: new Date()
+            name: document.getElementById('serviceName').value, order: parseInt(document.getElementById('serviceOrder').value) || 0,
+            description: document.getElementById('serviceDescription').value, price: document.getElementById('servicePrice').value,
+            status: document.getElementById('serviceStatus').value, lastUpdated: new Date()
         };
         try {
-            if (id) await updateDoc(doc(db, `/artifacts/${appId}/public/data/services/${id}`), data);
-            else await addDoc(collection(db, `/artifacts/${appId}/public/data/services`), data);
+            if (id) await updateDoc(doc(db, dbPath(`services/${id}`)), data);
+            else     await addDoc(collection(db, dbPath('services')), data);
             closeModal(document.getElementById('serviceModal'));
-        } catch (err) { alert("Error guardando servicio"); }
+            showToast(id ? 'Servicio actualizado.' : 'Servicio añadido.', 'success');
+        } catch (err) { showToast(`Error: ${err.message}`, 'error'); }
     });
-    document.getElementById('closeServiceModalBtn').addEventListener('click', () => closeModal(document.getElementById('serviceModal')));
+    document.getElementById('closeServiceModalBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('serviceModal'))
+    );
 
 
-    // ==========================================
-    // Anuncios
-    // ==========================================
-    const loadAnnouncements = () => {
-        unsubscribeListeners.announcements = onSnapshot(doc(db, `/artifacts/${appId}/public/data/config/announceBar`), (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                document.getElementById('announceInicio').value = data.inicio || '';
-                document.getElementById('announceCursos').value = data.cursos || '';
-                document.getElementById('announceServicios').value = data.servicios || '';
-                document.getElementById('announceNosotros').value = data.nosotros || '';
-                document.getElementById('announceLogin').value = data.login || '';
-                document.getElementById('announceDashboard').value = data.dashboard || '';
-            }
+    // ══════════════════════════════════════════════════════════
+    // INSCRIPCIONES
+    // ══════════════════════════════════════════════════════════
+    const renderEnrollmentRow = (e) => {
+        const tbody = document.getElementById('enrollments-table-body');
+        const tr = tbody.insertRow();
+
+        const statusBadge = e.status === 'Aprobado'
+            ? `<span class="badge badge-success">Aprobado</span><br>
+               <small style="color:#ffc107; font-weight:bold;">Cód: ${e.studentCode || e.referralCode || 'N/A'}</small>`
+            : `<span class="badge badge-warning">Pendiente</span>`;
+
+        const voucherLink = e.voucherUrl
+            ? `<a href="${e.voucherUrl}" target="_blank" style="color:#007bff;">Ver Comprobante</a>`
+            : `<span style="color:#888;">Por WhatsApp</span>`;
+
+        const approveBtn = e.status !== 'Aprobado'
+            ? `<button class="btn btn-sm btn-approve"
+                   data-id="${e.id}"
+                   data-name="${e.fullName}"
+                   data-email="${e.email || ''}"
+                   data-course="${e.courseName || ''}"
+                   data-code="${e.studentCode || ''}">
+                   <i class="fas fa-check"></i> Aprobar
+               </button>`
+            : '';
+
+        tr.innerHTML = `
+            <td>${e.timestamp ? new Date(e.timestamp.seconds * 1000).toLocaleDateString('es-PE') : '-'}</td>
+            <td><strong>${e.courseName || '-'}</strong></td>
+            <td>${e.fullName || '-'}<br><small>${e.email || '-'}</small></td>
+            <td>${e.phone || '-'}</td>
+            <td>${voucherLink}</td>
+            <td>${statusBadge}</td>
+            <td class="action-buttons">
+                ${approveBtn}
+                <button class="btn btn-danger btn-sm btn-delete" data-id="${e.id}"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+
+        // Aprobar: usa el studentCode generado durante el registro como código de referido.
+        // Así un solo código sirve tanto para identificar al alumno como para referidos.
+        tr.querySelector('.btn-approve')?.addEventListener('click', async (evt) => {
+            const btn          = evt.currentTarget;
+            const id           = btn.dataset.id;
+            const name         = btn.dataset.name   || 'Estudiante';
+            const email        = btn.dataset.email  || '';
+            const course       = btn.dataset.course || 'Curso DealerClub';
+            const existingCode = btn.dataset.code;
+
+            // Reutiliza el studentCode existente o genera uno nuevo con formato DC-
+            const referralCode = existingCode || (() => {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                let code = '';
+                for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+                return `DC-${new Date().getFullYear().toString().slice(-2)}${code}`;
+            })();
+
+            if (!confirm(`¿Confirmas el pago de ${name}?\nSe activará con código: ${referralCode}`)) return;
+
+            try {
+                // 1. Actualizar inscripción en Firestore
+                await updateDoc(doc(db, dbPath(`course_enrollments/${id}`)), {
+                    status: 'Aprobado', referralCode, approvedAt: new Date()
+                });
+
+                // 2. Activar user_roles si el alumno ya se registró con cuenta
+                const userRolesSnap = await getDocs(
+                    query(collection(db, dbPath('user_roles')), where('studentCode', '==', referralCode))
+                );
+                userRolesSnap.forEach(async (userDoc) => {
+                    await updateDoc(doc(db, dbPath(`user_roles/${userDoc.id}`)), { status: 'active' });
+                });
+
+                showToast(`Inscripción de ${name} aprobada. Código: ${referralCode}`, 'success');
+
+                // 3. Enviar email de confirmación al alumno vía EmailJS
+                if (email) {
+                    try {
+                        await emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
+                            to_name:      name,
+                            to_email:     email,
+                            course_name:  course,
+                            student_code: referralCode
+                        });
+                        showToast(`Email de confirmación enviado a ${email}`, 'info');
+                    } catch {
+                        // El email falló pero la inscripción ya fue aprobada en Firestore
+                        showToast('Inscripción aprobada, pero el email no se pudo enviar. Revisa EmailJS.', 'warning');
+                    }
+                }
+
+            } catch (err) { showToast(`Error al aprobar: ${err.message}`, 'error'); }
+        });
+
+        tr.querySelector('.btn-delete').addEventListener('click', () =>
+            confirmDelete(`¿Eliminar la inscripción de "${e.fullName}"?`, () => deleteItem('course_enrollments', e.id))
+        );
+    };
+
+    const loadEnrollments = () => {
+        document.getElementById('enrollments-table-body').innerHTML =
+            `<tr><td colspan="7" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        unsubscribeListeners.enrollments = onSnapshot(collection(db, dbPath('course_enrollments')), (snap) => {
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0));
+            pState.enrollments.data = data;
+            renderPaged('enrollments', renderEnrollmentRow, 'No hay inscripciones todavía.');
         });
     };
 
-    document.getElementById('announceBarForm').onsubmit = async (e) => {
+
+    // ══════════════════════════════════════════════════════════
+    // SOLICITUDES DE CONTACTO
+    // ══════════════════════════════════════════════════════════
+    const renderRequestRow = (r) => {
+        const tbody = document.getElementById('requests-table-body');
+        const tr = tbody.insertRow();
+        tr.innerHTML = `
+            <td>${r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleDateString('es-PE') : '-'}</td>
+            <td>${r.fullName || '-'}</td><td>${r.email || '-'}</td>
+            <td>${r.eventType || r.subject || '-'}</td>
+            <td>${(r.details || r.message || '').substring(0, 50)}…</td>
+            <td class="action-buttons">
+                <button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        tr.querySelector('.btn-delete').addEventListener('click', () =>
+            confirmDelete('¿Eliminar esta solicitud?', () => deleteItem('service_requests', r.id))
+        );
+    };
+
+    const loadRequests = () => {
+        document.getElementById('requests-table-body').innerHTML =
+            `<tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        unsubscribeListeners.requests = onSnapshot(collection(db, dbPath('service_requests')), (snap) => {
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0));
+            pState.requests.data = data;
+            renderPaged('requests', renderRequestRow, 'No hay solicitudes todavía.');
+        });
+    };
+
+
+    // ══════════════════════════════════════════════════════════
+    // CONFIG & ANUNCIOS (incluye WhatsApp)
+    // ══════════════════════════════════════════════════════════
+    const loadAnnouncements = () => {
+        unsubscribeListeners.announcements = onSnapshot(
+            doc(db, dbPath('config/announceBar')), (snap) => {
+                if (!snap.exists()) return;
+                const d = snap.data();
+                document.getElementById('announceInicio').value    = d.inicio    || '';
+                document.getElementById('announceCursos').value    = d.cursos    || '';
+                document.getElementById('announceServicios').value = d.servicios || '';
+                document.getElementById('announceNosotros').value  = d.nosotros  || '';
+                document.getElementById('announceLogin').value     = d.login     || '';
+                document.getElementById('announceDashboard').value = d.dashboard || '';
+                document.getElementById('configWhatsapp').value    = d.whatsapp  || '';
+            }
+        );
+    };
+
+    document.getElementById('announceBarForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const msg = document.getElementById('announceFormMessage');
-        
-        // 1. Estado de carga visual limpio
-        msg.className = 'form-message loading';
-        msg.textContent = 'Guardando...';
-        msg.style.display = 'block';
-
+        showMsg(msg, 'Guardando…', 'loading');
         try {
-            await setDoc(doc(db, `/artifacts/${appId}/public/data/config/announceBar`), {
-                inicio: document.getElementById('announceInicio').value,
-                cursos: document.getElementById('announceCursos').value,
+            await setDoc(doc(db, dbPath('config/announceBar')), {
+                inicio:    document.getElementById('announceInicio').value,
+                cursos:    document.getElementById('announceCursos').value,
                 servicios: document.getElementById('announceServicios').value,
-                nosotros: document.getElementById('announceNosotros').value,
-                login: document.getElementById('announceLogin').value,
+                nosotros:  document.getElementById('announceNosotros').value,
+                login:     document.getElementById('announceLogin').value,
                 dashboard: document.getElementById('announceDashboard').value,
                 lastUpdated: new Date()
             }, { merge: true });
-            
-            // 2. Éxito
-            msg.className = 'form-message success';
-            msg.textContent = 'Anuncios actualizados.';
-            
-            // 3. Ocultar mensaje limpiamente después de 3 segundos
-            setTimeout(() => {
-                msg.style.display = 'none';
-                msg.className = 'form-message'; // Reseteamos las clases
-            }, 3000);
+            showMsg(msg, 'Anuncios guardados.', 'success');
+            showToast('Anuncios actualizados correctamente.', 'success');
+            setTimeout(() => showMsg(msg, '', ''), 3000);
+        } catch (err) {
+            showMsg(msg, 'Error al guardar. Revisa tu conexión.', 'error');
+        }
+    });
 
-        } catch (err) { 
-            // 4. Error real
-            msg.className = 'form-message error';
-            msg.textContent = 'Error guardando. Revisa tu conexión.';
-            console.error("Error en AnnounceBar:", err);
-            
-            setTimeout(() => {
-                msg.style.display = 'none';
-                msg.className = 'form-message';
-            }, 5000);
+    document.getElementById('whatsappForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg    = document.getElementById('whatsappFormMessage');
+        const number = document.getElementById('configWhatsapp').value.trim();
+        if (!number) { showMsg(msg, 'Ingresa un número válido.', 'error'); return; }
+        showMsg(msg, 'Guardando…', 'loading');
+        try {
+            await setDoc(doc(db, dbPath('config/announceBar')), { whatsapp: number }, { merge: true });
+            showMsg(msg, `Número guardado: +${number}`, 'success');
+            showToast(`WhatsApp actualizado: +${number}`, 'success');
+            setTimeout(() => showMsg(msg, '', ''), 3000);
+        } catch (err) { showMsg(msg, 'Error al guardar.', 'error'); }
+    });
+
+
+    // ══════════════════════════════════════════════════════════
+    // CAMPUS VIRTUAL — MATERIAL DIDÁCTICO
+    // ══════════════════════════════════════════════════════════
+    const renderMaterialRow = (m) => {
+        const tbody = document.getElementById('materials-table-body');
+        const tr = tbody.insertRow();
+        const typeIcons = { Video: 'fa-play-circle', Documento: 'fa-file-alt', Enlace: 'fa-link' };
+        tr.innerHTML = `
+            <td><strong>${m.title}</strong></td>
+            <td>${m.category || '-'}</td>
+            <td><i class="fas ${typeIcons[m.type] || 'fa-file'}" style="margin-right:5px;"></i>${m.type || '-'}</td>
+            <td>${m.courseName || 'Todos'}</td>
+            <td><a href="${m.url}" target="_blank" style="color:#ffc107; text-decoration:underline;">Abrir enlace</a></td>
+            <td class="action-buttons">
+                <button class="btn btn-secondary btn-sm btn-edit" data-id="${m.id}"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-sm btn-delete" data-id="${m.id}"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        tr.querySelector('.btn-edit').addEventListener('click', () => {
+            document.getElementById('materialId').value       = m.id;
+            document.getElementById('materialTitle').value    = m.title || '';
+            document.getElementById('materialCategory').value = m.category || '';
+            document.getElementById('materialType').value     = m.type || 'Video';
+            document.getElementById('materialUrl').value      = m.url || '';
+            populateMaterialCourseSelect(m.courseId || 'all');
+            document.getElementById('material-modal-action').textContent = 'Editar';
+            openModal(document.getElementById('materialModal'));
+        });
+        tr.querySelector('.btn-delete').addEventListener('click', () =>
+            confirmDelete(`¿Eliminar el material "${m.title}"?`, () => deleteItem('materials', m.id))
+        );
+    };
+
+    const loadMaterials = () => {
+        document.getElementById('materials-table-body').innerHTML =
+            `<tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        unsubscribeListeners.materials = onSnapshot(collection(db, dbPath('materials')), (snap) => {
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+            pState.materials.data = data;
+            renderPaged('materials', renderMaterialRow, 'No hay materiales subidos aún.');
+        });
+    };
+
+    // Rellena el selector de cursos en el modal de material
+    const populateMaterialCourseSelect = async (selectedCourseId = 'all') => {
+        const select = document.getElementById('materialCourse');
+        select.innerHTML = '<option value="all">Todos los cursos</option>';
+        try {
+            const snap = await getDocs(collection(db, dbPath('courses')));
+            snap.docs.forEach(d => {
+                const c    = d.data();
+                const opt  = document.createElement('option');
+                opt.value  = d.id;
+                opt.text   = c.name;
+                if (d.id === selectedCourseId) opt.selected = true;
+                select.appendChild(opt);
+            });
+        } catch { /* sin internet: queda solo "Todos" */ }
+    };
+
+    document.getElementById('add-material-btn').addEventListener('click', async () => {
+        document.getElementById('materialForm').reset();
+        document.getElementById('materialId').value = '';
+        document.getElementById('material-modal-action').textContent = 'Añadir';
+        await populateMaterialCourseSelect('all');
+        openModal(document.getElementById('materialModal'));
+    });
+
+    document.getElementById('materialForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg    = document.getElementById('materialFormMessage');
+        const id     = document.getElementById('materialId').value;
+        const select = document.getElementById('materialCourse');
+        const courseId  = select.value;
+        const courseName= select.options[select.selectedIndex].text;
+
+        const data = {
+            title:       document.getElementById('materialTitle').value,
+            category:    document.getElementById('materialCategory').value,
+            type:        document.getElementById('materialType').value,
+            courseId,
+            courseName:  courseId === 'all' ? 'Todos' : courseName,
+            url:         document.getElementById('materialUrl').value,
+            createdAt:   new Date()
+        };
+
+        showMsg(msg, 'Guardando…', 'loading');
+        try {
+            if (id) await updateDoc(doc(db, dbPath(`materials/${id}`)), data);
+            else     await addDoc(collection(db, dbPath('materials')), data);
+            closeModal(document.getElementById('materialModal'));
+            showMsg(msg, '', '');
+            showToast(id ? 'Material actualizado.' : 'Material añadido al campus.', 'success');
+        } catch (err) { showMsg(msg, `Error: ${err.message}`, 'error'); }
+    });
+    document.getElementById('closeMaterialModalBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('materialModal'))
+    );
+
+
+    // ══════════════════════════════════════════════════════════
+    // CAMPUS VIRTUAL — TAREAS
+    // ══════════════════════════════════════════════════════════
+    const renderTaskRow = (t) => {
+        const tbody = document.getElementById('tasks-table-body');
+        const tr = tbody.insertRow();
+        const dateStr = t.createdAt ? new Date(t.createdAt.seconds * 1000).toLocaleDateString('es-PE') : '-';
+        const assignedLabel = t.assignedTo === 'all'
+            ? '<span style="color:#ffc107;">Todos los alumnos</span>'
+            : `<span style="color:#a78bfa;">${t.studentName || t.assignedTo}</span>`;
+
+        tr.innerHTML = `
+            <td>${dateStr}</td>
+            <td><strong>${t.title}</strong></td>
+            <td>${assignedLabel}</td>
+            <td>${(t.description || '').substring(0, 50)}${t.description?.length > 50 ? '…' : ''}</td>
+            <td class="action-buttons">
+                <button class="btn btn-danger btn-sm btn-delete" data-id="${t.id}"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        tr.querySelector('.btn-delete').addEventListener('click', () =>
+            confirmDelete(`¿Eliminar la tarea "${t.title}"?`, () => deleteItem('tasks', t.id))
+        );
+    };
+
+    const loadTasks = () => {
+        document.getElementById('tasks-table-body').innerHTML =
+            `<tr><td colspan="5" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        unsubscribeListeners.tasks = onSnapshot(collection(db, dbPath('tasks')), (snap) => {
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0));
+            pState.tasks.data = data;
+            renderPaged('tasks', renderTaskRow, 'No hay tareas creadas todavía.');
+        });
+    };
+
+    // Toggle del selector de alumno específico
+    document.getElementById('taskAssigneeType').addEventListener('change', (e) => {
+        const div = document.getElementById('specificStudentDiv');
+        div.style.display = e.target.value === 'specific' ? 'block' : 'none';
+        if (e.target.value === 'specific') loadActiveStudentsForTask();
+    });
+
+    const loadActiveStudentsForTask = async () => {
+        const select = document.getElementById('taskSpecificStudent');
+        select.innerHTML = '<option value="">Cargando…</option>';
+        try {
+            const snap = await getDocs(collection(db, dbPath('course_enrollments')));
+            const seen = new Set();
+            const options = [];
+            snap.docs.forEach(d => {
+                const e = d.data();
+                if (e.status === 'Aprobado' && !seen.has(e.email)) {
+                    seen.add(e.email);
+                    options.push({ code: e.studentCode, name: e.fullName, email: e.email });
+                }
+            });
+            select.innerHTML = '<option value="">Selecciona un alumno…</option>';
+            options.sort((a, b) => (a.name || '').localeCompare(b.name || '')).forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.code || s.email;
+                opt.text  = `${s.name} (${s.code || s.email})`;
+                opt.dataset.name = s.name;
+                select.appendChild(opt);
+            });
+            if (options.length === 0) select.innerHTML = '<option value="">Sin alumnos aprobados</option>';
+        } catch (err) {
+            select.innerHTML = '<option value="">Error cargando alumnos</option>';
         }
     };
 
-    // Cerrar cualquier modal al dar clic fuera de él
-    window.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal')) {
-            closeModal(e.target);
-        }
+    document.getElementById('add-task-btn').addEventListener('click', () => {
+        document.getElementById('taskForm').reset();
+        document.getElementById('taskId').value = '';
+        document.getElementById('specificStudentDiv').style.display = 'none';
+        document.getElementById('task-modal-action') && (document.getElementById('task-modal-action').textContent = 'Crear');
+        openModal(document.getElementById('taskModal'));
     });
-});
+
+    document.getElementById('taskForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg          = document.getElementById('taskFormMessage');
+        const assigneeType = document.getElementById('taskAssigneeType').value;
+        const isSpecific   = assigneeType === 'specific';
+
+        let assignedTo  = 'all';
+        let studentName = null;
+
+        if (isSpecific) {
+            const sel   = document.getElementById('taskSpecificStudent');
+            assignedTo  = sel.value;
+            studentName = sel.options[sel.selectedIndex]?.dataset.name || assignedTo;
+            if (!assignedTo) { showMsg(msg, 'Selecciona un alumno.', 'error'); return; }
+        }
+
+        const data = {
+            title:       document.getElementById('taskTitle').value,
+            description: document.getElementById('taskDescription').value,
+            url:         document.getElementById('taskUrl').value || null,
+            assignedTo,
+            studentName,
+            createdAt:   new Date()
+        };
+
+        showMsg(msg, 'Guardando tarea…', 'loading');
+        try {
+            await addDoc(collection(db, dbPath('tasks')), data);
+            closeModal(document.getElementById('taskModal'));
+            showMsg(msg, '', '');
+            showToast(`Tarea "${data.title}" asignada correctamente.`, 'success');
+        } catch (err) { showMsg(msg, `Error: ${err.message}`, 'error'); }
+    });
+    document.getElementById('closeTaskModalBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('taskModal'))
+    );
+
+
+    // ══════════════════════════════════════════════════════════
+    // CAMPUS VIRTUAL — PROGRESO DE ALUMNOS
+    // ══════════════════════════════════════════════════════════
+    const LEVEL_COLORS = { 'Rookie': '#888', 'Pro Dealer': '#007bff', 'Élite VIP': '#ffc107' };
+
+    const renderProgressRow = (s) => {
+        const tbody = document.getElementById('progress-table-body');
+        const tr = tbody.insertRow();
+        const levelColor = LEVEL_COLORS[s.level] || '#888';
+        const attPct  = s.attendance ?? '--';
+        const grade   = s.grades ?? '--';
+
+        tr.innerHTML = `
+            <td><code style="color:#ffc107;">${s.studentCode || '-'}</code></td>
+            <td>${s.fullName || '-'}</td>
+            <td>${s.email || '-'}</td>
+            <td><span style="color:${levelColor}; font-weight:bold;">${s.level || 'Rookie'}</span></td>
+            <td>${attPct !== '--' ? `${attPct}%` : '--'}</td>
+            <td>${grade !== '--' ? `${grade}/20` : '--'}</td>
+            <td class="action-buttons">
+                <button class="btn btn-secondary btn-sm btn-edit" data-id="${s.uid}" data-name="${s.fullName}">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+            </td>
+        `;
+        tr.querySelector('.btn-edit').addEventListener('click', () => {
+            document.getElementById('progressStudentUid').value  = s.uid;
+            document.getElementById('progressStudentName').textContent = s.fullName || s.email || 'Alumno';
+            document.getElementById('progressLevel').value       = s.level      || 'Rookie';
+            document.getElementById('progressAttendance').value  = s.attendance ?? '';
+            document.getElementById('progressGrades').value      = s.grades     ?? '';
+            openModal(document.getElementById('progressModal'));
+        });
+    };
+
+    const loadProgress = () => {
+        document.getElementById('progress-table-body').innerHTML =
+            `<tr><td colspan="7" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        unsubscribeListeners.progress = onSnapshot(
+            query(collection(db, dbPath('user_roles')), where('role', '==', 'student')),
+            (snap) => {
+                const data = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+                    .sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+                pState.progress.data = data;
+                renderPaged('progress', renderProgressRow, 'No hay alumnos registrados todavía.');
+            }
+        );
+    };
+
+    document.getElementById('progressForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById('progressFormMessage');
+        const uid = document.getElementById('progressStudentUid').value;
+        if (!uid) return;
+
+        const data = {
+            level:      document.getElementById('progressLevel').value,
+            attendance: parseFloat(document.getElementById('progressAttendance').value),
+            grades:     parseFloat(document.getElementById('progressGrades').value)
+        };
+
+        showMsg(msg, 'Guardando…', 'loading');
+        try {
+            await updateDoc(doc(db, dbPath(`user_roles/${uid}`)), data);
+            closeModal(document.getElementById('progressModal'));
+            showMsg(msg, '', '');
+            showToast('Progreso del alumno actualizado.', 'success');
+        } catch (err) { showMsg(msg, `Error: ${err.message}`, 'error'); }
+    });
+    document.getElementById('closeProgressModalBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('progressModal'))
+    );
+
+}); // fin DOMContentLoaded

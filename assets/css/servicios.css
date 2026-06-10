@@ -116,7 +116,7 @@
 .hero-content h1 {
     font-size: 3em;
     margin-bottom: 20px;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Satoshi', 'Montserrat', sans-serif;
     color: #ffc107;
 }
 
@@ -151,7 +151,7 @@ h2 {
     color: #ffc107;
     margin-bottom: 40px;
     text-align: center;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Satoshi', 'Montserrat', sans-serif;
 }
 
 .section-description {

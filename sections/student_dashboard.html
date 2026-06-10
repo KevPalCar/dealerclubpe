@@ -3,198 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Estudiante - DealerClub</title>
+    <title>Campus Virtual - DealerClub</title>
+    <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" href="../assets/css/main.css">
     <link rel="stylesheet" href="../assets/css/student_dashboard.css">
     <link rel="icon" href="../assets/images/favicon_pokerchips.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <header class="dashboard-header">
-        <div class="logo">
-            <a href="../index.html"><img src="../assets/images/isotipo_principal.png" alt="DealerClub Logo"></a>
+
+<!-- Overlay mientras se verifica la sesión -->
+<div id="auth-overlay" class="auth-overlay">
+    <div class="spinner-large"></div>
+    <p>Verificando sesión…</p>
+</div>
+
+<!-- Announce bar del dashboard -->
+<div id="announce-bar" class="announce-bar" style="display:none;">
+    <p id="announce-text"></p>
+    <button id="close-announce-bar"><i class="fas fa-times"></i></button>
+</div>
+
+<!-- Todo el cuerpo está oculto hasta que pase el guard de auth -->
+<div id="dash-body" style="visibility:hidden;">
+
+    <!-- ── HEADER ──────────────────────────────────────────── -->
+    <header class="dash-header">
+        <div class="dash-logo">
+            <a href="../index.html">
+                <img src="../assets/images/isotipo_principal.png" alt="DealerClub">
+            </a>
         </div>
-        <nav class="dashboard-nav">
-            <ul>
-                <li><a href="#" id="dashboard-link" class="current">Iniciar Sesión</a></li>
-                <li><a href="#" id="logout-btn">Cerrar Sesión</a></li>
-                <li id="admin-panel-link-container" style="display: none;">
-                    <a href="admin.html" class="admin-link" title="Panel de Administración"><i class="fas fa-user-circle"></i></a>
-                </li>
-            </ul>
-        </nav>
+
+        <div class="dash-user-info">
+            <div class="dash-welcome">
+                <span class="dash-hello">Hola,</span>
+                <strong id="dash-welcome-name">Estudiante</strong>
+            </div>
+            <code id="dash-student-code" class="dash-code"></code>
+            <span id="dash-level-pill" class="level-pill level-rookie">Rookie</span>
+        </div>
+
+        <div class="dash-header-right">
+            <a href="#" id="dash-logout-btn" class="btn-logout">
+                <i class="fas fa-sign-out-alt"></i> Salir
+            </a>
+        </div>
     </header>
 
-    <main class="dashboard-main">
-        <section id="welcome-section" class="dashboard-container">
-            <h2 id="welcome-message">Bienvenido/a, Estudiante!</h2>
-            <p>Este es tu panel de control personalizado.</p>
-            <div id="auth-status-message" class="message">Verificando estado de la sesión...</div>
+    <!-- ── TABS DE NAVEGACIÓN ──────────────────────────────── -->
+    <nav class="dash-tabs">
+        <button class="tab-btn" data-tab="courses">
+            <i class="fas fa-graduation-cap"></i>
+            <span>Mis Cursos</span>
+        </button>
+        <button class="tab-btn" data-tab="progress">
+            <i class="fas fa-chart-line"></i>
+            <span>Mi Progreso</span>
+        </button>
+        <button class="tab-btn" data-tab="tasks">
+            <i class="fas fa-tasks"></i>
+            <span>Mis Tareas</span>
+        </button>
+        <button class="tab-btn" data-tab="materials">
+            <i class="fas fa-book-open"></i>
+            <span>Material</span>
+        </button>
+    </nav>
 
-            <div id="dashboard-content" class="dashboard-content" style="position: relative;">
+    <!-- ── CONTENIDO DE TABS ───────────────────────────────── -->
+    <main class="dash-main">
 
-                <h3>Mis Cursos Inscritos</h3>
-                <div id="enrolled-courses-list" class="courses-list">
-                    <p id="loading-enrolled-courses">Cargando cursos...</p>
-                    <p id="no-enrolled-courses" style="display: none;">No estás inscrito/a en ningún curso aún.</p>
-                </div>
-
-                <h3>Mi Progreso</h3>
-                <div id="student-progress">
-                    <p>Progreso del curso y notas se mostrarán aquí.</p>
-                </div>
-
-                <h3>Notas del Administrador</h3>
-                <div id="admin-notes">
-                    <p>Notas y tareas asignadas por el administrador.</p>
-                </div>
+        <!-- TAB: MIS CURSOS -->
+        <section id="panel-courses" class="tab-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-graduation-cap"></i> Mis Cursos</h2>
+            </div>
+            <div id="courses-panel-content" class="courses-list panel-loading">
+                <div class="spinner-large"></div>
             </div>
         </section>
+
+        <!-- TAB: MI PROGRESO -->
+        <section id="panel-progress" class="tab-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-chart-line"></i> Mi Progreso</h2>
+            </div>
+
+            <div class="progress-cards-grid">
+
+                <!-- Nivel actual -->
+                <div class="prog-card">
+                    <div class="prog-card-icon"><i class="fas fa-medal"></i></div>
+                    <div class="prog-card-body">
+                        <p class="prog-label">Nivel actual</p>
+                        <span id="prog-level-val" class="prog-val level-rookie">Rookie</span>
+                        <p class="prog-hint">Los niveles son: Rookie → Pro Dealer → Élite VIP</p>
+                    </div>
+                </div>
+
+                <!-- Asistencia -->
+                <div class="prog-card">
+                    <div class="prog-card-icon"><i class="fas fa-calendar-check"></i></div>
+                    <div class="prog-card-body">
+                        <p class="prog-label">Asistencia</p>
+                        <span id="prog-att-val" class="prog-val">--</span>
+                        <div class="prog-bar-wrap">
+                            <div class="prog-bar-track">
+                                <div id="prog-att-bar" class="prog-bar-fill" style="width:0%"></div>
+                            </div>
+                            <span id="prog-att-pct" class="prog-bar-pct">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nota -->
+                <div class="prog-card">
+                    <div class="prog-card-icon"><i class="fas fa-star"></i></div>
+                    <div class="prog-card-body">
+                        <p class="prog-label">Nota promedio</p>
+                        <span id="prog-grade-val" class="prog-val">--</span>
+                        <div class="prog-bar-wrap">
+                            <div class="prog-bar-track">
+                                <div id="prog-grade-bar" class="prog-bar-fill prog-bar-gold" style="width:0%"></div>
+                            </div>
+                            <span id="prog-grade-pct" class="prog-bar-pct">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB: MIS TAREAS -->
+        <section id="panel-tasks" class="tab-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-tasks"></i> Mis Tareas</h2>
+            </div>
+            <div id="tasks-panel-content" class="tasks-list panel-loading">
+                <div class="spinner-large"></div>
+            </div>
+        </section>
+
+        <!-- TAB: MATERIAL DIDÁCTICO -->
+        <section id="panel-materials" class="tab-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-book-open"></i> Material Didáctico</h2>
+            </div>
+            <div id="materials-panel-content" class="materials-grid panel-loading">
+                <div class="spinner-large"></div>
+            </div>
+        </section>
+
     </main>
 
-    <footer class="dashboard-footer">
+    <footer class="dash-footer">
         <p>&copy; 2025 DealerClub. Todos los derechos reservados.</p>
     </footer>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+</div><!-- /#dash-body -->
 
-        // 1. Configuración y BFCache (Protección botón "Atrás")
-        window.addEventListener('pageshow', (event) => {
-            if (event.persisted) window.location.reload();
-        });
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = {
-            apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY", 
-            authDomain: "dealerclubpe.firebaseapp.com",
-            projectId: "dealerclubpe",
-            storageBucket: "dealerclubpe.firebasestorage.app",
-            messagingSenderId: "330568352415",
-            appId: "1:330568352415:web:9fcd7651698bfafac998aa"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const welcomeMessage = document.getElementById('welcome-message');
-            const authStatusMessage = document.getElementById('auth-status-message');
-            const logoutBtn = document.getElementById('logout-btn');
-            const enrolledCoursesList = document.getElementById('enrolled-courses-list');
-            const loadingEnrolledCourses = document.getElementById('loading-enrolled-courses');
-            const noEnrolledCourses = document.getElementById('no-enrolled-courses');
-            const adminPanelLinkContainer = document.getElementById('admin-panel-link-container');
-            const dashboardContent = document.getElementById('dashboard-content');
-
-            let unsubscribeEnrollments = null; 
-
-            const showAuthStatus = (message, type) => {
-                authStatusMessage.textContent = message;
-                authStatusMessage.className = `message ${type}`; 
-                if (message === '') authStatusMessage.style.display = 'none';
-                else authStatusMessage.style.display = 'block';
-            };
-
-            // 2. Observador de Sesión
-            onAuthStateChanged(auth, async (user) => {
-                if (user && !user.isAnonymous) {
-                    showAuthStatus('Verificando acceso...', 'loading');
-                    
-                    try {
-                        const userRoleRef = doc(db, `/artifacts/${appId}/public/data/user_roles/${user.uid}`);
-                        const userRoleSnap = await getDoc(userRoleRef);
-                        
-                        if (userRoleSnap.exists()) {
-                            const role = userRoleSnap.data().role;
-
-                            if (role === 'student' || role === 'admin') {
-                                // MOSTRAR CONTENIDO
-                                welcomeMessage.textContent = role === 'admin' ? '¡Hola Administrador!' : '¡Bienvenido/a!';
-                                if (role === 'admin') adminPanelLinkContainer.style.display = 'block';
-                                
-                                showAuthStatus('', ''); // Limpia el mensaje
-                                dashboardContent.style.display = 'block'; // MUESTRA EL DASHBOARD
-                                
-                                loadEnrolledCourses(user.uid);
-                            } else {
-                                throw new Error("Rol no autorizado");
-                            }
-                        } else {
-                            throw new Error("Usuario sin rol");
-                        }
-                    } catch (error) {
-                        console.error("Error de acceso:", error);
-                        await signOut(auth);
-                        window.location.href = 'login.html';
-                    }
-                } else {
-                    window.location.href = 'login.html';
-                }
-            });
-
-            // 3. Cargar Cursos
-            const loadEnrolledCourses = (userId) => {
-                const q = query(collection(db, `/artifacts/${appId}/public/data/course_enrollments`), where("studentId", "==", userId));
-                if (unsubscribeEnrollments) unsubscribeEnrollments();
-
-                unsubscribeEnrollments = onSnapshot(q, (snap) => {
-                    enrolledCoursesList.innerHTML = ''; 
-                    loadingEnrolledCourses.style.display = 'none';
-
-                    if (snap.empty) {
-                        noEnrolledCourses.style.display = 'block';
-                        return;
-                    }
-                    noEnrolledCourses.style.display = 'none';
-
-                    snap.docs.forEach(doc => {
-                        const enrollment = doc.data();
-                        const courseDiv = document.createElement('div');
-                        const rawStatus = (enrollment.status || 'pending').toLowerCase();
-                        
-                        let cardClass = 'card-pending';
-                        let badgeText = '🔒 Validando Pago';
-                        let btnHtml = `<button class="card-action-btn btn-locked" disabled><i class="fas fa-clock"></i> Esperando Verificación</button>`;
-
-                        if (['waitlist', 'lista_espera', 'espera'].includes(rawStatus)) {
-                            cardClass = 'card-waitlist';
-                            badgeText = '⏳ En Lista de Espera';
-                            btnHtml = `<button class="card-action-btn btn-locked" disabled><i class="fas fa-lock"></i> Cupos Cerrados</button>`;
-                        } else if (['active', 'activo', 'aprobado'].includes(rawStatus)) {
-                            cardClass = 'card-active';
-                            badgeText = '✅ Curso Activo';
-                            btnHtml = `<button class="card-action-btn btn-enter"><i class="fas fa-play"></i> Entrar al Curso</button>`;
-                        }
-
-                        courseDiv.className = `course-card ${cardClass}`; 
-                        const dateStr = enrollment.timestamp ? new Date(enrollment.timestamp.seconds * 1000).toLocaleDateString() : 'N/A';
-
-                        courseDiv.innerHTML = `
-                            <div class="status-badge">${badgeText}</div>
-                            <h4>${enrollment.courseName || 'Curso VIP DealerClub'}</h4>
-                            <p class="date">Solicitado el: ${dateStr}</p>
-                            ${btnHtml}
-                        `;
-                        enrolledCoursesList.appendChild(courseDiv);
-                    });
-                });
-            };
-
-            // 4. Botón Cerrar Sesión
-            logoutBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                try {
-                    await signOut(auth);
-                    window.location.href = 'login.html';
-                } catch (error) {
-                    alert("Error al cerrar sesión.");
-                }
-            });
-        });
-    </script>
+<script type="module" src="../assets/js/student_dashboard.js"></script>
 </body>
 </html>

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <title>Panel de Administración - DealerClub</title>
     <link rel="shortcut icon" href="../assets/images/favicon_pokerchips.png" type="image/x-icon">
     <link rel="stylesheet" href="../assets/css/main.css">
@@ -10,26 +11,48 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
+
+    <!-- ── SISTEMA DE NOTIFICACIONES TOAST ─────────────────── -->
+    <div id="toast-container"></div>
+
     <div class="admin-wrapper">
+
+        <!-- ── SIDEBAR ──────────────────────────────────────── -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2>DealerClub Admin</h2>
+                <h2>DealerClub</h2>
+                <span class="sidebar-subtitle">Admin Panel</span>
             </div>
             <nav class="sidebar-nav">
                 <ul>
+                    <!-- GRUPO: Contenido -->
+                    <li class="nav-group-label"><span><i class="fas fa-layer-group"></i> Contenido</span></li>
                     <li><a href="#" id="nav-courses" class="active"><i class="fas fa-book"></i> Cursos</a></li>
                     <li><a href="#" id="nav-professors"><i class="fas fa-chalkboard-teacher"></i> Profesores</a></li>
                     <li><a href="#" id="nav-alumni"><i class="fas fa-user-graduate"></i> Egresados</a></li>
                     <li><a href="#" id="nav-dealers"><i class="fas fa-star"></i> Dealers Destacados</a></li>
                     <li><a href="#" id="nav-services"><i class="fas fa-cogs"></i> Servicios</a></li>
-                    <li><a href="#" id="nav-enrollments"><i class="fas fa-users"></i> Inscripciones</a></li>
+
+                    <!-- GRUPO: Negocio -->
+                    <li class="nav-group-label"><span><i class="fas fa-briefcase"></i> Negocio</span></li>
+                    <li><a href="#" id="nav-enrollments"><i class="fas fa-file-signature"></i> Inscripciones</a></li>
                     <li><a href="#" id="nav-requests"><i class="fas fa-clipboard-list"></i> Solicitudes</a></li>
-                    <li><a href="#" id="nav-announcements"><i class="fas fa-bullhorn"></i> Anuncios</a></li>
+                    <li><a href="#" id="nav-announcements"><i class="fas fa-sliders-h"></i> Config & Anuncios</a></li>
+
+                    <!-- GRUPO: Campus Virtual -->
+                    <li class="nav-group-label"><span><i class="fas fa-graduation-cap"></i> Campus Virtual</span></li>
+                    <li><a href="#" id="nav-materials"><i class="fas fa-photo-video"></i> Material Didáctico</a></li>
+                    <li><a href="#" id="nav-tasks"><i class="fas fa-tasks"></i> Asignar Tareas</a></li>
+                    <li><a href="#" id="nav-progress"><i class="fas fa-chart-line"></i> Progreso Alumnos</a></li>
+
+                    <!-- Separador + Logout -->
+                    <li class="nav-separator"></li>
                     <li><a href="#" id="admin-logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a></li>
                 </ul>
             </nav>
         </aside>
 
+        <!-- ── CONTENIDO PRINCIPAL ───────────────────────────── -->
         <main class="admin-content">
             <header class="admin-header">
                 <h1 id="admin-main-title">Gestión de Cursos</h1>
@@ -39,109 +62,160 @@
                 </div>
             </header>
 
+            <!-- ═══════════════ CURSOS ═══════════════ -->
             <section id="courses-management" class="content-section active">
                 <div class="section-header">
                     <h2>Listado de Cursos</h2>
                     <button class="btn btn-primary" id="add-course-btn"><i class="fas fa-plus"></i> Añadir Curso</button>
+                </div>
+                <div class="table-toolbar">
+                    <input type="text" class="table-search" id="search-courses" placeholder="Buscar por nombre...">
+                    <span class="results-count" id="count-courses"></span>
                 </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
                         <thead>
                             <tr>
                                 <th>Orden</th><th>Nombre</th><th>Descripción</th><th>Precio</th>
-                                <th>Horario</th><th>Duración</th><th>Status</th><th>Acciones</th>
+                                <th>Horario</th><th>Duración</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="courses-table-body">
-                            <tr><td colspan="8" class="loading-message">Cargando cursos...</td></tr>
+                            <tr><td colspan="8" class="spinner-cell"><div class="spinner"></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-bar" id="pagination-courses" style="display:none">
+                    <button class="btn-page btn-prev-page" id="prev-courses"><i class="fas fa-chevron-left"></i></button>
+                    <span class="page-info" id="page-info-courses">1 / 1</span>
+                    <button class="btn-page btn-next-page" id="next-courses"><i class="fas fa-chevron-right"></i></button>
+                </div>
             </section>
 
+            <!-- ═══════════════ PROFESORES ═══════════════ -->
             <section id="professors-management" class="content-section">
                 <div class="section-header">
                     <h2>Gestión de Profesores</h2>
                     <button class="btn btn-primary" id="add-professor-btn"><i class="fas fa-plus"></i> Añadir Profesor</button>
                 </div>
+                <div class="table-toolbar">
+                    <input type="text" class="table-search" id="search-professors" placeholder="Buscar por nombre o especialidad...">
+                    <span class="results-count" id="count-professors"></span>
+                </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Orden</th><th>Nombre</th><th>Especialidad</th>
-                                <th>Biografía</th><th>Acciones</th>
+                                <th>Orden</th><th>Nombre</th><th>Especialidad</th><th>Biografía</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="professors-table-body">
-                            <tr><td colspan="5" class="loading-message">Cargando profesores...</td></tr>
+                            <tr><td colspan="5" class="spinner-cell"><div class="spinner"></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-bar" id="pagination-professors" style="display:none">
+                    <button class="btn-page btn-prev-page" id="prev-professors"><i class="fas fa-chevron-left"></i></button>
+                    <span class="page-info" id="page-info-professors">1 / 1</span>
+                    <button class="btn-page btn-next-page" id="next-professors"><i class="fas fa-chevron-right"></i></button>
+                </div>
             </section>
 
+            <!-- ═══════════════ EGRESADOS ═══════════════ -->
             <section id="alumni-management" class="content-section">
                 <div class="section-header">
                     <h2>Gestión de Egresados</h2>
                     <button class="btn btn-primary" id="add-alumni-btn"><i class="fas fa-plus"></i> Añadir Egresado</button>
                 </div>
+                <div class="table-toolbar">
+                    <input type="text" class="table-search" id="search-alumni" placeholder="Buscar por nombre o empresa...">
+                    <span class="results-count" id="count-alumni"></span>
+                </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Orden</th><th>Nombre</th><th>Puesto/Empresa</th>
-                                <th>Testimonio</th><th>Acciones</th>
+                                <th>Orden</th><th>Nombre</th><th>Puesto/Empresa</th><th>Testimonio</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="alumni-table-body">
-                            <tr><td colspan="5" class="loading-message">Cargando egresados...</td></tr>
+                            <tr><td colspan="5" class="spinner-cell"><div class="spinner"></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-bar" id="pagination-alumni" style="display:none">
+                    <button class="btn-page btn-prev-page" id="prev-alumni"><i class="fas fa-chevron-left"></i></button>
+                    <span class="page-info" id="page-info-alumni">1 / 1</span>
+                    <button class="btn-page btn-next-page" id="next-alumni"><i class="fas fa-chevron-right"></i></button>
+                </div>
             </section>
 
+            <!-- ═══════════════ DEALERS ═══════════════ -->
             <section id="dealers-management" class="content-section">
                 <div class="section-header">
                     <h2>Listado de Dealers Destacados</h2>
                     <button class="btn btn-primary" id="add-dealer-btn"><i class="fas fa-plus"></i> Añadir Dealer</button>
                 </div>
+                <div class="table-toolbar">
+                    <input type="text" class="table-search" id="search-dealers" placeholder="Buscar por nombre o especialidad...">
+                    <span class="results-count" id="count-dealers"></span>
+                </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Orden</th><th>Nombre</th><th>Especialidad</th>
-                                <th>Experiencia</th><th>Biografía</th><th>Acciones</th>
+                                <th>Orden</th><th>Nombre</th><th>Especialidad</th><th>Experiencia</th><th>Biografía</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="dealers-table-body">
-                            <tr><td colspan="6" class="loading-message">Cargando dealers...</td></tr>
+                            <tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-bar" id="pagination-dealers" style="display:none">
+                    <button class="btn-page btn-prev-page" id="prev-dealers"><i class="fas fa-chevron-left"></i></button>
+                    <span class="page-info" id="page-info-dealers">1 / 1</span>
+                    <button class="btn-page btn-next-page" id="next-dealers"><i class="fas fa-chevron-right"></i></button>
+                </div>
             </section>
 
+            <!-- ═══════════════ SERVICIOS ═══════════════ -->
             <section id="services-management" class="content-section">
                 <div class="section-header">
                     <h2>Listado de Servicios</h2>
                     <button class="btn btn-primary" id="add-service-btn"><i class="fas fa-plus"></i> Añadir Servicio</button>
                 </div>
+                <div class="table-toolbar">
+                    <input type="text" class="table-search" id="search-services" placeholder="Buscar por nombre...">
+                    <span class="results-count" id="count-services"></span>
+                </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Orden</th><th>Nombre</th><th>Descripción</th>
-                                <th>Precio</th><th>Status</th><th>Acciones</th>
+                                <th>Orden</th><th>Nombre</th><th>Descripción</th><th>Precio</th><th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="services-table-body">
-                            <tr><td colspan="6" class="loading-message">Cargando servicios...</td></tr>
+                            <tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-bar" id="pagination-services" style="display:none">
+                    <button class="btn-page btn-prev-page" id="prev-services"><i class="fas fa-chevron-left"></i></button>
+                    <span class="page-info" id="page-info-services">1 / 1</span>
+                    <button class="btn-page btn-next-page" id="next-services"><i class="fas fa-chevron-right"></i></button>
+                </div>
             </section>
 
+            <!-- ═══════════════ INSCRIPCIONES ═══════════════ -->
             <section id="enrollments-management" class="content-section">
                 <div class="section-header">
                     <h2>Listado de Inscripciones</h2>
+                </div>
+                <div class="table-toolbar">
+                    <input type="text" class="table-search" id="search-enrollments" placeholder="Buscar por alumno, curso o estado...">
+                    <span class="results-count" id="count-enrollments"></span>
                 </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
@@ -152,69 +226,218 @@
                             </tr>
                         </thead>
                         <tbody id="enrollments-table-body">
-                            <tr><td colspan="7" class="loading-message">Cargando inscripciones...</td></tr>
+                            <tr><td colspan="7" class="spinner-cell"><div class="spinner"></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-bar" id="pagination-enrollments" style="display:none">
+                    <button class="btn-page btn-prev-page" id="prev-enrollments"><i class="fas fa-chevron-left"></i></button>
+                    <span class="page-info" id="page-info-enrollments">1 / 1</span>
+                    <button class="btn-page btn-next-page" id="next-enrollments"><i class="fas fa-chevron-right"></i></button>
+                </div>
             </section>
+
+            <!-- ═══════════════ SOLICITUDES ═══════════════ -->
             <section id="requests-management" class="content-section">
                 <div class="section-header">
                     <h2>Solicitudes de Contacto</h2>
+                </div>
+                <div class="table-toolbar">
+                    <input type="text" class="table-search" id="search-requests" placeholder="Buscar por nombre, email o asunto...">
+                    <span class="results-count" id="count-requests"></span>
                 </div>
                 <div class="admin-table-container">
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>ID Solicitud</th><th>Nombre</th><th>Email</th><th>Asunto</th>
-                                <th>Mensaje</th><th>Fecha</th><th>Acciones</th>
+                                <th>Fecha</th><th>Nombre</th><th>Email</th><th>Asunto</th>
+                                <th>Mensaje</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="requests-table-body">
-                            <tr><td colspan="7" class="loading-message">Cargando solicitudes...</td></tr>
+                            <tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>
                         </tbody>
                     </table>
                 </div>
+                <div class="pagination-bar" id="pagination-requests" style="display:none">
+                    <button class="btn-page btn-prev-page" id="prev-requests"><i class="fas fa-chevron-left"></i></button>
+                    <span class="page-info" id="page-info-requests">1 / 1</span>
+                    <button class="btn-page btn-next-page" id="next-requests"><i class="fas fa-chevron-right"></i></button>
+                </div>
             </section>
 
+            <!-- ═══════════════ CONFIG & ANUNCIOS ═══════════════ -->
             <section id="announcements-management" class="content-section">
                 <div class="section-header">
-                    <h2>Gestión de Anuncios por Pestaña</h2>
+                    <h2>Configuración Global & Anuncios</h2>
                 </div>
-                <div class="admin-form-card">
-                    <h3>Textos del AnnounceBar (Deja en blanco para ocultar)</h3>
-                    <form id="announceBarForm">
-                        <div class="form-group">
-                            <label for="announceInicio">Inicio:</label>
-                            <input type="text" id="announceInicio" placeholder="Ej: ¡Bienvenidos a DealerClub!">
-                        </div>
-                        <div class="form-group">
-                            <label for="announceCursos">Cursos:</label>
-                            <input type="text" id="announceCursos" placeholder="Ej: ¡Últimos cupos con 20% de descuento!">
-                        </div>
-                        <div class="form-group">
-                            <label for="announceServicios">Servicios:</label>
-                            <input type="text" id="announceServicios" placeholder="Ej: Cotiza tu Casino de Fantasía hoy.">
-                        </div>
-                        <div class="form-group">
-                            <label for="announceNosotros">Nosotros:</label>
-                            <input type="text" id="announceNosotros" placeholder="Ej: Conoce a nuestros profesores expertos.">
-                        </div>
-                        <div class="form-group">
-                            <label for="announceLogin">Iniciar Sesión:</label>
-                            <input type="text" id="announceLogin" placeholder="Ej: Ingresa a tu plataforma.">
-                        </div>
-                        <div class="form-group">
-                            <label for="announceDashboard">Dashboard (Alumnos):</label>
-                            <input type="text" id="announceDashboard" placeholder="Ej: ¡Nuevo material subido!">
-                        </div>
-                        <button type="submit" class="btn btn-primary">Guardar Todos los Anuncios</button>
-                        <div id="announceFormMessage" class="form-message"></div>
-                    </form>
+                <div class="config-grid">
+
+                    <!-- Tarjeta: WhatsApp -->
+                    <div class="admin-form-card">
+                        <h3><i class="fab fa-whatsapp" style="color:#25d366;"></i> WhatsApp de Contacto</h3>
+                        <p style="color:#888; font-size:0.9em; margin-bottom:15px;">Número que se usa en el botón de WhatsApp del sitio y en la página de Servicios.</p>
+                        <form id="whatsappForm">
+                            <div class="form-group">
+                                <label>Número (con código de país, sin "+"):</label>
+                                <input type="text" id="configWhatsapp" placeholder="51929610747">
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Guardar Número
+                            </button>
+                            <div id="whatsappFormMessage" class="form-message" style="display:none;"></div>
+                        </form>
+                    </div>
+
+                    <!-- Tarjeta: AnnounceBar -->
+                    <div class="admin-form-card">
+                        <h3><i class="fas fa-bullhorn"></i> Textos del AnnounceBar</h3>
+                        <p style="color:#888; font-size:0.9em; margin-bottom:15px;">Deja en blanco para ocultar la barra en esa página.</p>
+                        <form id="announceBarForm">
+                            <div class="form-group">
+                                <label>Inicio:</label>
+                                <input type="text" id="announceInicio" placeholder="Ej: ¡Bienvenidos a DealerClub!">
+                            </div>
+                            <div class="form-group">
+                                <label>Cursos:</label>
+                                <input type="text" id="announceCursos" placeholder="Ej: ¡Últimos cupos con 20% de descuento!">
+                            </div>
+                            <div class="form-group">
+                                <label>Servicios:</label>
+                                <input type="text" id="announceServicios" placeholder="Ej: Cotiza tu Casino de Fantasía hoy.">
+                            </div>
+                            <div class="form-group">
+                                <label>Nosotros:</label>
+                                <input type="text" id="announceNosotros" placeholder="Ej: Conoce a nuestros profesores expertos.">
+                            </div>
+                            <div class="form-group">
+                                <label>Iniciar Sesión:</label>
+                                <input type="text" id="announceLogin" placeholder="Ej: Ingresa a tu plataforma.">
+                            </div>
+                            <div class="form-group">
+                                <label>Dashboard (Alumnos):</label>
+                                <input type="text" id="announceDashboard" placeholder="Ej: ¡Nuevo material subido!">
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Guardar Todos los Anuncios
+                            </button>
+                            <div id="announceFormMessage" class="form-message" style="display:none;"></div>
+                        </form>
+                    </div>
+
                 </div>
             </section>
-        </main>
+
+            <!-- ═══════════════ MATERIAL DIDÁCTICO ═══════════════ -->
+            <section id="materials-management" class="content-section">
+                <div class="section-header">
+                    <h2>Bóveda de Material Didáctico</h2>
+                    <button class="btn btn-primary" id="add-material-btn"><i class="fas fa-plus"></i> Añadir Material</button>
+                </div>
+                <div class="table-toolbar">
+                    <input type="text" class="table-search" id="search-materials" placeholder="Buscar por título, categoría o curso...">
+                    <span class="results-count" id="count-materials"></span>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Título</th><th>Categoría</th><th>Tipo</th><th>Curso</th><th>Enlace</th><th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="materials-table-body">
+                            <tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-bar" id="pagination-materials" style="display:none">
+                    <button class="btn-page btn-prev-page" id="prev-materials"><i class="fas fa-chevron-left"></i></button>
+                    <span class="page-info" id="page-info-materials">1 / 1</span>
+                    <button class="btn-page btn-next-page" id="next-materials"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </section>
+
+            <!-- ═══════════════ ASIGNAR TAREAS ═══════════════ -->
+            <section id="tasks-management" class="content-section">
+                <div class="section-header">
+                    <h2>Gestión de Tareas</h2>
+                    <button class="btn btn-primary" id="add-task-btn"><i class="fas fa-plus"></i> Nueva Tarea</button>
+                </div>
+                <div class="table-toolbar">
+                    <input type="text" class="table-search" id="search-tasks" placeholder="Buscar por título o alumno asignado...">
+                    <span class="results-count" id="count-tasks"></span>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th><th>Título</th><th>Asignado a</th><th>Descripción</th><th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasks-table-body">
+                            <tr><td colspan="5" class="spinner-cell"><div class="spinner"></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-bar" id="pagination-tasks" style="display:none">
+                    <button class="btn-page btn-prev-page" id="prev-tasks"><i class="fas fa-chevron-left"></i></button>
+                    <span class="page-info" id="page-info-tasks">1 / 1</span>
+                    <button class="btn-page btn-next-page" id="next-tasks"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </section>
+
+            <!-- ═══════════════ PROGRESO ALUMNOS ═══════════════ -->
+            <section id="progress-management" class="content-section">
+                <div class="section-header">
+                    <h2>Progreso de Alumnos</h2>
+                </div>
+                <div class="table-toolbar">
+                    <input type="text" class="table-search" id="search-progress" placeholder="Buscar por nombre o código...">
+                    <span class="results-count" id="count-progress"></span>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Código</th><th>Alumno</th><th>Email</th><th>Nivel</th>
+                                <th>Asistencia %</th><th>Nota</th><th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="progress-table-body">
+                            <tr><td colspan="7" class="spinner-cell"><div class="spinner"></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-bar" id="pagination-progress" style="display:none">
+                    <button class="btn-page btn-prev-page" id="prev-progress"><i class="fas fa-chevron-left"></i></button>
+                    <span class="page-info" id="page-info-progress">1 / 1</span>
+                    <button class="btn-page btn-next-page" id="next-progress"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </section>
+
+        </main><!-- /admin-content -->
+    </div><!-- /admin-wrapper -->
+
+
+    <!-- ══════════════════════════════════════════════════════
+         MODALES
+    ══════════════════════════════════════════════════════ -->
+
+    <!-- Modal: Confirmación de Eliminación -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content" style="max-width:400px; text-align:center;">
+            <span class="close-button" id="closeConfirmationModalBtn">&times;</span>
+            <h3 style="color:#ffc107; margin-bottom:15px;"><i class="fas fa-exclamation-triangle"></i> Confirmar Acción</h3>
+            <p id="confirmationMessage" style="margin-bottom:20px;"></p>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn btn-secondary" id="cancelConfirmBtn">Cancelar</button>
+                <button class="btn btn-danger" id="confirmActionBtn"><i class="fas fa-trash"></i> Sí, Eliminar</button>
+            </div>
+            <div id="deleteFormMessage" class="form-message" style="display:none; margin-top:10px;"></div>
+        </div>
     </div>
 
+    <!-- Modal: Curso -->
     <div id="courseModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeCourseModalBtn">&times;</span>
@@ -235,16 +458,19 @@
                 <div class="form-group">
                     <label>Estado:</label>
                     <select id="courseStatus" required>
-                        <option value="Abierto">Abierto</option><option value="En Progreso">En Progreso</option>
-                        <option value="Próximamente">Próximamente</option><option value="Cerrado">Cerrado</option>
+                        <option value="Abierto">Abierto</option>
+                        <option value="En Progreso">En Progreso</option>
+                        <option value="Próximamente">Próximamente</option>
+                        <option value="Cerrado">Cerrado</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary">Guardar Curso</button>
-                <div id="courseFormMessage" class="form-message"></div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Curso</button>
+                <div id="courseFormMessage" class="form-message" style="display:none;"></div>
             </form>
         </div>
     </div>
 
+    <!-- Modal: Profesor -->
     <div id="professorModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeProfessorModalBtn">&times;</span>
@@ -255,30 +481,42 @@
                 <div class="form-group"><label>Orden de Visualización:</label><input type="number" id="professorOrder" value="0" required></div>
                 <div class="form-group"><label>Especialidad/Cargo:</label><input type="text" id="professorSpecialty" required></div>
                 <div class="form-group"><label>Biografía corta:</label><textarea id="professorBio" rows="3" required></textarea></div>
-                <div class="form-group"><label>URL Imagen de Perfil:</label><input type="text" id="professorImageUrl"></div>
-                <button type="submit" class="btn btn-primary">Guardar Profesor</button>
-                <div id="professorFormMessage" class="form-message"></div>
+                <div class="form-group img-upload-box">
+                    <label style="color:#ffc107;"><i class="fas fa-image"></i> Imagen del Profesor</label>
+                    <label class="upload-sublabel">Opción 1 — Subir desde tu PC (se comprime automáticamente)</label>
+                    <input type="file" id="professorImageFile" accept="image/*">
+                    <label class="upload-sublabel" style="margin-top:10px;">Opción 2 — URL o ruta local</label>
+                    <input type="text" id="professorImageUrl" placeholder="https://... o ../assets/images/profe.jpg">
+                    <div style="text-align:center; margin-top:15px;">
+                        <img id="prof-img-preview" src="" alt="Vista previa"
+                             style="display:none; width:100px; height:100px; object-fit:cover; border-radius:50%; border:2px solid #ffc107; margin:0 auto;">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Profesor</button>
+                <div id="professorFormMessage" class="form-message" style="display:none;"></div>
             </form>
         </div>
     </div>
 
+    <!-- Modal: Egresado -->
     <div id="alumniModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeAlumniModalBtn">&times;</span>
             <h2><span id="alumni-modal-title-action">Añadir</span> Egresado</h2>
             <form id="alumniForm">
                 <input type="hidden" id="alumniId">
-                <div class="form-group"><label>Nombre del Egresado:</label><input type="text" id="alumniName" required></div>
+                <div class="form-group"><label>Nombre:</label><input type="text" id="alumniName" required></div>
                 <div class="form-group"><label>Orden de Visualización:</label><input type="number" id="alumniOrder" value="0" required></div>
                 <div class="form-group"><label>Puesto o Empresa (Ej: Dealer en Casino Grand Bellagio):</label><input type="text" id="alumniInfo" required></div>
                 <div class="form-group"><label>Testimonio:</label><textarea id="alumniTestimonial" rows="3" required></textarea></div>
                 <div class="form-group"><label>URL Imagen de Perfil:</label><input type="text" id="alumniImageUrl"></div>
-                <button type="submit" class="btn btn-primary">Guardar Egresado</button>
-                <div id="alumniFormMessage" class="form-message"></div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Egresado</button>
+                <div id="alumniFormMessage" class="form-message" style="display:none;"></div>
             </form>
         </div>
     </div>
 
+    <!-- Modal: Dealer -->
     <div id="dealerModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeDealerModalBtn">&times;</span>
@@ -291,12 +529,13 @@
                 <div class="form-group"><label>Años de Experiencia:</label><input type="number" id="dealerExperience" required></div>
                 <div class="form-group"><label>Biografía:</label><textarea id="dealerBio" rows="3" required></textarea></div>
                 <div class="form-group"><label>URL Imagen de Perfil:</label><input type="text" id="dealerImageUrl"></div>
-                <button type="submit" class="btn btn-primary">Guardar Dealer</button>
-                <div id="dealerFormMessage" class="form-message"></div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Dealer</button>
+                <div id="dealerFormMessage" class="form-message" style="display:none;"></div>
             </form>
         </div>
     </div>
 
+    <!-- Modal: Servicio -->
     <div id="serviceModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeServiceModalBtn">&times;</span>
@@ -314,22 +553,100 @@
                         <option value="Inactivo">Inactivo</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary">Guardar Servicio</button>
-                <div id="serviceFormMessage" class="form-message"></div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Servicio</button>
+                <div id="serviceFormMessage" class="form-message" style="display:none;"></div>
             </form>
         </div>
     </div>
 
-    <div id="confirmationModal" class="modal">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <span class="close-button" id="closeConfirmationModalBtn">&times;</span>
-            <h3 style="color:#ffc107; margin-bottom: 15px;">Confirmar Acción</h3>
-            <p id="confirmationMessage" style="margin-bottom: 20px;"></p>
-            <div class="modal-actions" style="display:flex; gap:10px; justify-content:center;">
-                <button class="btn btn-secondary" id="cancelConfirmBtn">Cancelar</button>
-                <button class="btn btn-primary" id="confirmActionBtn" style="background-color: #dc3545; color: white; border: none;">Sí, Eliminar</button>
-            </div>
-            <div id="deleteFormMessage" class="form-message"></div>
+    <!-- Modal: Material Didáctico -->
+    <div id="materialModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeMaterialModalBtn">&times;</span>
+            <h2><span id="material-modal-action">Añadir</span> Material</h2>
+            <form id="materialForm">
+                <input type="hidden" id="materialId">
+                <div class="form-group"><label>Título del Recurso:</label><input type="text" id="materialTitle" required></div>
+                <div class="form-group">
+                    <label>Categoría (Ej: Chip Handling, Blackjack, Documentos Generales):</label>
+                    <input type="text" id="materialCategory" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Recurso:</label>
+                    <select id="materialType" required>
+                        <option value="Video">Video (YouTube / Drive)</option>
+                        <option value="Documento">Documento (PDF / Notion)</option>
+                        <option value="Enlace">Enlace Externo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Curso al que pertenece:</label>
+                    <select id="materialCourse" required>
+                        <option value="all">Todos los cursos</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>URL / Link del recurso:</label><input type="url" id="materialUrl" required></div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Material</button>
+                <div id="materialFormMessage" class="form-message" style="display:none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Tarea -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeTaskModalBtn">&times;</span>
+            <h2>Crear Nueva Tarea</h2>
+            <form id="taskForm">
+                <input type="hidden" id="taskId">
+                <div class="form-group"><label>Título de la Tarea:</label><input type="text" id="taskTitle" required></div>
+                <div class="form-group"><label>Instrucciones / Descripción:</label><textarea id="taskDescription" rows="3" required></textarea></div>
+                <div class="form-group"><label>Link de apoyo (Opcional):</label><input type="url" id="taskUrl" placeholder="https://..."></div>
+                <div class="form-group">
+                    <label style="color:#ffc107;">¿A quién va dirigida?</label>
+                    <select id="taskAssigneeType" required>
+                        <option value="all">A Todos los Alumnos Activos</option>
+                        <option value="specific">A un Alumno Específico</option>
+                    </select>
+                </div>
+                <div class="form-group" id="specificStudentDiv" style="display:none;">
+                    <label>Selecciona al Alumno:</label>
+                    <select id="taskSpecificStudent">
+                        <option value="">Cargando alumnos aprobados...</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Asignar Tarea</button>
+                <div id="taskFormMessage" class="form-message" style="display:none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Progreso de Alumno -->
+    <div id="progressModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeProgressModalBtn">&times;</span>
+            <h2>Actualizar Progreso: <span id="progressStudentName" style="color:#ffc107;"></span></h2>
+            <form id="progressForm">
+                <input type="hidden" id="progressStudentUid">
+                <div class="form-group">
+                    <label>Nivel Actual (Gamificación):</label>
+                    <select id="progressLevel" required>
+                        <option value="Rookie">Rookie — Principiante</option>
+                        <option value="Pro Dealer">Pro Dealer — Intermedio</option>
+                        <option value="Élite VIP">Élite VIP — Avanzado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>% de Asistencia (0 – 100):</label>
+                    <input type="number" id="progressAttendance" min="0" max="100" required>
+                </div>
+                <div class="form-group">
+                    <label>Nota Promedio (0 – 20):</label>
+                    <input type="number" id="progressGrades" min="0" max="20" step="0.1" required>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Progreso</button>
+                <div id="progressFormMessage" class="form-message" style="display:none;"></div>
+            </form>
         </div>
     </div>
 

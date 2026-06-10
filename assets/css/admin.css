@@ -32,9 +32,18 @@ body {
 
 .sidebar-header h2 {
     color: #ffc107;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Satoshi', 'Montserrat', sans-serif;
     font-size: 1.8em;
     margin: 0;
+}
+
+.sidebar-subtitle {
+    display: block;
+    font-size: 0.7em;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: 4px;
 }
 
 .sidebar-nav ul {
@@ -83,7 +92,7 @@ body {
 .admin-header h1 {
     font-size: 2.2em;
     color: #ffc107;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Satoshi', 'Montserrat', sans-serif;
     margin: 0;
 }
 
@@ -118,7 +127,7 @@ body {
 .section-header h2 {
     font-size: 1.8em;
     color: #f0f0f0;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Satoshi', 'Montserrat', sans-serif;
     margin: 0;
 }
 
@@ -284,7 +293,7 @@ body {
     color: #ffc107;
     text-align: center;
     margin-bottom: 20px;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Satoshi', 'Montserrat', sans-serif;
 }
 
 .form-group {
@@ -382,9 +391,154 @@ body {
 .admin-form-card h3 {
     color: #f0f0f0;
     margin-bottom: 20px;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Satoshi', 'Montserrat', sans-serif;
 }
 
+
+/* ── TOAST NOTIFICATIONS ──────────────────────────── */
+#toast-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-radius: 8px;
+    background: #1e1e1e;
+    border: 1px solid #333;
+    color: #f0f0f0;
+    font-size: 0.9em;
+    font-weight: 500;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    max-width: 360px;
+}
+.toast.visible { opacity: 1; transform: translateY(0); }
+.toast-success { border-left: 4px solid #28a745; }
+.toast-success i { color: #28a745; }
+.toast-error   { border-left: 4px solid #dc3545; }
+.toast-error   i { color: #dc3545; }
+.toast-info    { border-left: 4px solid #17a2b8; }
+.toast-info    i { color: #17a2b8; }
+.toast-warning { border-left: 4px solid #ffc107; }
+.toast-warning i { color: #ffc107; }
+
+/* ── BADGE ────────────────────────────────────────── */
+.badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75em; font-weight: bold; text-transform: uppercase; }
+.badge-success { background: rgba(40,167,69,0.15); color: #28a745; border: 1px solid #28a745; }
+.badge-warning { background: rgba(255,193,7,0.15); color: #ffc107; border: 1px solid #ffc107; }
+.badge-danger  { background: rgba(220,53,69,0.15); color: #dc3545; border: 1px solid #dc3545; }
+.btn-approve   { background: #28a745; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em; display: inline-flex; align-items: center; gap: 5px; }
+.btn-approve:hover { background: #218838; }
+.btn-sm { padding: 6px 10px !important; font-size: 0.8em !important; }
+
+/* ── GRUPOS DE NAVEGACIÓN ─────────────────────────── */
+.nav-group-label {
+    padding: 14px 20px 6px;
+    font-size: 0.7em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #666;
+    cursor: default;
+    pointer-events: none;
+}
+.nav-separator {
+    border: none;
+    border-top: 1px solid rgba(255,193,7,0.15);
+    margin: 10px 0;
+}
+
+/* ── TOOLBAR DE TABLA (búsqueda + contador) ───────── */
+.table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+.table-search {
+    flex: 1;
+    min-width: 180px;
+    max-width: 320px;
+    padding: 9px 14px;
+    border-radius: 6px;
+    border: 1px solid #333;
+    background: #1a1a1a;
+    color: #f0f0f0;
+    font-size: 0.9em;
+}
+.table-search:focus { outline: none; border-color: #ffc107; box-shadow: 0 0 0 3px rgba(255,193,7,0.15); }
+.results-count { font-size: 0.85em; color: #888; white-space: nowrap; }
+
+/* ── PAGINACIÓN ───────────────────────────────────── */
+.pagination-bar {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 10px 0;
+}
+.btn-page {
+    background: #1a1a1a;
+    color: #ffc107;
+    border: 1px solid #333;
+    padding: 7px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background 0.2s;
+}
+.btn-page:hover:not(:disabled) { background: #2a2a2a; border-color: #ffc107; }
+.btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
+.page-info { font-size: 0.85em; color: #aaa; min-width: 100px; text-align: center; }
+
+/* ── SPINNER ──────────────────────────────────────── */
+.spinner {
+    width: 36px; height: 36px;
+    border: 3px solid #333;
+    border-top-color: #ffc107;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-cell { text-align: center; padding: 30px !important; }
+.empty-msg { text-align: center; color: #666; padding: 24px !important; font-style: italic; }
+
+/* ── CONFIG GRID (WhatsApp + AnnounceBar lado a lado) */
+.config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+}
+@media (max-width: 900px) { .config-grid { grid-template-columns: 1fr; } }
+.config-card {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 24px;
+}
+.config-card h3 { color: #ffc107; font-family: 'Satoshi', 'Montserrat', sans-serif; margin-bottom: 16px; font-size: 1.2em; }
+
+/* ── UPLOAD DE IMÁGENES ───────────────────────────── */
+.img-upload-box { display: flex; flex-direction: column; gap: 8px; }
+.upload-sublabel { font-size: 0.8em; color: #888; }
+#prof-img-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #ffc107; margin-top: 6px; display: none; }
 
 /* Media Queries para Responsive */
 @media (max-width: 768px) {

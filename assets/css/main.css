@@ -1,6 +1,10 @@
-/* Importación de todas las fuentes necesarias */
+/* Importación de fuentes — Tipografía oficial DealerClub
+   · Montserrat  (Google Fonts)  → cuerpo de texto, UI, etiquetas
+   · Satoshi     (Fontshare CDN) → títulos, headings, branding
+   Poppins se mantiene por compatibilidad con componentes legacy */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@1,900,700,500,400,300&display=swap');
 
 /* Importación de Font Awesome para iconos */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
@@ -30,8 +34,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif; /* Fuente para títulos */
-    /* El color se definirá en los CSS específicos de cada página para mayor control */
+    font-family: 'Satoshi', 'Montserrat', sans-serif;
 }
 
 a {

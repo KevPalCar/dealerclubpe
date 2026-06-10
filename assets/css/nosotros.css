@@ -114,7 +114,7 @@
 .hero-content h1 {
     font-size: 3em;
     margin-bottom: 20px;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Satoshi', 'Montserrat', sans-serif;
     color: #ffc107;
 }
 
@@ -148,7 +148,7 @@ h2 {
     font-size: 2.5em;
     color: #ffc107;
     margin-bottom: 50px;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Satoshi', 'Montserrat', sans-serif;
 }
 
 .circular-img {

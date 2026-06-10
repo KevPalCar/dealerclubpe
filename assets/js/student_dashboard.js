@@ -1,162 +1,304 @@
+// ============================================================
+// DASHBOARD DE ESTUDIANTE — DealerClub
+// ============================================================
+// Importa desde firebase.js. No re-inicialices Firebase aquí.
+// ============================================================
+
+import { auth, db, dbPath } from './firebase.js';
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import {
+    doc, getDoc, collection, query, where, onSnapshot
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// Protege el botón "Atrás" del BFCache (el usuario quedaría
+// logueado visualmente aunque su sesión ya haya caducado)
+window.addEventListener('pageshow', (e) => {
+    if (e.persisted) window.location.reload();
+});
+
 document.addEventListener('DOMContentLoaded', () => {
-    const welcomeMessage = document.getElementById('welcome-message');
-    const authStatusMessage = document.getElementById('auth-status-message');
-    const logoutBtn = document.getElementById('logout-btn');
-    const enrolledCoursesList = document.getElementById('enrolled-courses-list');
-    const loadingEnrolledCourses = document.getElementById('loading-enrolled-courses');
-    const noEnrolledCourses = document.getElementById('no-enrolled-courses');
 
-    // Variables de Firebase
-    let auth, onAuthStateChanged, signOut, db, docRef, getDoc, collection, queryFn, whereFn, getDocs, appId;
-    
-    // Control de reintentos para evitar bucles infinitos
-    let retryCount = 0;
-    const MAX_RETRIES = 50; // 5 segundos máximo esperando a Firebase
+    // ── OVERLAY DE AUTENTICACIÓN ─────────────────────────────
+    const overlay   = document.getElementById('auth-overlay');
+    const hideOverlay = () => { if (overlay) overlay.style.display = 'none'; };
 
-    // Diccionario para traducir estados al español
-    const statusConfig = {
-        'approved': { text: 'Aprobado', color: '#28a745' },
-        'rejected': { text: 'Rechazado', color: '#dc3545' },
-        'pending': { text: 'Pendiente', color: '#ffc107' }
-    };
+    // ── ANNOUNCE BAR ─────────────────────────────────────────
+    const announceBar   = document.getElementById('announce-bar');
+    const announceText  = document.getElementById('announce-text');
+    const closeAnnounce = document.getElementById('close-announce-bar');
 
-    // Función para inicializar Firebase y verificar el estado de autenticación
-    const initializeFirebaseAndAuth = async () => {
-        if (window.firebaseAuth && window.firebaseOnAuthStateChanged && window.firebaseSignOut &&
-            window.firebaseDb && window.firebaseDoc && window.firebaseGetDoc &&
-            window.firebaseCollection && window.firebaseQuery && window.firebaseWhere && window.firebaseGetDocs &&
-            window.appId) {
-            
-            auth = window.firebaseAuth;
-            onAuthStateChanged = window.firebaseOnAuthStateChanged;
-            signOut = window.firebaseSignOut;
-            db = window.firebaseDb;
-            docRef = window.firebaseDoc;
-            getDoc = window.firebaseGetDoc;
-            collection = window.firebaseCollection;
-            queryFn = window.firebaseQuery;
-            whereFn = window.firebaseWhere;
-            getDocs = window.firebaseGetDocs;
-            appId = window.appId;
-            console.log("Firebase SDK para dashboard inicializado correctamente.");
-
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    // Usuario logueado
-                    authStatusMessage.textContent = `Sesión iniciada como: ${user.email}`;
-                    authStatusMessage.className = 'message success';
-                    
-                    // Cargar perfil del usuario
-                    try {
-                        const userDocRef = docRef(db, `artifacts/${appId}/users`, user.uid);
-                        const userDocSnap = await getDoc(userDocRef);
-                        
-                        if (userDocSnap.exists()) {
-                            const userData = userDocSnap.data();
-                            welcomeMessage.textContent = `¡Bienvenido/a, ${userData.fullName || user.email}!`;
-                        } else {
-                            welcomeMessage.textContent = `¡Bienvenido/a, ${user.email}!`;
-                            console.warn("Perfil de usuario no encontrado en Firestore.");
-                        }
-                    } catch (error) {
-                        console.error("Error obteniendo datos del usuario:", error);
-                        welcomeMessage.textContent = `¡Bienvenido/a, ${user.email}!`;
-                    }
-
-                    // Cargar cursos
-                    fetchEnrolledCourses(user.uid);
-
-                } else {
-                    // Usuario NO logueado
-                    console.log("Usuario no autenticado, redirigiendo a login.");
-                    authStatusMessage.textContent = 'No has iniciado sesión. Redirigiendo...';
-                    authStatusMessage.className = 'message error';
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 2000);
-                }
-            });
-        } else {
-            retryCount++;
-            if (retryCount <= MAX_RETRIES) {
-                console.warn(`Esperando Firebase SDK... Intento ${retryCount}/${MAX_RETRIES}`);
-                setTimeout(initializeFirebaseAndAuth, 100);
+    onSnapshot(doc(db, dbPath('config/announceBar')), (snap) => {
+        if (snap.exists()) {
+            const d = snap.data();
+            if (d.dashboard?.trim()) {
+                announceText.textContent = d.dashboard;
+                announceBar.style.display = 'flex';
             } else {
-                console.error("Error crítico: No se pudo cargar Firebase SDK después de varios intentos.");
-                authStatusMessage.textContent = 'Error de conexión con el servidor. Recarga la página.';
-                authStatusMessage.className = 'message error';
+                announceBar.style.display = 'none';
             }
         }
-    };
+    });
+    closeAnnounce?.addEventListener('click', () => announceBar.style.display = 'none');
 
-    // Función para cargar los cursos en los que el usuario está inscrito
-    const fetchEnrolledCourses = async (userId) => {
-        loadingEnrolledCourses.style.display = 'block';
-        enrolledCoursesList.innerHTML = '';
-        noEnrolledCourses.style.display = 'none';
+    // ── GUARD DE AUTENTICACIÓN ───────────────────────────────
+    onAuthStateChanged(auth, async (user) => {
+        if (!user || user.isAnonymous) {
+            window.location.replace('login.html');
+            return;
+        }
 
         try {
-            const enrollmentsColRef = collection(db, `artifacts/${appId}/public/data/course_enrollments`);
-            const q = queryFn(enrollmentsColRef, whereFn("enrolledByUid", "==", userId));
-            const querySnapshot = await getDocs(q);
+            const roleSnap = await getDoc(doc(db, dbPath(`user_roles/${user.uid}`)));
+            if (!roleSnap.exists()) throw new Error('no-role');
 
-            if (querySnapshot.empty) {
-                loadingEnrolledCourses.style.display = 'none';
-                noEnrolledCourses.style.display = 'block';
-                return;
-            }
+            const roleData = roleSnap.data();
+            if (roleData.role !== 'student' && roleData.role !== 'admin') throw new Error('unauthorized');
 
-            loadingEnrolledCourses.style.display = 'none';
+            // Rellena cabecera
+            document.getElementById('dash-welcome-name').textContent =
+                (roleData.fullName || user.email || 'Estudiante').split(' ')[0];
+            document.getElementById('dash-student-code').textContent =
+                roleData.studentCode ? `Código: ${roleData.studentCode}` : '';
 
-            querySnapshot.forEach(doc => {
-                const enrollment = doc.data();
-                const courseItem = document.createElement('div');
-                courseItem.className = 'enrolled-course-item'; 
+            const levelEl = document.getElementById('dash-level-pill');
+            levelEl.textContent = roleData.level || 'Rookie';
+            const levelColors = { 'Pro Dealer': 'level-pro', 'Élite VIP': 'level-elite' };
+            levelEl.classList.add(levelColors[roleData.level] || 'level-rookie');
 
-                // Formateo seguro de fecha
-                let formattedDate = 'N/A';
-                if (enrollment.timestamp && typeof enrollment.timestamp.toDate === 'function') {
-                    formattedDate = enrollment.timestamp.toDate().toLocaleDateString('es-ES', { 
-                        year: 'numeric', month: 'long', day: 'numeric' 
-                    });
-                }
+            hideOverlay();
+            document.getElementById('dash-body').style.visibility = 'visible';
 
-                // Obtener estado formateado (por defecto 'pending')
-                const currentStatus = enrollment.status ? enrollment.status.toLowerCase() : 'pending';
-                const statusInfo = statusConfig[currentStatus] || statusConfig['pending'];
+            // Inicia los listeners de cada tab
+            listenCourses(user.email);
+            listenProgress(user.uid);
+            listenTasks(roleData.studentCode);
+            listenMaterials();
 
-                courseItem.innerHTML = `
-                    <h4>${enrollment.courseName || 'Curso Desconocido'}</h4>
-                    <p><strong>Estado:</strong> <span style="color: ${statusInfo.color}; font-weight: bold;">${statusInfo.text}</span></p>
-                    <p><strong>Solicitado el:</strong> ${formattedDate}</p>
-                    ${enrollment.comments ? `<p><strong>Comentarios:</strong> ${enrollment.comments}</p>` : ''}
-                `;
-                enrolledCoursesList.appendChild(courseItem);
-            });
+            switchTab('courses');
 
-        } catch (error) {
-            console.error("Error al cargar cursos inscritos:", error);
-            loadingEnrolledCourses.textContent = 'Error al cargar tus cursos inscritos.';
-            loadingEnrolledCourses.className = 'message error';
-            noEnrolledCourses.style.display = 'none';
+        } catch {
+            await signOut(auth);
+            window.location.replace('login.html');
         }
+    });
+
+    // ── SISTEMA DE TABS ──────────────────────────────────────
+    const switchTab = (tabName) => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelector(`.tab-btn[data-tab="${tabName}"]`)?.classList.add('active');
+        document.getElementById(`panel-${tabName}`)?.classList.add('active');
     };
 
-    // Manejo del botón de cerrar sesión
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                console.log("Sesión cerrada.");
-                window.location.href = 'login.html'; 
-            } catch (error) {
-                console.error("Error al cerrar sesión:", error);
-                authStatusMessage.textContent = 'Error al cerrar sesión. Inténtelo de nuevo.';
-                authStatusMessage.className = 'message error';
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // ── LOGOUT ───────────────────────────────────────────────
+    document.getElementById('dash-logout-btn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await signOut(auth);
+        window.location.replace('login.html');
+    });
+
+    // ════════════════════════════════════════════════════════
+    // TAB 1 — MIS CURSOS
+    // ════════════════════════════════════════════════════════
+    const listenCourses = (email) => {
+        const container = document.getElementById('courses-panel-content');
+        const q = query(collection(db, dbPath('course_enrollments')), where('email', '==', email));
+
+        onSnapshot(q, (snap) => {
+            container.innerHTML = '';
+            if (snap.empty) {
+                container.innerHTML = emptyState('No tienes cursos inscritos aún.', 'fa-graduation-cap');
+                return;
+            }
+            snap.docs
+                .map(d => d.data())
+                .sort((a, b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0))
+                .forEach(enrollment => {
+                    const rawStatus = (enrollment.status || '').toLowerCase();
+                    let cardClass = 'card-pending';
+                    let badgeText = '<i class="fas fa-lock"></i> Validando Pago';
+                    let btnHtml = `<button class="card-action-btn btn-locked" disabled>
+                                       <i class="fas fa-clock"></i> Esperando Verificación
+                                   </button>`;
+
+                    if (['waitlist', 'lista_espera'].includes(rawStatus)) {
+                        cardClass = 'card-waitlist';
+                        badgeText = '<i class="fas fa-hourglass-half"></i> Lista de Espera';
+                        btnHtml = `<button class="card-action-btn btn-locked" disabled>
+                                       <i class="fas fa-lock"></i> Cupos Cerrados
+                                   </button>`;
+                    } else if (['active', 'activo', 'aprobado'].includes(rawStatus)) {
+                        cardClass = 'card-active';
+                        badgeText = '<i class="fas fa-check-circle"></i> Curso Activo';
+                        btnHtml = `<button class="card-action-btn btn-enter">
+                                       <i class="fas fa-play"></i> Entrar al Curso
+                                   </button>`;
+                    }
+
+                    const dateStr = enrollment.timestamp
+                        ? new Date(enrollment.timestamp.seconds * 1000).toLocaleDateString('es-PE')
+                        : 'N/A';
+
+                    const card = document.createElement('div');
+                    card.className = `course-card ${cardClass}`;
+                    card.innerHTML = `
+                        <div class="status-badge">${badgeText}</div>
+                        <h4>${enrollment.courseName || 'Curso DealerClub'}</h4>
+                        <p class="date">Inscrito el: ${dateStr}</p>
+                        ${enrollment.studentCode
+                            ? `<p class="enroll-code"><i class="fas fa-id-badge"></i> ${enrollment.studentCode}</p>`
+                            : ''}
+                        ${btnHtml}
+                    `;
+                    container.appendChild(card);
+                });
+        });
+    };
+
+    // ════════════════════════════════════════════════════════
+    // TAB 2 — MI PROGRESO
+    // ════════════════════════════════════════════════════════
+    const listenProgress = (uid) => {
+        onSnapshot(doc(db, dbPath(`user_roles/${uid}`)), (snap) => {
+            if (!snap.exists()) return;
+            const d = snap.data();
+
+            // Nivel
+            const levelEl = document.getElementById('prog-level-val');
+            if (levelEl) {
+                levelEl.textContent = d.level || 'Rookie';
+                levelEl.className = 'prog-val ' + ({'Pro Dealer':'level-pro','Élite VIP':'level-elite'}[d.level] || 'level-rookie');
+            }
+
+            // Asistencia
+            const att    = d.attendance ?? null;
+            const attBar = document.getElementById('prog-att-bar');
+            const attPct = document.getElementById('prog-att-pct');
+            const attVal = document.getElementById('prog-att-val');
+            if (attBar && att !== null) {
+                const pct = Math.min(100, Math.max(0, att));
+                attBar.style.width = `${pct}%`;
+                if (attPct) attPct.textContent = `${pct}%`;
+                if (attVal) attVal.textContent = `${pct}%`;
+            } else if (attVal) {
+                attVal.textContent = 'Sin datos';
+            }
+
+            // Notas
+            const grade    = d.grades ?? null;
+            const gradeBar = document.getElementById('prog-grade-bar');
+            const gradePct = document.getElementById('prog-grade-pct');
+            const gradeVal = document.getElementById('prog-grade-val');
+            if (gradeBar && grade !== null) {
+                const pct = Math.min(100, Math.max(0, (grade / 20) * 100));
+                gradeBar.style.width = `${pct}%`;
+                if (gradePct) gradePct.textContent = `${pct.toFixed(0)}%`;
+                if (gradeVal) gradeVal.textContent = `${grade}/20`;
+            } else if (gradeVal) {
+                gradeVal.textContent = 'Sin datos';
             }
         });
-    }
+    };
 
-    // Iniciar el proceso
-    initializeFirebaseAndAuth();
+    // ════════════════════════════════════════════════════════
+    // TAB 3 — MIS TAREAS
+    // ════════════════════════════════════════════════════════
+    const listenTasks = (studentCode) => {
+        const container = document.getElementById('tasks-panel-content');
+
+        // Firestore 'in' operator acepta hasta 10 valores.
+        // Siempre incluimos 'all'; si hay código, también lo añadimos.
+        const assigneeCodes = studentCode ? ['all', studentCode] : ['all'];
+        const q = query(
+            collection(db, dbPath('tasks')),
+            where('assignedTo', 'in', assigneeCodes)
+        );
+
+        onSnapshot(q, (snap) => {
+            container.innerHTML = '';
+            if (snap.empty) {
+                container.innerHTML = emptyState('No tienes tareas asignadas aún.', 'fa-tasks');
+                return;
+            }
+            snap.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))
+                .forEach(task => {
+                    const dateStr = task.createdAt
+                        ? new Date(task.createdAt.seconds * 1000).toLocaleDateString('es-PE')
+                        : '';
+                    const isForAll = task.assignedTo === 'all';
+                    const card = document.createElement('div');
+                    card.className = 'task-card';
+                    card.innerHTML = `
+                        <div class="task-header">
+                            <span class="task-date">${dateStr}</span>
+                            <span class="task-assigned ${isForAll ? 'tag-all' : 'tag-personal'}">
+                                <i class="fas ${isForAll ? 'fa-users' : 'fa-user'}"></i>
+                                ${isForAll ? 'Todos' : 'Personal'}
+                            </span>
+                        </div>
+                        <h4 class="task-title">${task.title}</h4>
+                        ${task.description ? `<p class="task-desc">${task.description}</p>` : ''}
+                        ${task.url ? `<a href="${task.url}" target="_blank" rel="noopener" class="task-link">
+                            <i class="fas fa-external-link-alt"></i> Ver recurso
+                        </a>` : ''}
+                    `;
+                    container.appendChild(card);
+                });
+        });
+    };
+
+    // ════════════════════════════════════════════════════════
+    // TAB 4 — MATERIAL DIDÁCTICO
+    // ════════════════════════════════════════════════════════
+    const listenMaterials = () => {
+        const container = document.getElementById('materials-panel-content');
+
+        onSnapshot(collection(db, dbPath('materials')), (snap) => {
+            container.innerHTML = '';
+            if (snap.empty) {
+                container.innerHTML = emptyState('No hay material disponible por ahora.', 'fa-book-open');
+                return;
+            }
+            const materials = snap.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+
+            const typeIcons  = { Video: 'fa-play-circle', Documento: 'fa-file-alt', Enlace: 'fa-link' };
+            const typeColors = { Video: '#dc3545', Documento: '#007bff', Enlace: '#28a745' };
+
+            materials.forEach(m => {
+                const icon  = typeIcons[m.type]  || 'fa-file';
+                const color = typeColors[m.type] || '#ffc107';
+                const card  = document.createElement('div');
+                card.className = 'material-card';
+                card.innerHTML = `
+                    <div class="material-icon" style="color:${color};">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <div class="material-body">
+                        <p class="material-category">${m.courseName || 'General'}</p>
+                        <h4 class="material-title">${m.title}</h4>
+                        ${m.category ? `<span class="material-type">${m.category}</span>` : ''}
+                        <a href="${m.url}" target="_blank" rel="noopener" class="material-btn">
+                            <i class="fas ${icon}"></i> Abrir
+                        </a>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        });
+    };
+
+    // ── HELPER: EMPTY STATE ──────────────────────────────────
+    const emptyState = (msg, icon = 'fa-inbox') =>
+        `<div class="empty-state">
+            <i class="fas ${icon}"></i>
+            <p>${msg}</p>
+        </div>`;
 });
