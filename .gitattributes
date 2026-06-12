@@ -1,0 +1,26 @@
+# Normaliza automáticamente los finales de línea.
+# Todo archivo de texto se guarda en el repo con LF y se revisa (checkout) con LF,
+# sin importar el SO. Ideal porque despliegas en servidores Linux y trabajas en Windows.
+* text=auto eol=lf
+
+# Tipos de texto explícitos (por si la detección automática falla)
+*.html  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.svg   text eol=lf
+*.txt   text eol=lf
+
+# Binarios: nunca tocar finales de línea ni intentar diffs de texto
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary

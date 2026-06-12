@@ -274,8 +274,17 @@
                 <div class="section-header">
                     <h2>Solicitudes de Contacto</h2>
                 </div>
-                <div class="table-toolbar">
+                <div class="table-toolbar requests-toolbar">
                     <input type="text" class="table-search" id="search-requests" placeholder="Buscar por nombre, email o asunto...">
+                    <select id="filter-request-status" class="filter-select">
+                        <option value="">Todos los estados</option>
+                        <option value="Nuevo">Nuevo</option>
+                        <option value="Respondido">Respondido</option>
+                        <option value="Cerrado">Cerrado</option>
+                    </select>
+                    <label class="filter-date">Desde <input type="date" id="filter-request-from"></label>
+                    <label class="filter-date">Hasta <input type="date" id="filter-request-to"></label>
+                    <button type="button" class="btn btn-secondary btn-sm" id="clear-request-filters"><i class="fas fa-eraser"></i> Limpiar</button>
                     <span class="results-count" id="count-requests"></span>
                 </div>
                 <div class="admin-table-container">
@@ -283,7 +292,7 @@
                         <thead>
                             <tr>
                                 <th>Fecha</th><th>Nombre</th><th>Email</th><th>Asunto</th>
-                                <th>Mensaje</th><th>Acciones</th>
+                                <th>Estado</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="requests-table-body">
@@ -763,6 +772,19 @@
                 <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Asignar Tarea</button>
                 <div id="taskFormMessage" class="form-message" style="display:none;"></div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal: Detalle de Solicitud de Cotización -->
+    <div id="requestDetailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeRequestDetailBtn">&times;</span>
+            <h2>Detalle de la solicitud</h2>
+            <div id="requestDetailBody" class="request-detail"></div>
+            <div class="request-detail-actions">
+                <a id="requestDetailMail" class="btn btn-primary" href="#"><i class="fas fa-envelope"></i> Responder por correo</a>
+                <a id="requestDetailWa" class="btn btn-secondary" href="#" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+            </div>
         </div>
     </div>
 

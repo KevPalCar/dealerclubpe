@@ -1,5 +1,5 @@
 import { auth, db, dbPath } from './firebase.js';
-import { onAuthStateChanged, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -55,8 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 createdAt: new Date()
             });
 
-            showMessage('¡Cuenta creada con éxito! Redirigiendo…', 'success');
-            setTimeout(() => window.location.href = 'student_dashboard.html', 1500);
+            // Enviar correo de verificación (no bloquea el registro si falla)
+            try { await sendEmailVerification(user); } catch (err) { console.warn('No se pudo enviar la verificación:', err); }
+
+            showMessage('¡Cuenta creada! Te enviamos un correo de verificación: revísalo (y la carpeta de spam) para confirmar tu cuenta. Redirigiendo…', 'success');
+            setTimeout(() => window.location.href = 'student_dashboard.html', 2500);
 
         } catch (error) {
             const msgs = {

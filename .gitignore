@@ -1,0 +1,14 @@
+# Respaldo de imágenes originales sin optimizar (pesadas, NO desplegar)
+assets/images/originals/
+
+# Dependencias / herramientas
+node_modules/
+
+# Sistema operativo
+Thumbs.db
+.DS_Store
+
+# Editores y herramientas
+.vscode/
+.claude/
+*.log

@@ -921,31 +921,136 @@ document.addEventListener('DOMContentLoaded', () => {
     // ══════════════════════════════════════════════════════════
     // SOLICITUDES DE CONTACTO
     // ══════════════════════════════════════════════════════════
+    const REQUEST_STATUSES = ['Nuevo', 'Respondido', 'Cerrado'];
+
+    // Correo oficial de la empresa (cuenta desde la que se responde)
+    const COMPANY_EMAIL = 'dealerclubpe@gmail.com';
+
+    // Abre la ventana de redacción de Gmail directamente en la cuenta de la
+    // empresa, con destinatario, asunto y cuerpo autollenados con los datos de
+    // la solicitud. Si esa cuenta no está logueada en el navegador, Gmail
+    // pedirá iniciar sesión (queda garantizado que se responde desde la empresa).
+    const buildGmailCompose = (r) => {
+        const subject = `DealerClub — Respuesta a tu solicitud${r.quoteContext ? ` (${r.quoteContext})` : ''}`;
+        const body =
+            `Hola ${r.fullName || ''},\n\n` +
+            `Gracias por tu interés en nuestro Casino de Fantasía. Sobre tu solicitud:\n` +
+            (r.eventType ? `• Tipo de evento: ${r.eventType}\n` : '') +
+            (r.eventDate ? `• Fecha del evento: ${r.eventDate}\n` : '') +
+            (r.details   ? `• Detalle: ${r.details}\n`           : '') +
+            `\n[Escribe aquí tu respuesta]\n\nSaludos cordiales,\nEquipo DealerClub`;
+        const params = new URLSearchParams({ view: 'cm', fs: '1', to: r.email || '', su: subject, body });
+        return `https://mail.google.com/mail/?authuser=${encodeURIComponent(COMPANY_EMAIL)}&${params.toString()}`;
+    };
+    const buildWa = (r) => {
+        const phone = (r.phone || '').replace(/\D/g, '');
+        if (!phone) return '';
+        const text = `Hola ${r.fullName || ''}, te escribo de DealerClub 👋 sobre tu solicitud de cotización para tu evento. `;
+        return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+    };
+    // Registra que se tomó acción (marca como 'Respondido' si seguía 'Nuevo')
+    const markRequestResponded = async (r) => {
+        if ((r.status || 'Nuevo') === 'Nuevo') {
+            try { await updateDoc(doc(db, dbPath(`service_requests/${r.id}`)), { status: 'Respondido', respondedAt: new Date() }); }
+            catch { /* ignora */ }
+        }
+    };
+
+    const openRequestDetail = (r) => {
+        const date = r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleString('es-PE') : '-';
+        document.getElementById('requestDetailBody').innerHTML = `
+            <p><strong>Nombre:</strong> ${r.fullName || '-'}</p>
+            <p><strong>Email:</strong> <a href="mailto:${r.email || ''}">${r.email || '-'}</a></p>
+            <p><strong>Teléfono:</strong> ${r.phone || '-'}</p>
+            <p><strong>Tipo de evento:</strong> ${r.eventType || '-'}</p>
+            <p><strong>Fecha del evento:</strong> ${r.eventDate || '-'}</p>
+            ${r.quoteContext ? `<p><strong>Contexto:</strong> ${r.quoteContext}</p>` : ''}
+            <p><strong>Recibido:</strong> ${date}</p>
+            <p><strong>Estado:</strong> ${r.status || 'Nuevo'}</p>
+            <p><strong>Detalle / Mensaje:</strong></p>
+            <pre class="request-detail-msg">${r.details || r.message || '-'}</pre>
+        `;
+        const mailBtn = document.getElementById('requestDetailMail');
+        const waBtn   = document.getElementById('requestDetailWa');
+        mailBtn.href = buildGmailCompose(r);
+        mailBtn.target = '_blank';
+        mailBtn.rel = 'noopener';
+        mailBtn.onclick = () => markRequestResponded(r);
+        const wa = buildWa(r);
+        if (wa) { waBtn.style.display = ''; waBtn.href = wa; waBtn.onclick = () => markRequestResponded(r); }
+        else    { waBtn.style.display = 'none'; }
+        openModal(document.getElementById('requestDetailModal'));
+    };
+    document.getElementById('closeRequestDetailBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('requestDetailModal'))
+    );
+
     const renderRequestRow = (r) => {
-        const tbody = document.getElementById('requests-table-body');
-        const tr = tbody.insertRow();
+        const tbody  = document.getElementById('requests-table-body');
+        const tr     = tbody.insertRow();
+        const status = r.status || 'Nuevo';
+        const dateStr = r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleDateString('es-PE') : '-';
         tr.innerHTML = `
-            <td>${r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleDateString('es-PE') : '-'}</td>
+            <td>${dateStr}</td>
             <td>${r.fullName || '-'}</td><td>${r.email || '-'}</td>
-            <td>${r.eventType || r.subject || '-'}</td>
-            <td>${(r.details || r.message || '').substring(0, 50)}…</td>
+            <td>${r.eventType || r.subject || r.quoteContext || '-'}</td>
+            <td>
+                <select class="status-select req-status" data-id="${r.id}">
+                    ${REQUEST_STATUSES.map(s => `<option value="${s}" ${status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                </select>
+            </td>
             <td class="action-buttons">
-                <button class="btn btn-danger btn-sm btn-delete" data-id="${r.id}"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-secondary btn-sm btn-req-view" title="Ver detalle"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-secondary btn-sm btn-req-mail" title="Responder por correo"><i class="fas fa-envelope"></i></button>
+                <button class="btn btn-secondary btn-sm btn-req-wa" title="Responder por WhatsApp" ${r.phone ? '' : 'disabled'}><i class="fab fa-whatsapp"></i></button>
+                <button class="btn btn-danger btn-sm btn-delete" title="Eliminar"><i class="fas fa-trash"></i></button>
             </td>
         `;
+        tr.querySelector('.req-status').addEventListener('change', async (e) => {
+            await updateDoc(doc(db, dbPath(`service_requests/${e.target.dataset.id}`)), { status: e.target.value });
+            showToast('Estado de la solicitud actualizado.', 'success');
+        });
+        tr.querySelector('.btn-req-view').addEventListener('click', () => openRequestDetail(r));
+        tr.querySelector('.btn-req-mail').addEventListener('click', () => { window.open(buildGmailCompose(r), '_blank'); markRequestResponded(r); });
+        tr.querySelector('.btn-req-wa').addEventListener('click', () => { const u = buildWa(r); if (u) { window.open(u, '_blank'); markRequestResponded(r); } });
         tr.querySelector('.btn-delete').addEventListener('click', () =>
             confirmDelete('¿Eliminar esta solicitud?', () => deleteItem('service_requests', r.id))
         );
     };
 
+    // Filtros por estado y rango de fechas (se combinan con la búsqueda de texto)
+    let _requestsRaw = [];
+    const applyRequestFilters = () => {
+        const status = document.getElementById('filter-request-status')?.value || '';
+        const from   = document.getElementById('filter-request-from')?.value || '';
+        const to     = document.getElementById('filter-request-to')?.value || '';
+        let data = [..._requestsRaw];
+        if (status) data = data.filter(r => (r.status || 'Nuevo') === status);
+        if (from)   { const f = new Date(`${from}T00:00:00`).getTime() / 1000; data = data.filter(r => (r.timestamp?.seconds ?? 0) >= f); }
+        if (to)     { const t = new Date(`${to}T23:59:59`).getTime() / 1000;   data = data.filter(r => (r.timestamp?.seconds ?? 0) <= t); }
+        if (pState.requests) { pState.requests.data = data; pState.requests.page = 1; }
+        renderPaged('requests', renderRequestRow, 'No hay solicitudes que coincidan.');
+    };
+
+    ['filter-request-status', 'filter-request-from', 'filter-request-to'].forEach(id =>
+        document.getElementById(id)?.addEventListener('change', applyRequestFilters));
+    document.getElementById('clear-request-filters')?.addEventListener('click', () => {
+        document.getElementById('filter-request-status').value = '';
+        document.getElementById('filter-request-from').value   = '';
+        document.getElementById('filter-request-to').value     = '';
+        const search = document.getElementById('search-requests');
+        if (search) search.value = '';
+        if (pState.requests) pState.requests.term = '';
+        applyRequestFilters();
+    });
+
     const loadRequests = () => {
         document.getElementById('requests-table-body').innerHTML =
             `<tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>`;
         unsubscribeListeners.requests = onSnapshot(collection(db, dbPath('service_requests')), (snap) => {
-            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+            _requestsRaw = snap.docs.map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0));
-            pState.requests.data = data;
-            renderPaged('requests', renderRequestRow, 'No hay solicitudes todavía.');
+            applyRequestFilters();
         });
     };
 

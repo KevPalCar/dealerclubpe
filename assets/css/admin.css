@@ -699,3 +699,15 @@ button.att-cell:hover { border-color: #ffc107; }
     color: #eee;
     font-size: 0.85em;
 }
+
+/* =========================================
+   COTIZACIONES: FILTROS Y DETALLE
+   ========================================= */
+.requests-toolbar { flex-wrap: wrap; gap: 10px; align-items: center; }
+.filter-select { background: #1a1a1a; border: 1px solid #333; color: #eee; border-radius: 6px; padding: 7px 10px; font-size: 0.85em; }
+.filter-date { color: #888; font-size: 0.8em; display: flex; align-items: center; gap: 6px; }
+.filter-date input { background: #1a1a1a; border: 1px solid #333; color: #eee; border-radius: 6px; padding: 6px 8px; }
+.request-detail p { margin: 6px 0; color: #ddd; font-size: 0.9em; }
+.request-detail strong { color: #ffc107; }
+.request-detail-msg { white-space: pre-wrap; background: #111; border: 1px solid #333; border-radius: 8px; padding: 12px; color: #ccc; font-size: 0.85em; margin-top: 6px; }
+.request-detail-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }

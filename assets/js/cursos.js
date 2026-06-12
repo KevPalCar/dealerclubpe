@@ -1,5 +1,5 @@
 import { auth, db, dbPath } from './firebase.js';
-import { onAuthStateChanged, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 function generateStudentCode() {
@@ -242,14 +242,17 @@ document.addEventListener('DOMContentLoaded', () => {
             // 3. Guardar inscripción
             await addDoc(collection(db, dbPath('course_enrollments')), enrollmentData);
 
-            // 4. Cerrar sesión (el alumno debe iniciar sesión explícitamente)
+            // 4. Enviar correo de verificación (no bloquea el registro si falla)
+            try { await sendEmailVerification(user); } catch (err) { console.warn('No se pudo enviar la verificación:', err); }
+
+            // 5. Cerrar sesión (el alumno debe iniciar sesión explícitamente)
             await signOut(auth);
 
             const successMsg = `¡Todo listo! Tu código de alumno es:<br>
                 <strong style="font-size:1.5em;color:#fff;display:block;margin-top:10px;letter-spacing:3px;">
                     ${newStudentCode}
                 </strong><br>
-                <span style="font-size:0.8em;">Haz una captura. Ya puedes iniciar sesión con tu correo y contraseña.</span>`;
+                <span style="font-size:0.8em;">Haz una captura. Te enviamos un correo de verificación: revísalo (incluida la carpeta de spam) y confirma tu cuenta. Ya puedes iniciar sesión con tu correo y contraseña.</span>`;
             showFormMessage(enrollFormMessage, successMsg, 'success');
 
             setTimeout(() => {
