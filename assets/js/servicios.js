@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (studentAccessLink) {
         onAuthStateChanged(auth, (user) => {
             studentAccessLink.textContent = user ? 'Mi Campus' : 'Iniciar Sesión';
-            studentAccessLink.href = user ? 'student_dashboard.html' : 'login.html';
+            studentAccessLink.href = user ? '/panel-estudiante' : '/iniciar-sesion';
         });
     }
 

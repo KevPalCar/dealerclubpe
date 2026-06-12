@@ -3,30 +3,37 @@
 
    <url>
       <loc>https://dealerclubpe.com/</loc>
-      <lastmod>2025-11-18</lastmod>
+      <lastmod>2026-06-12</lastmod>
       <changefreq>weekly</changefreq>
       <priority>1.0</priority>
    </url>
 
    <url>
-      <loc>https://dealerclubpe.com/sections/nosotros.html</loc>
-      <lastmod>2025-11-18</lastmod>
+      <loc>https://dealerclubpe.com/cursos</loc>
+      <lastmod>2026-06-12</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://dealerclubpe.com/servicios</loc>
+      <lastmod>2026-06-12</lastmod>
+      <changefreq>weekly</changefreq>
+      <priority>0.8</priority>
+   </url>
+
+   <url>
+      <loc>https://dealerclubpe.com/nosotros</loc>
+      <lastmod>2026-06-12</lastmod>
       <changefreq>monthly</changefreq>
       <priority>0.8</priority>
    </url>
 
    <url>
-      <loc>https://dealerclubpe.com/sections/cursos.html</loc>
-      <lastmod>2025-11-18</lastmod>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
+      <loc>https://dealerclubpe.com/iniciar-sesion</loc>
+      <lastmod>2026-06-12</lastmod>
+      <changefreq>monthly</changefreq>
+      <priority>0.5</priority>
    </url>
 
-   <url>
-      <loc>https://dealerclubpe.com/sections/servicios.html</loc>
-      <lastmod>2025-11-18</lastmod>
-      <changefreq>weekly</changefreq>
-      <priority>0.8</priority>
-   </url>
-   
 </urlset>

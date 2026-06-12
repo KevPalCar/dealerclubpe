@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const snap = await getDoc(doc(db, dbPath(`user_roles/${user.uid}`)));
                 if (snap.exists()) {
                     const role = snap.data().role;
-                    if (role === 'admin')   { window.location.href = 'admin.html';            return; }
-                    if (role === 'student') { window.location.href = 'student_dashboard.html'; return; }
+                    if (role === 'admin')   { window.location.href = '/admin';            return; }
+                    if (role === 'student') { window.location.href = '/panel-estudiante'; return; }
                 }
             } catch { /* silencioso */ }
             await signOut(auth);
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try { await sendEmailVerification(user); } catch (err) { console.warn('No se pudo enviar la verificación:', err); }
 
             showMessage('¡Cuenta creada! Te enviamos un correo de verificación: revísalo (y la carpeta de spam) para confirmar tu cuenta. Redirigiendo…', 'success');
-            setTimeout(() => window.location.href = 'student_dashboard.html', 2500);
+            setTimeout(() => window.location.href = '/panel-estudiante', 2500);
 
         } catch (error) {
             const msgs = {

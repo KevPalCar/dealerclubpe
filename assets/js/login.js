@@ -48,8 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const snap = await getDoc(doc(db, dbPath(`user_roles/${user.uid}`)));
                 if (snap.exists()) {
                     const role = snap.data().role;
-                    if (role === 'admin')   { window.location.href = 'admin.html';            return; }
-                    if (role === 'student') { window.location.href = 'student_dashboard.html'; return; }
+                    if (role === 'admin')   { window.location.href = '/admin';            return; }
+                    if (role === 'student') { window.location.href = '/panel-estudiante'; return; }
                 }
                 await signOut(auth);
                 showMessage(loginMessage, 'Rol de usuario no reconocido.', 'error');
@@ -71,8 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const snap = await getDoc(doc(db, dbPath(`user_roles/${user.uid}`)));
             if (snap.exists()) {
                 const role = snap.data().role;
-                if (role === 'admin')   { showMessage(loginMessage, 'Redirigiendo al panel…', 'success');     window.location.href = 'admin.html';            return; }
-                if (role === 'student') { showMessage(loginMessage, 'Redirigiendo al campus…', 'success');    window.location.href = 'student_dashboard.html'; return; }
+                if (role === 'admin')   { showMessage(loginMessage, 'Redirigiendo al panel…', 'success');     window.location.href = '/admin';            return; }
+                if (role === 'student') { showMessage(loginMessage, 'Redirigiendo al campus…', 'success');    window.location.href = '/panel-estudiante'; return; }
             }
             await signOut(auth);
             showMessage(loginMessage, 'Rol de usuario no reconocido.', 'error');

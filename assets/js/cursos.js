@@ -102,16 +102,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const role = snap.data().role;
                     if (role === 'admin') {
                         studentAccessLink.textContent = 'Panel Admin';
-                        studentAccessLink.href = 'admin.html';
+                        studentAccessLink.href = '/admin';
                     } else if (role === 'student') {
                         studentAccessLink.textContent = 'Mi Campus';
-                        studentAccessLink.href = 'student_dashboard.html';
+                        studentAccessLink.href = '/panel-estudiante';
                     }
                 }
             } catch { /* silencioso */ }
         } else if (studentAccessLink) {
             studentAccessLink.textContent = 'Iniciar Sesión';
-            studentAccessLink.href = 'login.html';
+            studentAccessLink.href = '/iniciar-sesion';
         }
     });
 
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (enrollCourseModal) enrollCourseModal.style.display = 'none';
                 document.body.style.overflow = 'auto';
                 if (submitBtn) submitBtn.disabled = false;
-                window.location.href = 'login.html';
+                window.location.href = '/iniciar-sesion';
             }, 7000);
 
         } catch (error) {

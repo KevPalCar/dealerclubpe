@@ -15,12 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         const role = snap.data().role;
                         if (role === 'admin') {
                             studentAccessLink.textContent = 'Panel Admin';
-                            studentAccessLink.href = 'sections/admin.html';
+                            studentAccessLink.href = '/admin';
                             return;
                         }
                         if (role === 'student') {
                             studentAccessLink.textContent = 'Mi Campus';
-                            studentAccessLink.href = 'sections/student_dashboard.html';
+                            studentAccessLink.href = '/panel-estudiante';
                             return;
                         }
                     }
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await signOut(auth);
             }
             studentAccessLink.textContent = 'Iniciar Sesión';
-            studentAccessLink.href = 'sections/login.html';
+            studentAccessLink.href = '/iniciar-sesion';
         });
     }
 

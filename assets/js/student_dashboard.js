@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── GUARD DE AUTENTICACIÓN ───────────────────────────────
     onAuthStateChanged(auth, async (user) => {
         if (!user || user.isAnonymous) {
-            window.location.replace('login.html');
+            window.location.replace('/iniciar-sesion');
             return;
         }
 
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch {
             await signOut(auth);
-            window.location.replace('login.html');
+            window.location.replace('/iniciar-sesion');
         }
     });
 
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('dash-logout-btn').addEventListener('click', async (e) => {
         e.preventDefault();
         await signOut(auth);
-        window.location.replace('login.html');
+        window.location.replace('/iniciar-sesion');
     });
 
     // ════════════════════════════════════════════════════════

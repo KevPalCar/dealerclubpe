@@ -18,15 +18,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     const snap = await getDoc(doc(db, dbPath(`user_roles/${user.uid}`)));
                     if (snap.exists() && snap.data().role === 'admin') {
                         studentAccessLink.textContent = 'Panel Admin';
-                        studentAccessLink.href = 'admin.html';
+                        studentAccessLink.href = '/admin';
                         return;
                     }
                 } catch { /* silencioso */ }
                 studentAccessLink.textContent = 'Mi Campus';
-                studentAccessLink.href = 'student_dashboard.html';
+                studentAccessLink.href = '/panel-estudiante';
             } else {
                 studentAccessLink.textContent = 'Iniciar Sesión';
-                studentAccessLink.href = 'login.html';
+                studentAccessLink.href = '/iniciar-sesion';
             }
         });
     }

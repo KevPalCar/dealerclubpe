@@ -137,14 +137,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     loadSection('courses');
                 } else {
                     await signOut(auth);
-                    window.location.replace('login.html');
+                    window.location.replace('/iniciar-sesion');
                 }
             } catch {
                 await signOut(auth);
-                window.location.replace('login.html');
+                window.location.replace('/iniciar-sesion');
             }
         } else {
-            window.location.replace('login.html');
+            window.location.replace('/iniciar-sesion');
         }
     });
 
@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!target) return;
         if (target.id === 'admin-logout-btn') {
             await signOut(auth);
-            window.location.replace('login.html');
+            window.location.replace('/iniciar-sesion');
             return;
         }
         loadSection(target.id.replace('nav-', ''));
