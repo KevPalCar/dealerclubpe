@@ -206,7 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const titles = {
             courses: 'Gestión de Cursos',         professors: 'Gestión de Profesores',
             alumni: 'Gestión de Egresados',        dealers: 'Gestión de Dealers',
-            services: 'Gestión de Servicios',      enrollments: 'Inscripciones',
+            tables: 'Juegos del Casino',           services: 'Gestión de Servicios',
+            enrollments: 'Inscripciones',          referrals: 'Referidos & Marketing',
             requests: 'Solicitudes de Contacto',   announcements: 'Config & Anuncios',
             materials: 'Material Didáctico',        tasks: 'Asignar Tareas',
             progress: 'Progreso de Alumnos'
@@ -216,7 +217,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const loaders = {
             courses: loadCourses,      professors: loadProfessors,
             alumni: loadAlumni,        dealers: loadDealers,
-            services: loadServices,    enrollments: loadEnrollments,
+            tables: loadTables,        services: loadServices,
+            enrollments: loadEnrollments,  referrals: loadReferrals,
             requests: loadRequests,    announcements: loadAnnouncements,
             materials: loadMaterials,  tasks: loadTasks,
             progress: loadProgress
@@ -242,6 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initSearch('professors',  renderProfRow,       'No hay profesores registrados.');
         initSearch('alumni',      renderAlumniRow,     'No hay egresados registrados.');
         initSearch('dealers',     renderDealerRow,     'No hay dealers registrados.');
+        initSearch('tables',      renderTableRow,      'No hay juegos registrados.');
         initSearch('services',    renderServiceRow,    'No hay servicios registrados.');
         initSearch('enrollments', renderEnrollmentRow, 'No hay inscripciones.');
         initSearch('requests',    renderRequestRow,    'No hay solicitudes.');
@@ -595,6 +598,148 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ══════════════════════════════════════════════════════════
+    // CRUD: JUEGOS DEL CASINO (colección 'tables')
+    // ══════════════════════════════════════════════════════════
+    const renderTableRow = (t) => {
+        const tbody = document.getElementById('tables-table-body');
+        const tr = tbody.insertRow();
+        const thumb = t.imageUrl
+            ? `<img src="${t.imageUrl}" alt="${t.name || 'Juego'}" style="width:60px;height:40px;object-fit:cover;border-radius:4px;">`
+            : '<span style="color:#777;">—</span>';
+        tr.innerHTML = `
+            <td>${t.order ?? '-'}</td>
+            <td>${thumb}</td>
+            <td><strong>${t.name || ''}</strong></td>
+            <td><small style="color:#ffc107;">${t.tag || ''}</small></td>
+            <td>
+                <select class="status-select" data-id="${t.id}">
+                    <option value="Disponible"   ${t.status === 'Disponible'   ? 'selected' : ''}>Disponible</option>
+                    <option value="Próximamente" ${t.status === 'Próximamente' ? 'selected' : ''}>Próximamente</option>
+                    <option value="Agotado"      ${t.status === 'Agotado'      ? 'selected' : ''}>Agotado</option>
+                </select>
+            </td>
+            <td>${t.maxPlayers ? `${t.maxPlayers} jug.` : '—'}</td>
+            <td class="action-buttons">
+                <button class="btn btn-secondary btn-edit" data-id="${t.id}"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-delete" data-id="${t.id}"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        tr.querySelector('.status-select').addEventListener('change', async (e) => {
+            await updateDoc(doc(db, dbPath(`tables/${e.target.dataset.id}`)), { status: e.target.value });
+            showToast('Estado del juego actualizado.', 'success');
+        });
+        tr.querySelector('.btn-edit').addEventListener('click', () => {
+            document.getElementById('tableId').value          = t.id;
+            document.getElementById('tableName').value        = t.name || '';
+            document.getElementById('tableTag').value         = t.tag || '';
+            document.getElementById('tableTagStyle').value    = t.tagStyle || 'popular';
+            document.getElementById('tableOrder').value       = t.order ?? 0;
+            document.getElementById('tableDescription').value = t.description || '';
+            document.getElementById('tableMaxPlayers').value  = t.maxPlayers || '';
+            document.getElementById('tableStatus').value      = t.status || 'Disponible';
+            document.getElementById('tableImageUrl').value    = t.imageUrl || '';
+            document.getElementById('tableImageFile').value   = '';
+            const preview = document.getElementById('table-img-preview');
+            preview.src           = t.imageUrl || '';
+            preview.style.display = t.imageUrl ? 'block' : 'none';
+            document.getElementById('table-modal-title-action').textContent = 'Editar';
+            openModal(document.getElementById('tableModal'));
+        });
+        tr.querySelector('.btn-delete').addEventListener('click', () =>
+            confirmDelete(`¿Eliminar el juego "${t.name}"?`, () => deleteItem('tables', t.id))
+        );
+    };
+
+    const loadTables = () => {
+        document.getElementById('tables-table-body').innerHTML =
+            `<tr><td colspan="7" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        unsubscribeListeners.tables = onSnapshot(collection(db, dbPath('tables')), (snap) => {
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+            pState.tables.data = data;
+            renderPaged('tables', renderTableRow, 'No hay juegos registrados.');
+        });
+    };
+
+    // Previsualización de imagen (archivo local)
+    document.getElementById('tableImageFile').addEventListener('change', (e) => {
+        const file    = e.target.files[0];
+        const preview = document.getElementById('table-img-preview');
+        const urlInput= document.getElementById('tableImageUrl');
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                preview.src = ev.target.result;
+                preview.style.display = 'block';
+                urlInput.value = '';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+
+    // Previsualización de imagen (URL manual)
+    document.getElementById('tableImageUrl').addEventListener('input', (e) => {
+        const preview = document.getElementById('table-img-preview');
+        preview.src           = e.target.value;
+        preview.style.display = e.target.value.trim() ? 'block' : 'none';
+    });
+
+    document.getElementById('add-table-btn').addEventListener('click', () => {
+        document.getElementById('tableForm').reset();
+        document.getElementById('tableId').value = '';
+        document.getElementById('table-img-preview').style.display = 'none';
+        document.getElementById('table-modal-title-action').textContent = 'Añadir';
+        openModal(document.getElementById('tableModal'));
+    });
+
+    document.getElementById('tableForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msgBox = document.getElementById('tableFormMessage');
+        showMsg(msgBox, 'Procesando imagen…', 'loading');
+
+        const id        = document.getElementById('tableId').value;
+        const fileInput = document.getElementById('tableImageFile');
+        let finalUrl    = document.getElementById('tableImageUrl').value.trim();
+
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            if (file.size > 8 * 1024 * 1024) {
+                showMsg(msgBox, 'Imagen demasiado grande (máx 8MB).', 'error');
+                return;
+            }
+            try { finalUrl = await compressImage(file); }
+            catch { showMsg(msgBox, 'Error al procesar la imagen.', 'error'); return; }
+        }
+
+        const maxPlayers = parseInt(document.getElementById('tableMaxPlayers').value);
+        const data = {
+            name:        document.getElementById('tableName').value,
+            tag:         document.getElementById('tableTag').value.trim(),
+            tagStyle:    document.getElementById('tableTagStyle').value,
+            order:       parseInt(document.getElementById('tableOrder').value) || 0,
+            description: document.getElementById('tableDescription').value,
+            maxPlayers:  Number.isNaN(maxPlayers) ? null : maxPlayers,
+            status:      document.getElementById('tableStatus').value,
+            imageUrl:    finalUrl,
+            lastUpdated: new Date()
+        };
+
+        try {
+            if (id) await updateDoc(doc(db, dbPath(`tables/${id}`)), data);
+            else     await addDoc(collection(db, dbPath('tables')), data);
+            closeModal(document.getElementById('tableModal'));
+            showMsg(msgBox, '', '');
+            showToast(id ? 'Juego actualizado.' : 'Juego añadido.', 'success');
+        } catch (err) { showMsg(msgBox, `Error: ${err.message}`, 'error'); }
+    });
+    document.getElementById('closeTableModalBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('tableModal'))
+    );
+
+
+    // ══════════════════════════════════════════════════════════
     // CRUD: SERVICIOS
     // ══════════════════════════════════════════════════════════
     const renderServiceRow = (s) => {
@@ -820,6 +965,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('announceLogin').value     = d.login     || '';
                 document.getElementById('announceDashboard').value = d.dashboard || '';
                 document.getElementById('configWhatsapp').value    = d.whatsapp  || '';
+                document.getElementById('onboardingTitle').value    = d.onboardingTitle    || '';
+                document.getElementById('onboardingText').value     = d.onboardingText     || '';
+                document.getElementById('onboardingVideoUrl').value = d.onboardingVideoUrl  || '';
             }
         );
     };
@@ -858,6 +1006,98 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast(`WhatsApp actualizado: +${number}`, 'success');
             setTimeout(() => showMsg(msg, '', ''), 3000);
         } catch (err) { showMsg(msg, 'Error al guardar.', 'error'); }
+    });
+
+    document.getElementById('onboardingForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById('onboardingFormMessage');
+        showMsg(msg, 'Guardando…', 'loading');
+        try {
+            await setDoc(doc(db, dbPath('config/announceBar')), {
+                onboardingTitle:    document.getElementById('onboardingTitle').value.trim(),
+                onboardingText:     document.getElementById('onboardingText').value.trim(),
+                onboardingVideoUrl: document.getElementById('onboardingVideoUrl').value.trim()
+            }, { merge: true });
+            showMsg(msg, 'Bienvenida guardada.', 'success');
+            showToast('Bienvenida del alumno actualizada.', 'success');
+            setTimeout(() => showMsg(msg, '', ''), 3000);
+        } catch (err) { showMsg(msg, 'Error al guardar.', 'error'); }
+    });
+
+
+    // ══════════════════════════════════════════════════════════
+    // REFERIDOS & MARKETING
+    // ══════════════════════════════════════════════════════════
+    let _refRows  = [];
+    let _refNames = {};   // código → nombre del referidor
+
+    const renderReferralsSummary = () => {
+        const tbody = document.getElementById('referrals-summary-body');
+        const groups = {};
+        _refRows.forEach(r => {
+            const k = r.referrerCode || '—';
+            groups[k] = groups[k] || { count: 0, total: 0 };
+            groups[k].count++;
+            groups[k].total += (+r.amount || 0);
+        });
+        const keys = Object.keys(groups).sort((a, b) => groups[b].count - groups[a].count);
+        tbody.innerHTML = keys.length
+            ? keys.map(k => `
+                <tr>
+                    <td><code style="color:#ffc107;">${k}</code></td>
+                    <td>${_refNames[k] || '—'}</td>
+                    <td>${groups[k].count}</td>
+                    <td>S/ ${groups[k].total.toFixed(2)}</td>
+                </tr>`).join('')
+            : `<tr><td colspan="4" class="empty-msg">Aún no hay referidos registrados.</td></tr>`;
+    };
+
+    const renderReferralsList = () => {
+        const tbody = document.getElementById('referrals-list-body');
+        if (!_refRows.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty-msg">Sin registros.</td></tr>`; return; }
+        tbody.innerHTML = '';
+        [..._refRows].sort((a, b) => (b.date?.seconds ?? 0) - (a.date?.seconds ?? 0)).forEach(r => {
+            const tr = tbody.insertRow();
+            const dateStr = r.date ? new Date(r.date.seconds * 1000).toLocaleDateString('es-PE') : '-';
+            tr.innerHTML = `
+                <td>${dateStr}</td>
+                <td><code style="color:#ffc107;">${r.referrerCode || '—'}</code></td>
+                <td>${r.newStudentName || '—'}</td>
+                <td>S/ ${(+r.amount || 0).toFixed(2)}</td>
+                <td class="action-buttons"><button class="btn btn-danger btn-sm btn-del-ref" data-id="${r.id}"><i class="fas fa-trash"></i></button></td>`;
+            tr.querySelector('.btn-del-ref').addEventListener('click', () =>
+                confirmDelete('¿Eliminar este referido?', () => deleteItem('referrals', r.id)));
+        });
+    };
+
+    const loadReferrals = async () => {
+        _refNames = {};
+        try {
+            const es = await getDocs(collection(db, dbPath('course_enrollments')));
+            es.forEach(d => { const e = d.data(); if (e.studentCode) _refNames[e.studentCode] = e.fullName; });
+        } catch { /* ignora */ }
+        unsubscribeListeners.referrals = onSnapshot(collection(db, dbPath('referrals')), (snap) => {
+            _refRows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderReferralsSummary();
+            renderReferralsList();
+        });
+    };
+
+    document.getElementById('referralForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById('referralFormMessage');
+        const referrerCode   = document.getElementById('refReferrerCode').value.trim().toUpperCase();
+        const newStudentName = document.getElementById('refNewStudent').value.trim();
+        const amount         = parseFloat(document.getElementById('refAmount').value) || 0;
+        if (!referrerCode || !newStudentName) { showMsg(msg, 'Completa el código y el nombre.', 'error'); return; }
+        showMsg(msg, 'Guardando…', 'loading');
+        try {
+            await addDoc(collection(db, dbPath('referrals')), { referrerCode, newStudentName, amount, date: new Date() });
+            document.getElementById('referralForm').reset();
+            showMsg(msg, 'Referido registrado.', 'success');
+            showToast('Referido registrado.', 'success');
+            setTimeout(() => showMsg(msg, '', ''), 2500);
+        } catch (err) { showMsg(msg, `Error: ${err.message}`, 'error'); }
     });
 
 
@@ -975,17 +1215,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tr.innerHTML = `
             <td>${dateStr}</td>
-            <td><strong>${t.title}</strong></td>
+            <td><strong>${t.title}</strong>${t.dueDate ? `<br><small style="color:#ff9800;">Vence: ${t.dueDate}</small>` : ''}</td>
             <td>${assignedLabel}</td>
             <td>${(t.description || '').substring(0, 50)}${t.description?.length > 50 ? '…' : ''}</td>
             <td class="action-buttons">
+                <button class="btn btn-secondary btn-sm btn-subs" data-id="${t.id}"><i class="fas fa-inbox"></i> Entregas</button>
                 <button class="btn btn-danger btn-sm btn-delete" data-id="${t.id}"><i class="fas fa-trash"></i></button>
             </td>
         `;
+        tr.querySelector('.btn-subs').addEventListener('click', () => openSubmissions(t.id, t.title));
         tr.querySelector('.btn-delete').addEventListener('click', () =>
             confirmDelete(`¿Eliminar la tarea "${t.title}"?`, () => deleteItem('tasks', t.id))
         );
     };
+
+    // ── ENTREGAS: revisión y calificación por el admin ───────
+    const openSubmissions = (taskId, title) => {
+        document.getElementById('submissionsTaskTitle').textContent = title || '';
+        const list = document.getElementById('submissionsList');
+        list.innerHTML = '<div class="spinner"></div>';
+        openModal(document.getElementById('submissionsModal'));
+
+        unsubscribeListeners.submissions?.();
+        unsubscribeListeners.submissions = onSnapshot(
+            query(collection(db, dbPath('task_submissions')), where('taskId', '==', taskId)),
+            (snap) => {
+                if (snap.empty) { list.innerHTML = '<p style="color:#888;">Aún no hay entregas para esta tarea.</p>'; return; }
+                list.innerHTML = '';
+                snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''))
+                    .forEach(s => {
+                        const ev = s.imageUrl
+                            ? `<a href="${s.imageUrl}" target="_blank" rel="noopener">Ver foto</a>`
+                            : s.link ? `<a href="${s.link}" target="_blank" rel="noopener">${s.link}</a>`
+                            : '<span style="color:#888;">Sin evidencia (marcada como hecha)</span>';
+                        const card = document.createElement('div');
+                        card.className = 'submission-card';
+                        card.innerHTML = `
+                            <div class="submission-head">
+                                <strong>${s.studentName || s.studentCode || 'Alumno'}</strong>
+                                <span class="sub-status ${s.status}">${s.status === 'reviewed' ? 'Revisada' : 'Entregada'}</span>
+                            </div>
+                            <p class="submission-ev">Evidencia: ${ev}</p>
+                            <div class="submission-grade">
+                                <input type="number" class="sub-grade" min="0" max="20" step="0.1" placeholder="/20" value="${s.grade ?? ''}">
+                                <input type="text" class="sub-feedback" placeholder="Feedback para el alumno" value="${(s.feedback || '').replace(/"/g, '&quot;')}">
+                                <button type="button" class="btn btn-primary btn-sm sub-save"><i class="fas fa-check"></i></button>
+                            </div>
+                        `;
+                        card.querySelector('.sub-save').addEventListener('click', async () => {
+                            const g = card.querySelector('.sub-grade').value;
+                            try {
+                                await updateDoc(doc(db, dbPath(`task_submissions/${s.id}`)), {
+                                    status: 'reviewed',
+                                    grade: g === '' ? null : parseFloat(g),
+                                    feedback: card.querySelector('.sub-feedback').value.trim(),
+                                    reviewedAt: new Date()
+                                });
+                                showToast('Revisión guardada.', 'success');
+                            } catch (err) { showToast(`Error: ${err.message}`, 'error'); }
+                        });
+                        list.appendChild(card);
+                    });
+            }
+        );
+    };
+    document.getElementById('closeSubmissionsModalBtn').addEventListener('click', () => {
+        unsubscribeListeners.submissions?.();
+        closeModal(document.getElementById('submissionsModal'));
+    });
 
     const loadTasks = () => {
         document.getElementById('tasks-table-body').innerHTML =
@@ -1061,6 +1359,7 @@ document.addEventListener('DOMContentLoaded', () => {
             title:       document.getElementById('taskTitle').value,
             description: document.getElementById('taskDescription').value,
             url:         document.getElementById('taskUrl').value || null,
+            dueDate:     document.getElementById('taskDueDate').value || null,
             assignedTo,
             studentName,
             createdAt:   new Date()
@@ -1084,32 +1383,131 @@ document.addEventListener('DOMContentLoaded', () => {
     // ══════════════════════════════════════════════════════════
     const LEVEL_COLORS = { 'Rookie': '#888', 'Pro Dealer': '#007bff', 'Élite VIP': '#ffc107' };
 
+    // ── Helpers de asistencia / notas ────────────────────────
+    const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const ymd = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+    const attPct = (log) => {
+        const vals = Object.values(log || {});
+        if (!vals.length) return null;
+        return Math.round(vals.filter(v => v === 'present').length / vals.length * 100);
+    };
+    const gradesAvg = (arr) => {
+        const list = (arr || []).filter(g => g && g.score != null && g.score !== '');
+        if (!list.length) return null;
+        return +(list.reduce((s, g) => s + (+g.score || 0), 0) / list.length).toFixed(1);
+    };
+
+    // Estado del calendario mientras el modal de progreso está abierto
+    const attEdit = { log: {}, year: 0, month: 0 };
+
+    const renderAttSummary = () => {
+        const vals = Object.values(attEdit.log);
+        const present = vals.filter(v => v === 'present').length;
+        document.getElementById('attSummary').textContent = vals.length
+            ? `Asistencia: ${attPct(attEdit.log)}% (${present} de ${vals.length} días de clase)`
+            : 'Sin días registrados aún.';
+    };
+
+    const renderAttCalendar = () => {
+        const grid = document.getElementById('attCalGrid');
+        const { year: y, month: m, log } = attEdit;
+        document.getElementById('attCalLabel').textContent = `${MONTHS_ES[m]} ${y}`;
+        const firstDow = (new Date(y, m, 1).getDay() + 6) % 7;   // 0 = lunes
+        const daysIn   = new Date(y, m + 1, 0).getDate();
+        let html = ['L','M','M','J','V','S','D'].map(d => `<span class="att-dow">${d}</span>`).join('');
+        for (let i = 0; i < firstDow; i++) html += `<span class="att-cell empty"></span>`;
+        for (let d = 1; d <= daysIn; d++) {
+            const ds  = ymd(y, m, d);
+            const st  = log[ds];
+            const cls = st === 'present' ? 'present' : st === 'absent' ? 'absent' : '';
+            html += `<button type="button" class="att-cell ${cls}" data-date="${ds}">${d}</button>`;
+        }
+        grid.innerHTML = html;
+        grid.querySelectorAll('.att-cell[data-date]').forEach(c =>
+            c.addEventListener('click', () => {
+                const cur = attEdit.log[c.dataset.date];
+                if (!cur) attEdit.log[c.dataset.date] = 'present';
+                else if (cur === 'present') attEdit.log[c.dataset.date] = 'absent';
+                else delete attEdit.log[c.dataset.date];
+                renderAttCalendar();
+            }));
+        renderAttSummary();
+    };
+
+    document.getElementById('attPrevMonth').addEventListener('click', () => {
+        if (--attEdit.month < 0) { attEdit.month = 11; attEdit.year--; }
+        renderAttCalendar();
+    });
+    document.getElementById('attNextMonth').addEventListener('click', () => {
+        if (++attEdit.month > 11) { attEdit.month = 0; attEdit.year++; }
+        renderAttCalendar();
+    });
+
+    const addGradeRow = (g = {}) => {
+        const row = document.createElement('div');
+        row.className = 'grade-row';
+        const note = (g.note || '').replace(/"/g, '&quot;');
+        row.innerHTML = `
+            <input type="number" class="grade-week"  min="1" value="${g.week ?? ''}" placeholder="#">
+            <input type="date"   class="grade-date"  value="${g.date || ''}">
+            <input type="number" class="grade-score" min="0" max="20" step="0.1" value="${g.score ?? ''}" placeholder="/20">
+            <input type="text"   class="grade-note"  value="${note}" placeholder="Comentario">
+            <button type="button" class="grade-del"><i class="fas fa-times"></i></button>
+        `;
+        row.querySelector('.grade-del').addEventListener('click', () => row.remove());
+        document.getElementById('progressGradesList').appendChild(row);
+    };
+    const collectGrades = () =>
+        [...document.querySelectorAll('#progressGradesList .grade-row')].map(r => ({
+            week:  parseInt(r.querySelector('.grade-week').value) || null,
+            date:  r.querySelector('.grade-date').value || '',
+            score: r.querySelector('.grade-score').value === '' ? null : parseFloat(r.querySelector('.grade-score').value),
+            note:  r.querySelector('.grade-note').value.trim()
+        })).filter(g => g.score != null || g.note);
+
+    document.getElementById('addGradeWeekBtn').addEventListener('click', () => {
+        const next = document.querySelectorAll('#progressGradesList .grade-row').length + 1;
+        addGradeRow({ week: next });
+    });
+
     const renderProgressRow = (s) => {
         const tbody = document.getElementById('progress-table-body');
         const tr = tbody.insertRow();
         const levelColor = LEVEL_COLORS[s.level] || '#888';
-        const attPct  = s.attendance ?? '--';
-        const grade   = s.grades ?? '--';
+        const aPct  = s.attendanceLog ? attPct(s.attendanceLog) : (s.attendance ?? null);
+        const grade = (s.weeklyGrades && s.weeklyGrades.length) ? gradesAvg(s.weeklyGrades) : (s.grades ?? null);
 
         tr.innerHTML = `
             <td><code style="color:#ffc107;">${s.studentCode || '-'}</code></td>
             <td>${s.fullName || '-'}</td>
             <td>${s.email || '-'}</td>
             <td><span style="color:${levelColor}; font-weight:bold;">${s.level || 'Rookie'}</span></td>
-            <td>${attPct !== '--' ? `${attPct}%` : '--'}</td>
-            <td>${grade !== '--' ? `${grade}/20` : '--'}</td>
+            <td>${aPct  != null ? `${aPct}%`   : '--'}</td>
+            <td>${grade != null ? `${grade}/20` : '--'}</td>
             <td class="action-buttons">
-                <button class="btn btn-secondary btn-sm btn-edit" data-id="${s.uid}" data-name="${s.fullName}">
+                <button class="btn btn-secondary btn-sm btn-edit" data-id="${s.uid}">
                     <i class="fas fa-edit"></i> Editar
                 </button>
             </td>
         `;
         tr.querySelector('.btn-edit').addEventListener('click', () => {
-            document.getElementById('progressStudentUid').value  = s.uid;
+            document.getElementById('progressStudentUid').value = s.uid;
             document.getElementById('progressStudentName').textContent = s.fullName || s.email || 'Alumno';
-            document.getElementById('progressLevel').value       = s.level      || 'Rookie';
-            document.getElementById('progressAttendance').value  = s.attendance ?? '';
-            document.getElementById('progressGrades').value      = s.grades     ?? '';
+            document.getElementById('progressLevel').value     = s.level || 'Rookie';
+            document.getElementById('progressStartDate').value = s.courseStartDate || '';
+
+            // Asistencia: carga el registro y posiciona el calendario
+            attEdit.log = { ...(s.attendanceLog || {}) };
+            const base = s.courseStartDate ? new Date(`${s.courseStartDate}T00:00:00`) : new Date();
+            attEdit.year  = base.getFullYear();
+            attEdit.month = base.getMonth();
+            renderAttCalendar();
+
+            // Notas semanales
+            document.getElementById('progressGradesList').innerHTML = '';
+            (s.weeklyGrades || []).forEach(addGradeRow);
+
             openModal(document.getElementById('progressModal'));
         });
     };
@@ -1134,10 +1532,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const uid = document.getElementById('progressStudentUid').value;
         if (!uid) return;
 
+        const grades = collectGrades();
         const data = {
-            level:      document.getElementById('progressLevel').value,
-            attendance: parseFloat(document.getElementById('progressAttendance').value),
-            grades:     parseFloat(document.getElementById('progressGrades').value)
+            level:           document.getElementById('progressLevel').value,
+            courseStartDate: document.getElementById('progressStartDate').value || null,
+            attendanceLog:   attEdit.log,
+            weeklyGrades:    grades,
+            attendance:      attPct(attEdit.log),   // derivado (compatibilidad con vistas previas)
+            grades:          gradesAvg(grades)       // derivado (compatibilidad)
         };
 
         showMsg(msg, 'Guardando…', 'loading');

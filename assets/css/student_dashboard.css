@@ -177,13 +177,13 @@ body {
 
 /* Estado: Activo / VIP */
 .card-active {
-    border-top: 4px solid #ffc107;
-    box-shadow: 0 0 15px rgba(255, 193, 7, 0.05);
+    border-top: 4px solid #28a745;
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.08);
 }
 .card-active .status-badge {
-    background-color: rgba(255, 193, 7, 0.15);
-    color: #ffc107;
-    border: 1px solid #ffc107;
+    background-color: rgba(40, 167, 69, 0.15);
+    color: #2ecc71;
+    border: 1px solid #28a745;
 }
 
 /* Etiquetas (Badges) */
@@ -622,3 +622,370 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================================
+   HERO DE ALUMNO PENDIENTE (vitrina + persuasión)
+   ========================================= */
+.pending-hero {
+    background: linear-gradient(160deg, #1a1a1a, #121212);
+    border: 1px solid rgba(255, 193, 7, 0.35);
+    border-radius: 14px;
+    padding: 30px;
+    margin: 0 0 25px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+.pending-hero-head { text-align: center; margin-bottom: 22px; }
+.pending-tag {
+    display: inline-block;
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+    border: 1px solid #ffc107;
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 0.8em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+}
+.pending-hero-head h2 { color: #ffc107; font-size: 1.7em; margin: 0 0 8px; }
+.pending-hero-head p  { color: #ccc; max-width: 640px; margin: 0 auto; }
+
+/* Pasos del onboarding */
+.pending-steps {
+    list-style: none;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 0;
+    margin: 0 0 24px;
+}
+.pending-steps .step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #1f1f1f;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 12px 16px;
+    min-width: 170px;
+}
+.pending-steps .step-ico {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85em;
+    flex-shrink: 0;
+}
+.step.done    .step-ico { background: #28a745; color: #fff; }
+.step.current .step-ico { background: #ffc107; color: #000; }
+.step.locked  .step-ico { background: #333;    color: #888; }
+.step.current { border-color: #ffc107; box-shadow: inset 0 0 0 1px #ffc107; }
+.pending-steps .step-label { font-size: 0.9em; color: #eee; }
+.step.locked .step-label   { color: #888; }
+
+/* Video de bienvenida (responsive 16:9) */
+.pending-video-wrap { max-width: 720px; margin: 0 auto 24px; }
+.pending-video {
+    position: relative;
+    padding-top: 56.25%;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #333;
+}
+.pending-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* CTA de WhatsApp */
+.pending-cta-box { text-align: center; margin-bottom: 22px; }
+.pending-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #25d366;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05em;
+    padding: 15px 28px;
+    border-radius: 50px;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(37, 211, 102, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.pending-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37, 211, 102, 0.5); }
+.pending-cta-hint { color: #999; font-size: 0.85em; margin-top: 10px; }
+
+/* Ganchos / prueba social */
+.pending-perks {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    padding: 0;
+    margin: 0;
+}
+.pending-perks li { display: flex; align-items: center; gap: 10px; color: #ddd; font-size: 0.92em; }
+.pending-perks i  { color: #ffc107; width: 20px; text-align: center; }
+
+/* Aviso de modo vitrina */
+.preview-notice {
+    background: rgba(255, 193, 7, 0.12);
+    border: 1px dashed rgba(255, 193, 7, 0.5);
+    color: #ffc107;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 0.92em;
+}
+.preview-notice strong { color: #fff; }
+
+/* Modo vitrina: paneles visibles pero no interactivos.
+   La navegación entre pestañas (.tab-btn, fuera de .tab-panel) sigue activa. */
+.dash-pending .tab-panel { opacity: 0.7; }
+.dash-pending .tab-panel .card-action-btn,
+.dash-pending .tab-panel a,
+.dash-pending .tab-panel button {
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+    .pending-hero { padding: 20px; }
+    .pending-hero-head h2 { font-size: 1.35em; }
+    .pending-steps .step { min-width: 0; width: 100%; }
+}
+
+/* =========================================
+   MI PROGRESO 2.0 — ASISTENCIA + NOTAS SEMANALES
+   ========================================= */
+.prog-section {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+}
+.prog-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.prog-section-head h3 { color: #ffc107; margin: 0; font-size: 1.1em; }
+.prog-section-tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+.att-view-toggle { display: inline-flex; background: #222; border: 1px solid #333; border-radius: 8px; overflow: hidden; }
+.att-view-btn { background: transparent; border: none; color: #bbb; padding: 6px 14px; cursor: pointer; font-size: 0.85em; font-weight: 600; }
+.att-view-btn.active { background: #ffc107; color: #000; }
+.att-summary-inline { color: #ffc107; font-weight: 600; margin-left: 6px; }
+
+.week-filter { background: #222; border: 1px solid #333; color: #eee; padding: 8px 12px; border-radius: 8px; font-size: 0.9em; }
+
+/* Calendario de asistencia (mismo look que el admin) */
+.att-cal-head { display: flex; align-items: center; gap: 12px; }
+.att-cal-head > span { font-weight: 700; color: #ffc107; min-width: 120px; text-align: center; }
+.btn-cal-nav { background: #2a2a2a; border: 1px solid #444; color: #ddd; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; }
+.btn-cal-nav:hover { border-color: #ffc107; color: #ffc107; }
+.att-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.att-dow { text-align: center; font-size: 0.7em; color: #888; font-weight: 700; padding-bottom: 4px; }
+.att-cell {
+    aspect-ratio: 1 / 1;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; background: #222; border: 1px solid #333;
+    color: #bbb; font-size: 0.85em; font-weight: 600;
+}
+.att-cell.empty { background: transparent; border: none; }
+.att-cell.present { background: rgba(40, 167, 69, 0.85); border-color: #28a745; color: #fff; }
+.att-cell.absent  { background: rgba(220, 53, 69, 0.85); border-color: #dc3545; color: #fff; }
+.att-legend { font-size: 0.8em; color: #aaa; margin-top: 12px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.att-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin: 0 4px 0 10px; }
+.att-dot.present { background: #28a745; }
+.att-dot.absent  { background: #dc3545; }
+
+/* Notas semanales (vista del alumno) */
+.grades-view { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.grade-card { background: #212121; border: 1px solid #333; border-left: 4px solid #888; border-radius: 10px; padding: 14px; }
+.grade-card.good { border-left-color: #28a745; }
+.grade-card.mid  { border-left-color: #ff9800; }
+.grade-card.low  { border-left-color: #dc3545; }
+.grade-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.grade-week-pill { background: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid #ffc107; border-radius: 12px; padding: 3px 10px; font-size: 0.75em; font-weight: 700; }
+.grade-score { font-size: 1.3em; font-weight: 800; color: #fff; }
+.grade-bar-track { height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+.grade-bar-fill { height: 100%; background: #ffc107; }
+.grade-card.good .grade-bar-fill { background: #28a745; }
+.grade-card.low  .grade-bar-fill { background: #dc3545; }
+.grade-note-text { color: #ccc; font-style: italic; font-size: 0.88em; margin: 10px 0 6px; }
+.grade-date-text { color: #888; font-size: 0.78em; }
+
+/* =========================================
+   TAREAS INTERACTIVAS
+   ========================================= */
+.tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    margin-left: 6px;
+    background: #dc3545;
+    color: #fff;
+    border-radius: 9px;
+    font-size: 0.7em;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.task-status-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.72em;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.task-status-pill.pending   { background: rgba(255, 152, 0, 0.18);  color: #ffb74d; border: 1px solid #ff9800; }
+.task-status-pill.overdue   { background: rgba(220, 53, 69, 0.18);  color: #ff7b8a; border: 1px solid #dc3545; }
+.task-status-pill.submitted { background: rgba(33, 150, 243, 0.18); color: #64b5f6; border: 1px solid #2196f3; }
+.task-status-pill.reviewed  { background: rgba(40, 167, 69, 0.18);  color: #4caf50; border: 1px solid #28a745; }
+
+.task-card.task-overdue { border-left: 3px solid #dc3545; }
+.task-card.task-reviewed { border-left: 3px solid #28a745; }
+
+.task-due { color: #ff9800; font-size: 0.82em; margin: 8px 0 0; }
+
+.task-action-area { margin-top: 14px; }
+.task-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.task-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 0.85em;
+    font-weight: 700;
+    cursor: pointer;
+    background: #ffc107;
+    color: #000;
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+.task-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.task-btn-alt   { background: #2196f3; color: #fff; }
+.task-btn-ghost { background: transparent; border: 1px solid #555; color: #bbb; }
+
+.task-evidence {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #161616;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px;
+}
+.task-evidence .ev-link {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: #eee;
+    font-size: 0.85em;
+}
+.ev-file-label { color: #64b5f6; font-size: 0.85em; cursor: pointer; }
+.ev-status { font-size: 0.78em; color: #999; }
+
+.task-submitted-info { color: #4caf50; font-size: 0.88em; margin: 0 0 10px; }
+.task-submitted-info a, .task-feedback a { color: #64b5f6; }
+.task-review { background: rgba(40, 167, 69, 0.08); border: 1px solid rgba(40, 167, 69, 0.4); border-radius: 8px; padding: 12px; }
+.task-grade { font-size: 1.3em; font-weight: 800; color: #4caf50; }
+.task-feedback { color: #ccc; font-style: italic; font-size: 0.88em; margin: 8px 0 0; }
+.task-note { color: #888; font-size: 0.82em; font-style: italic; }
+
+/* =========================================
+   TARJETA DE REFERIDOS (alumno)
+   ========================================= */
+.referral-card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.12), rgba(40, 167, 69, 0.10));
+    border: 1px solid rgba(255, 193, 7, 0.35);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-top: 22px;
+}
+.referral-info { display: flex; align-items: center; gap: 14px; }
+.referral-info > i { font-size: 1.8em; color: #ffc107; }
+.referral-title { color: #fff; font-weight: 700; margin: 0; }
+.referral-sub { color: #bbb; font-size: 0.85em; margin: 2px 0 0; }
+.referral-code-box { display: flex; align-items: center; gap: 8px; background: #0d0d0d; border: 1px dashed #ffc107; border-radius: 10px; padding: 8px 12px; }
+.referral-code-label { color: #888; font-size: 0.7em; text-transform: uppercase; }
+#referral-code { color: #ffc107; font-weight: 800; letter-spacing: 1px; font-size: 1.05em; }
+.referral-btn-copy { background: transparent; border: none; color: #ffc107; cursor: pointer; font-size: 1em; }
+.referral-share { display: inline-flex; align-items: center; gap: 8px; background: #25d366; color: #fff; font-weight: 700; padding: 11px 18px; border-radius: 50px; text-decoration: none; }
+.referral-share:hover { filter: brightness(1.08); }
+@media (max-width: 600px) {
+    .referral-card { flex-direction: column; align-items: stretch; text-align: center; }
+    .referral-info, .referral-code-box { justify-content: center; }
+}
+
+/* =========================================
+   AULA DEL CURSO (modal)
+   ========================================= */
+.aula-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.aula-content {
+    background: linear-gradient(160deg, #1a1a1a, #121212);
+    border: 1px solid rgba(255, 193, 7, 0.35);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 28px;
+    position: relative;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+.aula-close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: #888; font-size: 1.8em; cursor: pointer; line-height: 1; }
+.aula-close:hover { color: #fff; }
+.aula-header { text-align: center; margin-bottom: 20px; }
+.aula-tag { display: inline-block; background: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid #ffc107; border-radius: 20px; padding: 4px 12px; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+.aula-header h2 { color: #ffc107; margin: 0 0 6px; font-size: 1.5em; }
+.aula-header p { color: #bbb; margin: 0; font-size: 0.9em; }
+.aula-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.aula-meta-item { flex: 1; min-width: 140px; display: flex; align-items: center; gap: 12px; background: #212121; border: 1px solid #333; border-radius: 10px; padding: 12px 14px; }
+.aula-meta-item > i { color: #ffc107; font-size: 1.2em; }
+.aula-meta-label { display: block; color: #888; font-size: 0.7em; text-transform: uppercase; }
+.aula-meta-item span:last-child { color: #eee; font-weight: 700; }
+.aula-progress { margin-bottom: 20px; }
+.aula-progress-top { display: flex; justify-content: space-between; color: #ccc; font-size: 0.85em; margin-bottom: 6px; }
+.aula-progress-top span:last-child { color: #ffc107; font-weight: 700; }
+.aula-progress-track { height: 10px; background: #333; border-radius: 5px; overflow: hidden; }
+.aula-progress-fill { height: 100%; background: linear-gradient(90deg, #ffc107, #28a745); width: 0%; transition: width 0.4s ease; }
+.aula-section { margin-bottom: 20px; }
+.aula-section h3 { color: #ffc107; font-size: 1em; margin: 0 0 12px; }
+.aula-materials { display: flex; flex-direction: column; gap: 8px; }
+.aula-mat { display: flex; align-items: center; gap: 10px; background: #212121; border: 1px solid #333; border-radius: 8px; padding: 10px 12px; color: #eee; text-decoration: none; font-size: 0.9em; transition: border-color 0.2s ease; }
+.aula-mat:hover { border-color: #ffc107; }
+.aula-mat > i { color: #ffc107; }
+.aula-empty { color: #888; font-size: 0.85em; font-style: italic; text-align: center; padding: 14px; }
+.aula-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.aula-btn { flex: 1; min-width: 140px; border: none; border-radius: 10px; padding: 12px; font-weight: 700; cursor: pointer; background: #ffc107; color: #000; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.aula-btn-alt { background: #2196f3; color: #fff; }
+.aula-btn:hover { filter: brightness(1.08); }
+@media (max-width: 600px) { .aula-content { padding: 20px; } }

@@ -31,11 +31,13 @@
                     <li><a href="#" id="nav-professors"><i class="fas fa-chalkboard-teacher"></i> Profesores</a></li>
                     <li><a href="#" id="nav-alumni"><i class="fas fa-user-graduate"></i> Egresados</a></li>
                     <li><a href="#" id="nav-dealers"><i class="fas fa-star"></i> Dealers Destacados</a></li>
+                    <li><a href="#" id="nav-tables"><i class="fas fa-dice"></i> Juegos del Casino</a></li>
                     <li><a href="#" id="nav-services"><i class="fas fa-cogs"></i> Servicios</a></li>
 
                     <!-- GRUPO: Negocio -->
                     <li class="nav-group-label"><span><i class="fas fa-briefcase"></i> Negocio</span></li>
                     <li><a href="#" id="nav-enrollments"><i class="fas fa-file-signature"></i> Inscripciones</a></li>
+                    <li><a href="#" id="nav-referrals"><i class="fas fa-gift"></i> Referidos</a></li>
                     <li><a href="#" id="nav-requests"><i class="fas fa-clipboard-list"></i> Solicitudes</a></li>
                     <li><a href="#" id="nav-announcements"><i class="fas fa-sliders-h"></i> Config & Anuncios</a></li>
 
@@ -208,6 +210,36 @@
                 </div>
             </section>
 
+            <!-- ═══════════════ JUEGOS DEL CASINO ═══════════════ -->
+            <section id="tables-management" class="content-section">
+                <div class="section-header">
+                    <h2>Juegos del Casino de Fantasía</h2>
+                    <button class="btn btn-primary" id="add-table-btn"><i class="fas fa-plus"></i> Añadir Juego</button>
+                </div>
+                <div class="table-toolbar">
+                    <input type="text" class="table-search" id="search-tables" placeholder="Buscar por nombre...">
+                    <span class="results-count" id="count-tables"></span>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Orden</th><th>Imagen</th><th>Nombre</th><th>Etiqueta</th>
+                                <th>Estado</th><th>Jugadores</th><th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tables-table-body">
+                            <tr><td colspan="7" class="spinner-cell"><div class="spinner"></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-bar" id="pagination-tables" style="display:none">
+                    <button class="btn-page btn-prev-page" id="prev-tables"><i class="fas fa-chevron-left"></i></button>
+                    <span class="page-info" id="page-info-tables">1 / 1</span>
+                    <button class="btn-page btn-next-page" id="next-tables"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </section>
+
             <!-- ═══════════════ INSCRIPCIONES ═══════════════ -->
             <section id="enrollments-management" class="content-section">
                 <div class="section-header">
@@ -263,6 +295,46 @@
                     <button class="btn-page btn-prev-page" id="prev-requests"><i class="fas fa-chevron-left"></i></button>
                     <span class="page-info" id="page-info-requests">1 / 1</span>
                     <button class="btn-page btn-next-page" id="next-requests"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </section>
+
+            <!-- ═══════════════ REFERIDOS ═══════════════ -->
+            <section id="referrals-management" class="content-section">
+                <div class="section-header">
+                    <h2>Referidos &amp; Marketing</h2>
+                </div>
+                <div class="config-grid">
+                    <!-- Registrar referido -->
+                    <div class="admin-form-card">
+                        <h3><i class="fas fa-gift"></i> Registrar referido</h3>
+                        <p style="color:#888; font-size:0.9em; margin-bottom:15px;">Cuando un alumno nuevo se inscribe usando el código de otro, regístralo aquí para llevar la cuenta y el monto ganado.</p>
+                        <form id="referralForm">
+                            <div class="form-group"><label>Código del referidor:</label><input type="text" id="refReferrerCode" placeholder="DC-25ABCDE" required></div>
+                            <div class="form-group"><label>Nombre del nuevo alumno:</label><input type="text" id="refNewStudent" required></div>
+                            <div class="form-group"><label>Monto ganado (S/):</label><input type="number" id="refAmount" min="0" step="0.01" placeholder="0.00"></div>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Registrar</button>
+                            <div id="referralFormMessage" class="form-message" style="display:none;"></div>
+                        </form>
+                    </div>
+
+                    <!-- Ranking por referidor -->
+                    <div class="admin-form-card">
+                        <h3><i class="fas fa-trophy"></i> Ranking de referidores</h3>
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead><tr><th>Código</th><th>Referidor</th><th>Referidos</th><th>Total</th></tr></thead>
+                                <tbody id="referrals-summary-body"><tr><td colspan="4" class="empty-msg">Sin datos.</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-header" style="margin-top:25px;"><h2>Detalle de referidos</h2></div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead><tr><th>Fecha</th><th>Cód. referidor</th><th>Nuevo alumno</th><th>Monto</th><th>Acciones</th></tr></thead>
+                        <tbody id="referrals-list-body"><tr><td colspan="5" class="empty-msg">Sin registros.</td></tr></tbody>
+                    </table>
                 </div>
             </section>
 
@@ -322,6 +394,31 @@
                                 <i class="fas fa-save"></i> Guardar Todos los Anuncios
                             </button>
                             <div id="announceFormMessage" class="form-message" style="display:none;"></div>
+                        </form>
+                    </div>
+
+                    <!-- Tarjeta: Onboarding del alumno pendiente -->
+                    <div class="admin-form-card">
+                        <h3><i class="fas fa-play-circle" style="color:#e50914;"></i> Bienvenida del Alumno Pendiente</h3>
+                        <p style="color:#888; font-size:0.9em; margin-bottom:15px;">Lo que ve un alumno registrado que aún no ha enviado/validado su voucher de pago. El video es opcional.</p>
+                        <form id="onboardingForm">
+                            <div class="form-group">
+                                <label>Título de bienvenida:</label>
+                                <input type="text" id="onboardingTitle" placeholder="Ej: ¡Estás a un paso de tu acceso completo!">
+                            </div>
+                            <div class="form-group">
+                                <label>Mensaje persuasivo:</label>
+                                <textarea id="onboardingText" rows="2" placeholder="Ej: Envía tu voucher de pago y desbloquea todo el campus virtual."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>URL del Video de Bienvenida (YouTube, opcional):</label>
+                                <input type="text" id="onboardingVideoUrl" placeholder="https://www.youtube.com/watch?v=...  (déjalo vacío para ocultarlo)">
+                                <small style="color:#888;">Sube tu video a YouTube como "Oculto/No listado" y pega el enlace aquí. Sin costo.</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Guardar Bienvenida
+                            </button>
+                            <div id="onboardingFormMessage" class="form-message" style="display:none;"></div>
                         </form>
                     </div>
 
@@ -559,6 +656,53 @@
         </div>
     </div>
 
+    <!-- Modal: Juego del Casino -->
+    <div id="tableModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeTableModalBtn">&times;</span>
+            <h2><span id="table-modal-title-action">Añadir</span> Juego del Casino</h2>
+            <form id="tableForm">
+                <input type="hidden" id="tableId">
+                <div class="form-group"><label>Nombre del Juego:</label><input type="text" id="tableName" placeholder="Ej: Blackjack, Ruleta Francesa" required></div>
+                <div class="form-group">
+                    <label>Etiqueta Estratégica (Opcional):</label>
+                    <input type="text" id="tableTag" placeholder="Ej: 🔥 Más Solicitado, ⭐ Recomendado, NUEVO">
+                </div>
+                <div class="form-group">
+                    <label>Color de la Etiqueta:</label>
+                    <select id="tableTagStyle">
+                        <option value="popular">Rojo (Más Solicitado)</option>
+                        <option value="gold">Dorado (Recomendado)</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Orden de Visualización:</label><input type="number" id="tableOrder" value="0" required></div>
+                <div class="form-group"><label>Descripción:</label><textarea id="tableDescription" rows="3" placeholder="Breve descripción del juego."></textarea></div>
+                <div class="form-group"><label>Máx. de Jugadores (Opcional):</label><input type="number" id="tableMaxPlayers" placeholder="Ej: 7"></div>
+                <div class="form-group">
+                    <label>Estado:</label>
+                    <select id="tableStatus" required>
+                        <option value="Disponible">Disponible</option>
+                        <option value="Próximamente">Próximamente</option>
+                        <option value="Agotado">Agotado</option>
+                    </select>
+                </div>
+                <div class="form-group img-upload-box">
+                    <label style="color:#ffc107;"><i class="fas fa-image"></i> Imagen del Juego</label>
+                    <label class="upload-sublabel">Opción 1 — Subir desde tu PC (se comprime automáticamente)</label>
+                    <input type="file" id="tableImageFile" accept="image/*">
+                    <label class="upload-sublabel" style="margin-top:10px;">Opción 2 — URL o ruta local</label>
+                    <input type="text" id="tableImageUrl" placeholder="https://... o ../assets/images/mesa.jpg">
+                    <div style="text-align:center; margin-top:15px;">
+                        <img id="table-img-preview" src="" alt="Vista previa"
+                             style="display:none; width:140px; height:90px; object-fit:cover; border-radius:8px; border:2px solid #ffc107; margin:0 auto;">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Juego</button>
+                <div id="tableFormMessage" class="form-message" style="display:none;"></div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal: Material Didáctico -->
     <div id="materialModal" class="modal">
         <div class="modal-content">
@@ -602,6 +746,7 @@
                 <div class="form-group"><label>Título de la Tarea:</label><input type="text" id="taskTitle" required></div>
                 <div class="form-group"><label>Instrucciones / Descripción:</label><textarea id="taskDescription" rows="3" required></textarea></div>
                 <div class="form-group"><label>Link de apoyo (Opcional):</label><input type="url" id="taskUrl" placeholder="https://..."></div>
+                <div class="form-group"><label>Fecha límite (Opcional):</label><input type="date" id="taskDueDate"></div>
                 <div class="form-group">
                     <label style="color:#ffc107;">¿A quién va dirigida?</label>
                     <select id="taskAssigneeType" required>
@@ -621,29 +766,68 @@
         </div>
     </div>
 
+    <!-- Modal: Entregas de una Tarea (revisión) -->
+    <div id="submissionsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeSubmissionsModalBtn">&times;</span>
+            <h2>Entregas: <span id="submissionsTaskTitle" style="color:#ffc107;"></span></h2>
+            <div id="submissionsList" class="submissions-list"></div>
+        </div>
+    </div>
+
     <!-- Modal: Progreso de Alumno -->
     <div id="progressModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeProgressModalBtn">&times;</span>
-            <h2>Actualizar Progreso: <span id="progressStudentName" style="color:#ffc107;"></span></h2>
+            <h2>Progreso: <span id="progressStudentName" style="color:#ffc107;"></span></h2>
             <form id="progressForm">
                 <input type="hidden" id="progressStudentUid">
-                <div class="form-group">
-                    <label>Nivel Actual (Gamificación):</label>
-                    <select id="progressLevel" required>
-                        <option value="Rookie">Rookie — Principiante</option>
-                        <option value="Pro Dealer">Pro Dealer — Intermedio</option>
-                        <option value="Élite VIP">Élite VIP — Avanzado</option>
-                    </select>
+
+                <div class="progress-edit-grid">
+                    <!-- Columna izquierda: datos + notas semanales -->
+                    <div>
+                        <div class="form-group">
+                            <label>Nivel Actual (Gamificación):</label>
+                            <select id="progressLevel" required>
+                                <option value="Rookie">Rookie — Principiante</option>
+                                <option value="Pro Dealer">Pro Dealer — Intermedio</option>
+                                <option value="Élite VIP">Élite VIP — Avanzado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de inicio del curso:</label>
+                            <input type="date" id="progressStartDate">
+                            <small style="color:#888;">Ancla las semanas de las notas y el filtro del alumno.</small>
+                        </div>
+
+                        <h3 class="progress-subhead"><i class="fas fa-star"></i> Notas semanales</h3>
+                        <div class="grades-editor-head">
+                            <span>Sem</span><span>Fecha</span><span>/20</span><span>Comentario</span><span></span>
+                        </div>
+                        <div id="progressGradesList" class="grades-editor"></div>
+                        <button type="button" class="btn btn-secondary btn-sm" id="addGradeWeekBtn">
+                            <i class="fas fa-plus"></i> Añadir semana
+                        </button>
+                    </div>
+
+                    <!-- Columna derecha: asistencia (calendario clicable) -->
+                    <div>
+                        <h3 class="progress-subhead"><i class="fas fa-calendar-check"></i> Asistencia</h3>
+                        <div class="att-cal-head">
+                            <button type="button" class="btn-cal-nav" id="attPrevMonth"><i class="fas fa-chevron-left"></i></button>
+                            <span id="attCalLabel">—</span>
+                            <button type="button" class="btn-cal-nav" id="attNextMonth"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div id="attCalGrid" class="att-cal-grid"></div>
+                        <p class="att-legend">
+                            <span class="att-dot present"></span> Asistió
+                            <span class="att-dot absent"></span> Faltó
+                            <small>— clic en un día para alternar</small>
+                        </p>
+                        <p id="attSummary" class="att-summary">—</p>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>% de Asistencia (0 – 100):</label>
-                    <input type="number" id="progressAttendance" min="0" max="100" required>
-                </div>
-                <div class="form-group">
-                    <label>Nota Promedio (0 – 20):</label>
-                    <input type="number" id="progressGrades" min="0" max="20" step="0.1" required>
-                </div>
+
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Progreso</button>
                 <div id="progressFormMessage" class="form-message" style="display:none;"></div>
             </form>

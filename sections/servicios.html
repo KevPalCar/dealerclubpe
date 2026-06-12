@@ -206,29 +206,9 @@
 
                 <div class="selection-group">
                     <h3>1. Mesas Disponibles</h3>
-                    <div class="interactive-grid">
-                        <div class="item-card" data-type="Mesa" data-name="Blackjack">
-                            <span class="badge badge-popular">🔥 Más Solicitado</span>
-                            <span class="item-name">Blackjack</span>
-                        </div>
-                        <div class="item-card" data-type="Mesa" data-name="Ruleta Francesa">
-                            <span class="badge badge-popular">🔥 Más Solicitado</span>
-                            <span class="item-name">Ruleta Francesa</span>
-                        </div>
-                        <div class="item-card" data-type="Mesa" data-name="Ultimate Texas Hold'em">
-                            <span class="badge badge-gold">⭐ Recomendado</span>
-                            <span class="item-name">Ultimate Texas Hold'em</span>
-                        </div>
-                        
-                        <div class="item-card" data-type="Mesa" data-name="Texas Hold'em">
-                            <span class="item-name">Póker Texas Hold'em (Torneo)</span>
-                        </div>
-                        <div class="item-card" data-type="Mesa" data-name="Craps">
-                            <span class="item-name">Mesa de Craps</span>
-                        </div>
-                        <div class="item-card" data-type="Mesa" data-name="3 Card Póker">
-                            <span class="item-name">3 Card Póker</span>
-                        </div>
+                    <div class="interactive-grid" id="modal-mesas-grid">
+                        <!-- Las mesas se cargan dinámicamente desde Firestore (colección 'tables') -->
+                        <p id="modal-mesas-loading" class="item-name" style="grid-column:1/-1;color:#888;">Cargando mesas…</p>
                     </div>
                 </div>
 

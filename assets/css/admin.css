@@ -609,3 +609,93 @@ body {
         right: 15px;
     }
 }
+
+/* =========================================
+   PROGRESO: ASISTENCIA (CALENDARIO) + NOTAS SEMANALES
+   ========================================= */
+#progressModal .modal-content { max-width: 820px; }
+
+.progress-edit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 20px;
+}
+.progress-subhead {
+    color: #ffc107;
+    font-size: 1em;
+    margin: 18px 0 10px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 6px;
+}
+
+/* Editor de notas semanales */
+.grades-editor-head,
+.grade-row {
+    display: grid;
+    grid-template-columns: 50px 130px 70px 1fr 32px;
+    gap: 8px;
+    align-items: center;
+}
+.grades-editor-head { font-size: 0.7em; color: #888; text-transform: uppercase; margin-bottom: 6px; }
+.grades-editor { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; margin-bottom: 10px; }
+.grade-row input {
+    padding: 6px 8px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #eee;
+    font-size: 0.85em;
+    width: 100%;
+}
+.grade-del { background: transparent; border: none; color: #dc3545; cursor: pointer; font-size: 1em; }
+.grade-del:hover { color: #ff6b6b; }
+
+/* Calendario de asistencia (compartido con el panel del alumno) */
+.att-cal-head { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 10px; }
+.att-cal-head > span { font-weight: 700; color: #ffc107; min-width: 130px; text-align: center; }
+.btn-cal-nav { background: #2a2a2a; border: 1px solid #444; color: #ddd; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; }
+.btn-cal-nav:hover { border-color: #ffc107; color: #ffc107; }
+.att-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.att-dow { text-align: center; font-size: 0.7em; color: #888; font-weight: 700; padding-bottom: 4px; }
+.att-cell {
+    aspect-ratio: 1 / 1;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; background: #222; border: 1px solid #333;
+    color: #bbb; font-size: 0.85em; font-weight: 600;
+}
+.att-cell.empty { background: transparent; border: none; }
+.att-cell.present { background: rgba(40, 167, 69, 0.85); border-color: #28a745; color: #fff; }
+.att-cell.absent  { background: rgba(220, 53, 69, 0.85); border-color: #dc3545; color: #fff; }
+button.att-cell { cursor: pointer; }
+button.att-cell:hover { border-color: #ffc107; }
+.att-legend { font-size: 0.8em; color: #aaa; margin-top: 10px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.att-dot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin: 0 4px 0 10px; }
+.att-dot.present { background: #28a745; }
+.att-dot.absent  { background: #dc3545; }
+.att-summary { color: #ffc107; font-weight: 600; margin-top: 8px; font-size: 0.9em; }
+
+@media (max-width: 768px) {
+    .progress-edit-grid { grid-template-columns: 1fr; }
+}
+
+/* =========================================
+   ENTREGAS DE TAREAS (revisión del admin)
+   ========================================= */
+.submissions-list { display: flex; flex-direction: column; gap: 12px; max-height: 60vh; overflow-y: auto; }
+.submission-card { background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 14px; }
+.submission-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.sub-status { font-size: 0.72em; font-weight: 800; text-transform: uppercase; padding: 3px 9px; border-radius: 10px; }
+.sub-status.submitted { background: rgba(33, 150, 243, 0.18); color: #64b5f6; }
+.sub-status.reviewed  { background: rgba(40, 167, 69, 0.18);  color: #4caf50; }
+.submission-ev { font-size: 0.85em; color: #ccc; margin: 0 0 10px; }
+.submission-ev a { color: #64b5f6; word-break: break-all; }
+.submission-grade { display: grid; grid-template-columns: 80px 1fr auto; gap: 8px; align-items: center; }
+.submission-grade input {
+    padding: 7px 9px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #eee;
+    font-size: 0.85em;
+}

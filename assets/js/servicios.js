@@ -37,11 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingDealers       = document.getElementById('loading-dealers');
     const mesasGrid            = document.getElementById('mesas-grid-container');
     const loadingMesas         = document.getElementById('loading-mesas');
+    const modalMesasGrid       = document.getElementById('modal-mesas-grid');
     const studentAccessLink    = document.getElementById('student-access-link');
     const announceBar          = document.getElementById('announce-bar');
     const announceText         = document.getElementById('announce-text');
     const closeAnnounce        = document.getElementById('close-announce-bar');
-    const itemCards            = document.querySelectorAll('.item-card');
 
     // ── CARGA NÚMERO WHATSAPP DESDE FIRESTORE ─────────────────
     // Usa merge:true en el admin para no perder otros campos del documento.
@@ -89,12 +89,19 @@ document.addEventListener('DOMContentLoaded', () => {
         detailsTextarea.value = txt;
     };
 
-    itemCards.forEach(card => {
+    // Activa/desactiva una tarjeta seleccionable. Las mesas en estado
+    // "Próximamente"/"Agotado" llevan la clase .item-disabled y no se togglean.
+    const attachItemToggle = (card) => {
         card.addEventListener('click', function () {
+            if (this.classList.contains('item-disabled')) return;
             this.classList.toggle('selected');
             updateDetailsText();
         });
-    });
+    };
+
+    // Los EXTRAS son estáticos en el HTML; las MESAS se generan dinámicamente
+    // desde Firestore y reciben su toggle en fetchMesas().
+    document.querySelectorAll('.item-card.extra-card').forEach(attachItemToggle);
 
     // ── MODALES ───────────────────────────────────────────────
     const openQuoteModal = (info = '') => {
@@ -115,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
         quoteModal.style.display = 'none';
         document.body.style.overflow = 'auto';
         quoteForm.reset();
-        itemCards.forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('.item-card.selected').forEach(c => c.classList.remove('selected'));
     };
 
     const openWhatsappModal = () => {
@@ -197,35 +204,74 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ── MESAS ─────────────────────────────────────────────────
+    // ── MESAS / JUEGOS DEL CASINO ─────────────────────────────
+    // Normaliza el estado: cualquier valor que no sea "Próximamente"
+    // o "Agotado" se considera "Disponible" (compatibilidad con datos viejos).
+    const normalizeStatus = (s) =>
+        ['Próximamente', 'Agotado'].includes(s) ? s : 'Disponible';
+
     const fetchMesas = async () => {
         if (!mesasGrid) return;
         loadingMesas.style.display = 'block';
         mesasGrid.innerHTML = '';
+        if (modalMesasGrid) modalMesasGrid.innerHTML = '';
         try {
             const snap = await getDocs(collection(db, dbPath('tables')));
-            if (snap.empty) { loadingMesas.textContent = 'No hay mesas disponibles.'; return; }
-            loadingMesas.style.display = 'none';
-            snap.docs
+            const mesas = snap.docs
                 .map(d => ({ id: d.id, ...d.data() }))
-                .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-                .forEach(mesa => {
-                    const imageUrl = mesa.imageUrl || `https://placehold.co/400x200/333333/ffffff?text=${encodeURIComponent(mesa.name || 'Mesa')}`;
-                    const card = document.createElement('div');
-                    card.className = 'mesa-card';
-                    card.innerHTML = `
-                        <img src="${imageUrl}" alt="${mesa.name || 'Mesa'}"
-                             onerror="this.onerror=null;this.src='https://eidk95seyu2.exactdn.com/en/blog/wp-content/uploads/2024/02/BetMGMCasino_Header_Apr01_Craps-Dice-Setting-and-Control-min.jpg?strip=all'">
-                        <h3>${mesa.name || 'Mesa'}</h3>
-                        <p>${mesa.description || 'Consulta para más detalles.'}</p>
-                        <button type="button" class="btn btn-primary open-quote-modal"
-                                data-table-name="${mesa.name || 'Mesa'}">
-                            ${mesa.status === 'Próximamente' ? 'Próximamente' : 'Cotizar'}
-                        </button>
+                .sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || (a.name || '').localeCompare(b.name || ''));
+
+            if (mesas.length === 0) {
+                loadingMesas.textContent = 'No hay mesas disponibles.';
+                if (modalMesasGrid) modalMesasGrid.innerHTML = '<p class="item-name" style="grid-column:1/-1;color:#888;">Pronto añadiremos mesas.</p>';
+                return;
+            }
+            loadingMesas.style.display = 'none';
+
+            mesas.forEach(mesa => {
+                const name      = mesa.name || 'Mesa';
+                const status    = normalizeStatus(mesa.status);
+                const disabled  = status !== 'Disponible';
+                const badgeCls  = mesa.tagStyle === 'gold' ? 'badge-gold' : 'badge-popular';
+                const badgeHtml = mesa.tag ? `<span class="badge ${badgeCls}">${mesa.tag}</span>` : '';
+                const players   = mesa.maxPlayers ? ` · Hasta ${mesa.maxPlayers} jugadores` : '';
+                const imageUrl  = mesa.imageUrl || `https://placehold.co/400x200/333333/ffffff?text=${encodeURIComponent(name)}`;
+
+                // ── Tarjeta de la grilla pública ──
+                const stateCls = disabled ? (status === 'Agotado' ? 'mesa-out' : 'mesa-soon') : '';
+                const btnHtml  = disabled
+                    ? `<button type="button" class="btn btn-primary" disabled>${status}</button>`
+                    : `<button type="button" class="btn btn-primary open-quote-modal" data-table-name="${name}">Cotizar</button>`;
+                const card = document.createElement('div');
+                card.className = `mesa-card ${stateCls}`;
+                card.innerHTML = `
+                    ${badgeHtml}
+                    ${disabled ? `<span class="mesa-status-pill">${status}</span>` : ''}
+                    <img src="${imageUrl}" alt="${name}"
+                         onerror="this.onerror=null;this.src='https://eidk95seyu2.exactdn.com/en/blog/wp-content/uploads/2024/02/BetMGMCasino_Header_Apr01_Craps-Dice-Setting-and-Control-min.jpg?strip=all'">
+                    <h3>${name}</h3>
+                    <p>${(mesa.description || 'Consulta para más detalles.')}${players}</p>
+                    ${btnHtml}
+                `;
+                mesasGrid.appendChild(card);
+
+                // ── Tarjeta seleccionable del modal "Arma tu Experiencia" ──
+                if (modalMesasGrid) {
+                    const item = document.createElement('div');
+                    item.className = `item-card${disabled ? ' item-disabled' : ''}`;
+                    item.dataset.type = 'Mesa';
+                    item.dataset.name = name;
+                    item.innerHTML = `
+                        ${badgeHtml}
+                        <span class="item-name">${name}</span>
+                        ${disabled ? `<span class="item-status">${status}</span>` : ''}
                     `;
-                    mesasGrid.appendChild(card);
-                });
-            document.querySelectorAll('.open-quote-modal').forEach(b => b.addEventListener('click', handleOpenQuote));
+                    attachItemToggle(item);
+                    modalMesasGrid.appendChild(item);
+                }
+            });
+
+            mesasGrid.querySelectorAll('.open-quote-modal').forEach(b => b.addEventListener('click', handleOpenQuote));
         } catch {
             loadingMesas.textContent = 'Error al cargar las mesas.';
             loadingMesas.style.color = '#dc3545';
