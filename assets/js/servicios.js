@@ -192,10 +192,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             await addDoc(collection(db, dbPath('service_requests')), data);
-            formMessage.textContent = '¡Cotización enviada con éxito!';
+            // Opción A: invitar a continuar por WhatsApp (el lead inicia el chat
+            // → abre la ventana de 24 h y su pedido llega directo a nuestra bandeja).
+            const waText = `Hola DealerClub, soy ${data.fullName || ''}. Acabo de enviar una solicitud de cotización` +
+                (data.eventType ? ` para ${data.eventType}` : '') +
+                (data.eventDate ? ` (fecha tentativa: ${data.eventDate})` : '') + '.' +
+                (data.details ? ` ${data.details}` : '');
+            const waUrl = `https://wa.me/${WHATSAPP_PHONE_NUMBER}?text=${encodeURIComponent(waText)}`;
+            formMessage.innerHTML = '¡Cotización enviada con éxito! 🎉<br>Para una respuesta más rápida, continúa por WhatsApp:<br>' +
+                `<a href="${waUrl}" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:12px;display:inline-block;">Continuar por WhatsApp</a>`;
             formMessage.className = 'form-message success';
             quoteForm.reset();
-            setTimeout(closeQuoteModal, 3000);
+            setTimeout(closeQuoteModal, 15000);
         } catch {
             formMessage.textContent = 'Hubo un error al enviar. Inténtalo de nuevo.';
             formMessage.className = 'form-message error';

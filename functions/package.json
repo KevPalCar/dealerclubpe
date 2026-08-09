@@ -1,0 +1,22 @@
+{
+  "name": "dealerclub-whatsapp-bot",
+  "description": "Backend de Cloud Functions para el bot de WhatsApp de DealerClub",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.1.1"
+  },
+  "devDependencies": {},
+  "license": "UNLICENSED"
+}

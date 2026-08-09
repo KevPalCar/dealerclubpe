@@ -942,11 +942,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const params = new URLSearchParams({ view: 'cm', fs: '1', to: r.email || '', su: subject, body });
         return `https://mail.google.com/mail/?authuser=${encodeURIComponent(COMPANY_EMAIL)}&${params.toString()}`;
     };
+    // URL del panel de atención de WhatsApp (bandeja de la empresa).
+    const WA_PANEL_URL = 'https://dealerclubpe.web.app/';
+    // Construye un enlace al PANEL (no al WhatsApp personal): abre el chat de ese
+    // número y autollena un mensaje con los datos de la solicitud, listo para enviar
+    // desde el número de la empresa.
     const buildWa = (r) => {
         const phone = (r.phone || '').replace(/\D/g, '');
         if (!phone) return '';
-        const text = `Hola ${r.fullName || ''}, te escribo de DealerClub 👋 sobre tu solicitud de cotización para tu evento. `;
-        return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+        const text = `Hola ${r.fullName || ''}, te escribo de DealerClub 👋 sobre tu solicitud` +
+            (r.eventType ? ` de ${r.eventType}` : '') +
+            (r.eventDate ? ` (fecha tentativa: ${r.eventDate})` : '') + '.';
+        return `${WA_PANEL_URL}?to=${phone}&msg=${encodeURIComponent(text)}`;
     };
     // Registra que se tomó acción (marca como 'Respondido' si seguía 'Nuevo')
     const markRequestResponded = async (r) => {

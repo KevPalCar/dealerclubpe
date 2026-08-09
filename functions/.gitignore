@@ -1,0 +1,13 @@
+# Dependencias
+node_modules/
+
+# Secretos locales (NUNCA subir a Git)
+.env
+.env.local
+.secret.local
+*.local
+
+# Logs
+firebase-debug.log
+firebase-debug.*.log
+*.log

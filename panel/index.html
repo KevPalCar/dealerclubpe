@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<link rel="icon" href="favicon.png" />
+<title>DealerClub · Panel</title>
+<style>
+  :root { --bg:#0e0e10; --panel:#17171b; --line:#26262c; --gold:#e9b949; --txt:#ececf0; --muted:#9a9aa3; --me:#1f5c3a; --them:#26262c; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--txt); }
+  button { cursor:pointer; font:inherit; }
+  /* Login */
+  #login { max-width:340px; margin:12vh auto; padding:24px; background:var(--panel); border:1px solid var(--line); border-radius:14px; }
+  #login h1 { font-size:20px; margin:0 0 4px; } #login p { color:var(--muted); margin:0 0 16px; font-size:13px; }
+  #login input { width:100%; padding:11px; margin:6px 0; background:#0e0e10; border:1px solid var(--line); border-radius:8px; color:var(--txt); }
+  .btn { background:var(--gold); color:#1a1a1a; border:none; border-radius:8px; padding:11px 14px; font-weight:600; }
+  .btn:disabled { opacity:.5; }
+  .err { color:#ff7a7a; font-size:13px; min-height:18px; }
+  /* App */
+  #app { display:none; height:100vh; grid-template-columns:320px 1fr; }
+  .col { border-right:1px solid var(--line); display:flex; flex-direction:column; min-height:0; }
+  .top { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--line); }
+  .top b { color:var(--gold); }
+  .list { overflow-y:auto; flex:1; }
+  .item { padding:12px 14px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .item:hover, .item.active { background:#1d1d22; }
+  .item .nm { font-weight:600; font-size:14px; display:flex; justify-content:space-between; gap:8px; }
+  .item .ls { color:var(--muted); font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+  .pill { font-size:10.5px; background:#5b2330; color:#ffb3b3; padding:1px 7px; border-radius:10px; }
+  /* Chat */
+  #chat { display:flex; flex-direction:column; min-height:0; }
+  #chatTop { padding:12px 14px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  #msgs { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:8px; background:#0b0b0d; }
+  .b { max-width:74%; padding:8px 11px; border-radius:12px; font-size:14px; white-space:pre-wrap; word-wrap:break-word; }
+  .them { background:var(--them); align-self:flex-start; border-bottom-left-radius:3px; }
+  .me { background:var(--me); align-self:flex-end; border-bottom-right-radius:3px; }
+  .imgmsg { display:block; max-width:240px; max-height:320px; border-radius:8px; cursor:pointer; }
+  .medmsg { display:block; max-width:240px; }
+  .doclink { color:var(--gold); text-decoration:none; font-weight:600; }
+  .cap { margin-top:4px; font-size:13px; }
+  .banner { background:#5b2330; color:#ffd7d7; padding:8px 12px; font-size:13px; text-align:center; }
+  .composer { display:flex; gap:8px; padding:10px; border-top:1px solid var(--line); }
+  .composer textarea { flex:1; resize:none; height:44px; padding:10px; background:#0e0e10; border:1px solid var(--line); border-radius:8px; color:var(--txt); }
+  .ghost { background:transparent; color:var(--muted); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:12.5px; }
+  .empty { color:var(--muted); margin:auto; font-size:14px; }
+  @media (max-width:720px){
+    #app { grid-template-columns:1fr; }
+    .col.hide-m { display:none; } #chat.show-m { display:flex; }
+    #chat { display:none; }
+  }
+</style>
+</head>
+<body>
+  <div id="login">
+    <img src="isotipo.png" alt="DealerClub" style="height:64px;display:block;margin:0 auto 12px" />
+    <h1 style="text-align:center">DealerClub · Panel</h1>
+    <p>Atención de leads de WhatsApp</p>
+    <input id="email" type="email" placeholder="Correo" autocomplete="username" />
+    <input id="pass" type="password" placeholder="Contraseña" autocomplete="current-password" />
+    <button id="loginBtn" class="btn" style="width:100%;margin-top:8px">Entrar</button>
+    <p class="err" id="loginErr"></p>
+  </div>
+
+  <div id="app">
+    <div class="col" id="listCol">
+      <div class="top"><span style="display:flex;align-items:center;gap:8px"><img src="isotipo.png" alt="" style="height:26px" /><b>DealerClub</b></span><span style="display:flex;gap:6px"><button class="ghost" id="newChat">＋ Nuevo</button><button class="ghost" id="logout">Salir</button></span></div>
+      <div class="list" id="list"></div>
+    </div>
+    <div id="chat">
+      <div id="chatTop"><span id="chatTitle"></span>
+        <span style="display:flex;gap:6px">
+          <button class="ghost" id="backBtn" style="display:none">←</button>
+          <button class="ghost" id="toggleBot"></button>
+        </span>
+      </div>
+      <div id="msgs"></div>
+      <div class="composer">
+        <label class="ghost" for="fileInput" id="attachBtn" title="Adjuntar archivo" style="display:flex;align-items:center;cursor:pointer">📎</label>
+        <input id="fileInput" type="file" style="display:none" accept="image/*,video/*,audio/*,application/pdf,.pdf,.doc,.docx" />
+        <textarea id="reply" placeholder="Escribe como DealerClub…"></textarea>
+        <button class="btn" id="sendBtn">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY",
+  authDomain: "dealerclubpe.firebaseapp.com",
+  projectId: "dealerclubpe",
+  storageBucket: "dealerclubpe.firebasestorage.app",
+  messagingSenderId: "330568352415",
+  appId: "1:330568352415:web:9fcd7651698bfafac998aa"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const fns = getFunctions(app, "us-central1");
+const call = (n) => httpsCallable(fns, n);
+
+const $ = (id) => document.getElementById(id);
+let current = null, listTimer = null, chatTimer = null;
+const mediaCache = {}; // storagePath -> dataUrl (evita recargar en cada poll)
+
+async function getMedia(path) {
+  if (mediaCache[path]) return mediaCache[path];
+  const { data } = await call("adminGetMedia")({ path });
+  mediaCache[path] = data.dataUrl;
+  return data.dataUrl;
+}
+async function setSrc(el, path) {
+  try { el.src = await getMedia(path); } catch (e) { el.alt = "no se pudo cargar"; }
+}
+
+// ---- Login ----
+$("loginBtn").onclick = async () => {
+  $("loginErr").textContent = "";
+  $("loginBtn").disabled = true;
+  try {
+    await signInWithEmailAndPassword(auth, $("email").value.trim(), $("pass").value);
+  } catch (e) {
+    $("loginErr").textContent = "No se pudo entrar. Revisa correo/contraseña.";
+  }
+  $("loginBtn").disabled = false;
+};
+$("pass").addEventListener("keydown", (e) => { if (e.key === "Enter") $("loginBtn").click(); });
+$("logout").onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    $("login").style.display = "none";
+    $("app").style.display = "grid";
+    refreshList();
+    listTimer = setInterval(refreshList, 5000);
+    handleDeepLink();
+  } else {
+    $("app").style.display = "none";
+    $("login").style.display = "block";
+    clearInterval(listTimer); clearInterval(chatTimer);
+  }
+});
+
+// Enlace desde el admin web: ?to=<numero>&msg=<texto> → abre ese chat y autollena.
+async function handleDeepLink() {
+  const p = new URLSearchParams(location.search);
+  const to = (p.get("to") || "").replace(/\D/g, "");
+  if (!to) return;
+  const msg = p.get("msg") || "";
+  history.replaceState({}, "", location.pathname); // limpia la URL
+  try {
+    await call("adminStartChat")({ phone: to });
+    await refreshList();
+    openChat(to, "+" + to);
+    if (msg) $("reply").value = msg;
+  } catch (e) { alert("No se pudo abrir el chat: " + (e.message || e)); }
+}
+
+// ---- Lista ----
+async function refreshList() {
+  try {
+    const { data } = await call("adminListConversations")();
+    const list = $("list");
+    list.innerHTML = "";
+    if (!data.length) { list.innerHTML = '<p class="empty" style="padding:20px">Aún no hay conversaciones.</p>'; return; }
+    for (const c of data) {
+      const div = document.createElement("div");
+      div.className = "item" + (current === c.phone ? " active" : "");
+      const name = c.name || ("+" + c.phone);
+      div.innerHTML = `<div class="nm"><span>${esc(name)}</span>${c.humanTakeover ? '<span class="pill">pausado</span>' : ''}</div>
+        <div class="ls">${c.lastRole === 'user' ? '' : '✓ '}${esc(c.last || '')}</div>`;
+      div.onclick = () => openChat(c.phone, name);
+      list.appendChild(div);
+    }
+  } catch (e) {
+    console.error(e);
+    $("list").innerHTML = '<div class="banner">No se pudieron cargar los chats.<br>' +
+      esc((e && (e.message || e.code)) || String(e)) + '</div>';
+  }
+}
+
+// ---- Chat ----
+async function openChat(phone, name) {
+  current = phone;
+  $("chat").classList.add("show-m"); $("listCol").classList.add("hide-m");
+  $("backBtn").style.display = window.innerWidth <= 720 ? "" : "none";
+  $("chatTitle").innerHTML = `<b>${esc(name)}</b> · +${phone}`;
+  await loadChat();
+  clearInterval(chatTimer);
+  chatTimer = setInterval(loadChat, 4000);
+  refreshList();
+}
+$("backBtn").onclick = () => { $("chat").classList.remove("show-m"); $("listCol").classList.remove("hide-m"); current = null; clearInterval(chatTimer); };
+
+async function loadChat() {
+  if (!current) return;
+  try {
+    const { data } = await call("adminGetConversation")({ phone: current });
+    const box = $("msgs");
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+    box.innerHTML = "";
+    for (const m of data.history) {
+      const d = document.createElement("div");
+      d.className = "b " + (m.role === "user" ? "them" : "me");
+      if (m.storagePath && (m.type === "image" || m.type === "sticker")) {
+        const img = document.createElement("img");
+        img.className = "imgmsg";
+        img.onclick = async () => window.open(await getMedia(m.storagePath), "_blank");
+        d.appendChild(img);
+        setSrc(img, m.storagePath);
+      } else if (m.storagePath && m.type === "audio") {
+        const a = document.createElement("audio");
+        a.controls = true; a.className = "medmsg";
+        d.appendChild(a);
+        setSrc(a, m.storagePath);
+      } else if (m.storagePath && m.type === "video") {
+        const v = document.createElement("video");
+        v.controls = true; v.className = "imgmsg";
+        d.appendChild(v);
+        setSrc(v, m.storagePath);
+      } else if (m.storagePath && m.type === "document") {
+        const link = document.createElement("a");
+        link.href = "#"; link.className = "doclink";
+        link.textContent = "📄 " + (m.filename || "documento");
+        link.onclick = async (e) => { e.preventDefault(); window.open(await getMedia(m.storagePath), "_blank"); };
+        d.appendChild(link);
+      } else {
+        d.textContent = m.text;
+      }
+      if (m.storagePath && m.caption) {
+        const cap = document.createElement("div");
+        cap.className = "cap"; cap.textContent = m.caption;
+        d.appendChild(cap);
+      }
+      box.appendChild(d);
+    }
+    if (atBottom) box.scrollTop = box.scrollHeight;
+    const tb = $("toggleBot");
+    tb.textContent = data.humanTakeover ? "▶ Reactivar bot" : "⏸ Pausar bot";
+    tb.onclick = async () => { await call("adminSetTakeover")({ phone: current, value: !data.humanTakeover }); loadChat(); refreshList(); };
+  } catch (e) { console.error(e); }
+}
+
+$("sendBtn").onclick = async () => {
+  const t = $("reply").value.trim();
+  if (!t || !current) return;
+  $("sendBtn").disabled = true;
+  try {
+    await call("adminSendReply")({ phone: current, text: t });
+    $("reply").value = "";
+    await loadChat(); refreshList();
+  } catch (e) { alert("No se pudo enviar: " + (e.message || e)); }
+  $("sendBtn").disabled = false;
+};
+
+// Nuevo chat con cualquier número
+$("newChat").onclick = async () => {
+  const raw = prompt("Escribir a un número nuevo.\nPon el número con código de país (solo dígitos), ej. 51999888777:");
+  if (!raw) return;
+  const phone = raw.replace(/\D/g, "");
+  if (phone.length < 8) { alert("Número inválido. Incluye el código de país (ej. 51...)."); return; }
+  try {
+    await call("adminStartChat")({ phone });
+    await refreshList();
+    openChat(phone, "+" + phone);
+  } catch (e) { alert("No se pudo abrir el chat: " + (e.message || e)); }
+};
+
+// Adjuntar y enviar un archivo (imagen/pdf/audio/video)
+$("fileInput").onchange = async () => {
+  const file = $("fileInput").files[0];
+  if (!file || !current) return;
+  if (file.size > 10 * 1024 * 1024) { alert("Archivo muy grande (máx 10 MB)."); $("fileInput").value = ""; return; }
+  const caption = $("reply").value.trim();
+  $("attachBtn").textContent = "⏳";
+  try {
+    const dataUrl = await new Promise((res, rej) => {
+      const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file);
+    });
+    const dataBase64 = String(dataUrl).split(",")[1];
+    await call("adminSendMedia")({ phone: current, dataBase64, mime: file.type || "application/octet-stream", filename: file.name, caption });
+    $("reply").value = "";
+    await loadChat(); refreshList();
+  } catch (e) { alert("No se pudo enviar el archivo: " + (e.message || e)); }
+  $("attachBtn").textContent = "📎";
+  $("fileInput").value = "";
+};
+
+function esc(s){ return (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+</script>
+</body>
+</html>
