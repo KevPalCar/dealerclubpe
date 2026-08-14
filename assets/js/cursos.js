@@ -151,7 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="card-content-wrapper">
                         <h3 class="course-title">${course.name || 'Curso'}</h3>
                         <p class="course-description">${course.description || ''}</p>
-                        <p class="price">${course.price || 'N/A'}</p>
+                        <div class="price-block">
+                            <p class="price">${course.price || 'N/A'}</p>
+                            ${course.priceNote ? `<p class="price-note">${course.priceNote}</p>` : ''}
+                        </div>
                         <ul class="course-details">
                             <li><strong>Horario:</strong> ${course.schedule || 'N/A'}</li>
                             <li><strong>Juegos:</strong></li>

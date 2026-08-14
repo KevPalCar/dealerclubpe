@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${c.order ?? '-'}</td>
             <td><strong>${c.name}</strong><br><small style="color:#ffc107;">${c.tag || ''}</small></td>
             <td>${(c.description || '').substring(0, 35)}…</td>
-            <td>${c.price}</td><td>${c.schedule}</td><td>${c.duration}</td>
+            <td>${c.price}${c.priceNote ? `<br><small style="color:#999;">${c.priceNote}</small>` : ''}</td><td>${c.schedule}</td><td>${c.duration}</td>
             <td>
                 <select class="status-select" data-id="${c.id}">
                     <option value="Abierto"      ${c.status === 'Abierto'       ? 'selected' : ''}>Abierto</option>
@@ -289,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('courseOrder').value       = c.order;
             document.getElementById('courseDescription').value = c.description;
             document.getElementById('coursePrice').value       = c.price;
+            document.getElementById('coursePriceNote').value   = c.priceNote || '';
             document.getElementById('courseSchedule').value    = c.schedule;
             document.getElementById('courseDuration').value    = c.duration;
             document.getElementById('courseGames').value       = (c.gamesIncluded || []).join(', ');
@@ -328,6 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
             order: parseInt(document.getElementById('courseOrder').value) || 0,
             description: document.getElementById('courseDescription').value,
             price: document.getElementById('coursePrice').value,
+            priceNote: document.getElementById('coursePriceNote').value.trim(),
             schedule: document.getElementById('courseSchedule').value,
             duration: document.getElementById('courseDuration').value,
             gamesIncluded: document.getElementById('courseGames').value.split(',').map(g => g.trim()).filter(Boolean),

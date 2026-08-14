@@ -287,6 +287,21 @@ h2 {
     margin: 0 0 25px;
     line-height: 1;
 }
+/* Bloque de precio + nota aclaratoria (ej: "por mes") */
+.price-block {
+    margin: 0 0 25px;
+}
+.price-block .price {
+    margin: 0;
+}
+.price-note {
+    margin: 6px 0 0;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: #bdbdbd;
+    line-height: 1.3;
+    letter-spacing: 0.3px;
+}
 .course-details {
     list-style: none;
     padding: 0;
@@ -586,6 +601,21 @@ h2 {
     color: #ffc107;
     margin: 0 0 25px;
     line-height: 1;
+}
+/* Bloque de precio + nota aclaratoria (ej: "por mes") */
+.price-block {
+    margin: 0 0 25px;
+}
+.price-block .price {
+    margin: 0;
+}
+.price-note {
+    margin: 6px 0 0;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: #bdbdbd;
+    line-height: 1.3;
+    letter-spacing: 0.3px;
 }
 .course-details {
     list-style: none;
