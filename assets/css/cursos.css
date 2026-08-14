@@ -690,6 +690,122 @@ h2 {
 .consideracion-item i { font-size: 2em; color: #ffc107; margin-bottom: 10px; display: block; text-align: center; }
 
 /* =========================================
+   AVISO DESTACADO: HORARIOS A MEDIDA (CTA fijo)
+   ========================================= */
+.horario-personalizado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    margin-top: 30px;
+    padding: 26px 32px;
+    background: linear-gradient(135deg, #ffd54f 0%, #ffc107 55%, #ffb300 100%);
+    border-radius: 12px;
+    text-align: left;
+    box-shadow: 0 10px 30px rgba(255, 193, 7, 0.28);
+    position: relative;
+    overflow: hidden;
+}
+/* Brillo diagonal que recorre el aviso para atraer la mirada */
+.horario-personalizado::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+    transform: skewX(-20deg);
+    animation: horarioShine 4.5s ease-in-out infinite;
+}
+@keyframes horarioShine {
+    0%, 65% { left: -60%; }
+    100%    { left: 130%; }
+}
+.horario-personalizado-texto {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+}
+.horario-badge {
+    display: inline-block;
+    background-color: #1a1a1a;
+    color: #ffc107;
+    font-size: 0.75em;
+    font-weight: bold;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 50px;
+    margin-bottom: 12px;
+}
+.horario-badge i { margin-right: 6px; }
+.horario-personalizado h3 {
+    color: #1a1a1a;
+    font-size: 1.75em;
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 0 0 8px;
+}
+.horario-personalizado p {
+    color: #3d3218;
+    font-size: 1.05em;
+    font-weight: 500;
+    margin: 0;
+    line-height: 1.6;
+}
+.horario-personalizado p strong {
+    color: #1a1a1a;
+    font-weight: 800;
+    white-space: nowrap;
+}
+.btn-horario-wa {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background-color: #128c3e;
+    color: #fff;
+    text-decoration: none;
+    padding: 16px 30px;
+    border-radius: 50px;
+    white-space: nowrap;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+    animation: horarioPulse 2.2s ease-in-out infinite;
+    transition: transform 0.25s ease, background-color 0.25s ease;
+}
+.btn-horario-wa i { font-size: 1.9em; }
+.btn-horario-wa span {
+    display: flex;
+    flex-direction: column;
+    font-size: 1.1em;
+    font-weight: bold;
+    line-height: 1.2;
+}
+.btn-horario-wa small {
+    font-size: 0.72em;
+    font-weight: 500;
+    opacity: 0.9;
+}
+@keyframes horarioPulse {
+    0%, 100% { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(18, 140, 62, 0.55); }
+    50%      { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3), 0 0 0 14px rgba(18, 140, 62, 0); }
+}
+.btn-horario-wa:hover {
+    background-color: #0e6f31;
+    color: #fff;
+    transform: translateY(-3px) scale(1.03);
+}
+/* Respeta a quien prefiere menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+    .horario-personalizado::after,
+    .btn-horario-wa { animation: none; }
+}
+
+/* =========================================
    6. FOOTER
    ========================================= */
 /* Estilos para el Footer */
@@ -996,7 +1112,23 @@ h2 {
     }
 
     .footer-info, .footer-contact, .footer-social { width: 100%; margin-bottom: 20px; }
-    
+
+    /* Aviso de horarios personalizados: se apila en móvil */
+    .horario-personalizado {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+        padding: 24px 20px;
+    }
+    .horario-personalizado h3 { font-size: 1.45em; }
+    .horario-personalizado p { font-size: 1em; }
+    .btn-horario-wa {
+        width: 100%;
+        justify-content: center;
+        padding: 15px 20px;
+    }
+    .btn-horario-wa span { text-align: left; }
+
     /* Modal Móvil */
     .modal-content { width: 95%; padding: 20px; }
     .close-button { top: 5px; right: 15px; }
