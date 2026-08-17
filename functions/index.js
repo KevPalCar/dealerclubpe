@@ -84,6 +84,48 @@ function resolveMedia(nombre) {
   return null;
 }
 
+// WhatsApp no entiende markdown: el modelo a veces se escapa y manda
+// "**negrita**" o viñetas "*   item", que el cliente ve tal cual.
+function normalizarWhatsapp(texto) {
+  return (
+    texto
+      // Viñetas de lista -> punto medio (antes que las negritas, para no
+      // confundir el asterisco de viñeta con el de énfasis).
+      .replace(/^[ \t]*[*-][ \t]{2,}/gm, "• ")
+      .replace(/^[ \t]*[*-][ \t]+(?=\S)/gm, "• ")
+      // **negrita** -> *negrita* (el formato real de WhatsApp)
+      .replace(/\*\*(.+?)\*\*/gs, "*$1*")
+      // Títulos markdown -> texto normal
+      .replace(/^#{1,6}[ \t]*/gm, "")
+      // La línea de la oferta debe ir sola, nunca pegada a una frase.
+      .replace(/[ \t]*(🎟️\s*Oferta gratuita)/g, "\n\n$1")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  );
+}
+
+// Si el bot anunció el catálogo pero olvidó la etiqueta [[BROCHURE:…]],
+// deducimos cuál corresponde por lo que dijo él y por lo que pidió el lead.
+// Devuelve "escuela" | "eventos" | null.
+function inferirBrochure(respuestaBot, mensajeLead) {
+  const bot = (respuestaBot || "").toLowerCase();
+  const anuncia = /(catálogo|catalogo|brochure|folleto|dossier)/.test(bot);
+  if (!anuncia) return null;
+
+  const lead = (mensajeLead || "").toLowerCase().trim();
+  const dice = (re, txt) => re.test(txt);
+
+  // Pistas explícitas en lo que dijo el bot.
+  if (dice(/casino de fantas|evento|alquiler de mesas/, bot)) return "eventos";
+  if (dice(/escuela|curso|programa|dealer/, bot)) return "escuela";
+
+  // Si no, por la opción que eligió el lead en el menú.
+  if (/^2\b|2️⃣|casino de fantas|evento/.test(lead)) return "eventos";
+  if (/^1\b|1️⃣|escuela|curso/.test(lead)) return "escuela";
+
+  return null;
+}
+
 // Enlace que abre WhatsApp hacia el número de empresa con el comando
 // "@<lead> " ya escrito, para que Kevin solo complete su mensaje.
 function adminReplyLink(leadPhone) {
@@ -245,7 +287,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     let escalar = false;
     const pedidos = [];
     const imagenes = [];
-    const cleanReply = reply
+    const sinEtiquetas = reply
       .replace(/\[\[ESCALAR\]\]/gi, () => {
         escalar = true;
         return "";
@@ -261,6 +303,8 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       .replace(/\n{3,}/g, "\n\n")
       .trim();
 
+    const cleanReply = normalizarWhatsapp(sinEtiquetas);
+
     // 8) Enviar el texto (si quedó algo) y guardarlo en el historial.
     if (cleanReply) {
       const sendResult = await wa.sendText(msg.from, cleanReply);
@@ -274,21 +318,54 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       ]);
     }
 
+    // 8.5) Red de seguridad: a veces el modelo ANUNCIA el catálogo
+    //      ("te comparto el catálogo…") pero se olvida de poner la
+    //      etiqueta [[BROCHURE:…]], y el lead se queda sin el PDF.
+    //      Si detectamos el anuncio y no hubo etiqueta, lo enviamos igual.
+    if (!pedidos.length) {
+      const inferido = inferirBrochure(cleanReply, msg.text);
+      if (inferido) {
+        pedidos.push(inferido);
+        logger.info("Brochure inferido (el cerebro no puso la etiqueta)", {
+          tipo: inferido,
+          from: msg.from,
+        });
+      }
+    }
+
     // 9) Enviar los brochures solicitados que aún no se hayan enviado.
     const yaEnviados = conv?.brochuresSent || [];
     const nuevos = [...new Set(pedidos)].filter(
       (t) => BROCHURES[t] && !yaEnviados.includes(t)
     );
+    const enviados = [];
     for (const t of nuevos) {
       const b = BROCHURES[t];
+      const caption = b.caption();
       try {
-        const r = await wa.sendDocument(msg.from, b.file, b.filename, b.caption());
+        const r = await wa.sendDocument(msg.from, b.file, b.filename, caption);
         logger.info("Brochure enviado", { tipo: t, dryRun: !!r?.dryRun, error: r?.error });
+        enviados.push(t);
+        // Queda en el historial para que en el panel se VEA que el PDF salió
+        // (antes solo se enviaba y el chat parecía no tener el archivo).
+        await store.appendMessages(msg.from, [
+          {
+            role: "assistant",
+            type: "document",
+            text: `[documento] ${b.filename}`,
+            filename: b.filename,
+            mime: "application/pdf",
+            caption,
+            ts: Date.now(),
+          },
+        ]);
       } catch (e) {
         logger.error("No se pudo enviar el brochure", { tipo: t, error: e.message });
       }
     }
-    if (nuevos.length) await store.addBrochuresSent(msg.from, nuevos);
+    // Solo marcamos como enviados los que de verdad salieron: si falló, que
+    // se pueda reintentar en el siguiente mensaje.
+    if (enviados.length) await store.addBrochuresSent(msg.from, enviados);
 
     // 9.5) Enviar capturas/imágenes solicitadas por el cerebro ([[IMG:nombre]]).
     for (const nombre of [...new Set(imagenes)]) {
@@ -321,7 +398,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
 });
 
 // Helpers expuestos solo para pruebas locales (no afecta a producción).
-exports._test = { parseIncoming, isValidSignature };
+exports._test = { parseIncoming, isValidSignature, inferirBrochure };
 
 // Funciones del panel admin (callable).
 const adminFns = require("./lib/admin");

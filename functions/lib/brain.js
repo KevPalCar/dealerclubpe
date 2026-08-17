@@ -10,6 +10,7 @@ const fs = require("fs");
 const path = require("path");
 const logger = require("firebase-functions/logger");
 const { LLM_API_KEY, LLM_PROVIDER, LLM_MODEL } = require("./config");
+const { getCatalogoTexto } = require("./catalog");
 
 let SYSTEM_PROMPT = null;
 function getSystemPrompt() {
@@ -20,8 +21,8 @@ function getSystemPrompt() {
   return SYSTEM_PROMPT;
 }
 
-// System prompt + contexto temporal (Lima) para proponer días concretos.
-function buildSystem() {
+// System prompt + catálogo en vivo + contexto temporal (Lima).
+async function buildSystem() {
   const fecha = new Date().toLocaleDateString("es-PE", {
     timeZone: "America/Lima",
     weekday: "long",
@@ -29,8 +30,11 @@ function buildSystem() {
     month: "long",
     day: "numeric",
   });
+  // Precios/horarios reales, leídos del mismo sitio que edita el admin.
+  const catalogo = await getCatalogoTexto();
   return (
     getSystemPrompt() +
+    (catalogo ? `\n\n${catalogo}` : "") +
     `\n\n## Contexto temporal\nHoy es ${fecha} (hora de Lima). Es solo referencia; NO propongas días ni fechas concretas al cliente.`
   );
 }
@@ -90,7 +94,7 @@ async function callGemini(history, apiKey, model) {
   }));
 
   const payload = {
-    systemInstruction: { parts: [{ text: buildSystem() }] },
+    systemInstruction: { parts: [{ text: await buildSystem() }] },
     contents,
     generationConfig: {
       temperature: 0.7,
@@ -129,7 +133,7 @@ async function callClaude(history, apiKey) {
     model,
     max_tokens: 600,
     temperature: 0.7,
-    system: buildSystem(),
+    system: await buildSystem(),
     messages,
   };
 
