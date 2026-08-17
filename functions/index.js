@@ -367,6 +367,26 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     // se pueda reintentar en el siguiente mensaje.
     if (enviados.length) await store.addBrochuresSent(msg.from, enviados);
 
+    // 9.2) Casino de Fantasía: TODA cotización la arma un humano (depende del
+    //      lugar, invitados, mesas, extras). Avisamos a Kevin apenas entra el
+    //      lead —una sola vez— pero SIN pausar el bot: mientras él se organiza,
+    //      el bot sigue conversando y recogiendo los datos del evento.
+    if (enviados.includes("eventos")) {
+      const primeraVez = await store.marcarAvisoUnico(msg.from, "eventAlertSent");
+      if (primeraVez) {
+        await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
+          title: "Lead de eventos - Casino de Fantasia",
+          message:
+            `${msg.profileName || "Un lead"} (+${msg.from}) pidió información de Casino de Fantasía.\n` +
+            `El bot ya le envió el catálogo y está recogiendo los datos del evento (fecha, lugar, invitados, mesas).\n` +
+            `Entra cuando puedas para cotizar: el bot NO está pausado.`,
+          click: adminReplyLink(msg.from),
+          tags: "tada",
+        });
+        logger.info("Alerta de lead de eventos enviada", { from: msg.from });
+      }
+    }
+
     // 9.5) Enviar capturas/imágenes solicitadas por el cerebro ([[IMG:nombre]]).
     for (const nombre of [...new Set(imagenes)]) {
       const filePath = resolveMedia(nombre);

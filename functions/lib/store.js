@@ -101,6 +101,22 @@ async function addBrochuresSent(phone, tipos) {
   );
 }
 
+// Marca que ya se avisó a Kevin de este lead (alerta de una sola vez).
+// Devuelve true si ESTA llamada fue la que lo marcó; false si ya estaba.
+async function marcarAvisoUnico(phone, campo) {
+  const ref = db.collection("wa_conversations").doc(phone);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (snap.exists && snap.data()[campo]) return false;
+    tx.set(
+      ref,
+      { [campo]: true, updatedAt: FieldValue.serverTimestamp() },
+      { merge: true }
+    );
+    return true;
+  });
+}
+
 async function isHumanTakeover(phone) {
   const conv = await getConversation(phone);
   return !!(conv && conv.humanTakeover);
@@ -139,6 +155,7 @@ module.exports = {
   appendMessages,
   isHumanTakeover,
   setHumanTakeover,
+  marcarAvisoUnico,
   addBrochuresSent,
   upsertLead,
   saveMedia,
