@@ -163,9 +163,38 @@
 }
 
 .work-content {
-    max-width: 800px;
-    margin: 0 auto 40px;
+    display: flex;
+    align-items: center;
+    gap: 45px;
+    max-width: 1100px;
+    margin: 0 auto 50px;
     text-align: left;
+}
+
+.work-intro {
+    flex: 1 1 auto;
+}
+
+/* Marco del video de presentacion: 9:16, el formato nativo de la pieza. */
+.work-video {
+    position: relative;
+    flex: 0 0 300px;
+    width: 300px;
+    aspect-ratio: 9 / 16;
+    margin: 0;
+    overflow: hidden;
+    border-radius: 18px;
+    background-color: #000;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.65);
+}
+
+.work-video video {
+    display: block;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .work-content h2 {
@@ -194,6 +223,8 @@
 }
 
 .swiper-slide {
+    position: relative;
+    overflow: hidden;
     width: 60% !important;
     height: 400px;
     background-color: #212121;
@@ -211,11 +242,37 @@
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8);
 }
 
-.swiper-slide img {
+.swiper-slide img,
+.swiper-slide video {
     display: block;
+    position: relative;
+    z-index: 1;
     width: 100%;
     height: 100%;
     border-radius: 15px;
+    object-fit: cover;
+}
+
+/* Medio mas angosto que el marco (p. ej. un reel 9:16): se muestra completo
+   y las alas se rellenan con una copia difuminada de si mismo. gallery.js
+   pone la clase y el fondo. */
+.is-pillarboxed .slide-media {
+    object-fit: contain;
+}
+
+.slide-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-position: center;
+    background-size: cover;
+    filter: blur(28px) brightness(0.45) saturate(1.15);
+    transform: scale(1.25);
+    pointer-events: none;
+}
+
+/* El video no cargo: se queda visible su poster. */
+.swiper-slide video.is-unavailable {
     object-fit: cover;
 }
 
@@ -382,6 +439,17 @@
     .work-content {
         text-align: center;
         max-width: 100%;
+    }
+
+    /* El video pasa debajo del texto y se centra. */
+    .work-content {
+        flex-direction: column;
+        gap: 35px;
+    }
+
+    .work-video {
+        flex: 0 0 auto;
+        width: min(280px, 70vw);
     }
 }
 

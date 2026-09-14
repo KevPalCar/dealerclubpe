@@ -58,7 +58,7 @@
                     <li><a href="/nosotros">Nosotros</a></li>
                     <li><a href="/iniciar-sesion" id="student-access-link">Iniciar Sesión</a></li>
                 </ul>
-            </nav>
+            </nav>  
         </div>
 
         <div class="hero-content">
@@ -109,28 +109,50 @@
 
     <section class="our-work-section">
         <div class="work-content">
-            <h2><strong>Nuestro Trabajo</strong></h2>
-            <p>Formamos a la élite de croupiers y proveemos talento "A1" para casinos y eventos exclusivos en Lima.
-                Nuestro trabajo es nuestra mejor carta de presentación. Aquí puedes ver una muestra de nuestro talento y
-                dedicación.</p>
+            <div class="work-intro">
+                <h2><strong>Nuestro Trabajo</strong></h2>
+                <p>Formamos a la élite de croupiers y proveemos talento "A1" para casinos y eventos exclusivos en Lima.
+                    Nuestro trabajo es nuestra mejor carta de presentación. Aquí puedes ver una muestra de nuestro
+                    talento y dedicación.</p>
+            </div>
+            <figure class="work-video">
+                <video class="slide-media" data-src="/assets/video/presentacion-dealerclub.mp4"
+                       poster="/assets/video/presentacion-dealerclub-poster.webp"
+                       width="540" height="960" preload="none" muted loop playsinline
+                       disablepictureinpicture
+                       aria-label="Video de presentación de DealerClub: el equipo de dealers en mesa"></video>
+            </figure>
         </div>
         <div class="work-gallery">
             <div class="swiper mySwiper">
                 <div class="swiper-wrapper">
                     <div class="swiper-slide">
-                        <img src="assets/images/KevinPoker.webp" alt="Trabajo de DealerClub 1" loading="lazy">
+                        <img class="slide-media" src="/assets/images/ruleta-fichas.webp" alt="Dealer de DealerClub colocando fichas sobre el paño de la ruleta"
+                             width="1400" height="788" loading="lazy" decoding="async">
                     </div>
                     <div class="swiper-slide">
-                        <img src="assets/images/LuciBaccarat.webp" alt="Trabajo de DealerClub 2" loading="lazy">
+                        <img class="slide-media" src="/assets/images/blackjack-mesa.webp" alt="Mesa de Blackjack de DealerClub durante el reparto de cartas"
+                             width="1400" height="788" loading="lazy" decoding="async">
                     </div>
                     <div class="swiper-slide">
-                        <img src="assets/images/KevUTH.webp" alt="Trabajo de DealerClub 3" loading="lazy">
+                        <img class="slide-media" src="/assets/images/poker-mesa.webp" alt="Mesa de Póker de DealerClub con el board servido y el rack de fichas"
+                             width="1400" height="788" loading="lazy" decoding="async">
                     </div>
                     <div class="swiper-slide">
-                        <img src="assets/images/KevBaccarat.webp" alt="Trabajo de DealerClub 4" loading="lazy">
+                        <img class="slide-media" src="/assets/images/evento-publico.webp" alt="Invitados jugando en una mesa de DealerClub durante un evento privado"
+                             width="1400" height="788" loading="lazy" decoding="async">
                     </div>
                     <div class="swiper-slide">
-                        <img src="assets/images/LuRuleta.webp" alt="Trabajo de DealerClub 5" loading="lazy">
+                        <img class="slide-media" src="/assets/images/mesa-jugadores.webp" alt="Dealer de DealerClub atendiendo a dos jugadores en mesa de Blackjack"
+                             width="1400" height="788" loading="lazy" decoding="async">
+                    </div>
+                    <div class="swiper-slide">
+                        <img class="slide-media" src="/assets/images/manos-juego.webp" alt="Manos de dealer y jugador en plena mano, junto al rack de fichas"
+                             width="1400" height="788" loading="lazy" decoding="async">
+                    </div>
+                    <div class="swiper-slide">
+                        <img class="slide-media" src="/assets/images/fichas-dealerclub.webp" alt="Fichas de DealerClub apiladas sobre el paño de juego"
+                             width="1400" height="788" loading="lazy" decoding="async">
                     </div>
                 </div>
             </div>
@@ -209,18 +231,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
-    <script>
-        var swiper = new Swiper(".mySwiper", {
-            slidesPerView: "auto",
-            centeredSlides: true,
-            spaceBetween: 30,
-            loop: true,
-            navigation: {
-                nextEl: ".swiper-button-next",
-                prevEl: ".swiper-button-prev",
-            },
-        });
-    </script>
+    <script src="/assets/js/gallery.js" defer></script>
     <!-- Icono flotante de WhatsApp -->
     <a href="https://wa.me/51929610747?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20m%C3%A1s%20informaci%C3%B3n."
         class="whatsapp-float" target="_blank">
