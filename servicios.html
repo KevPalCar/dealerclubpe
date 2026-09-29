@@ -208,84 +208,179 @@
     </a>
 
     <!-- Modal de Cotización de Servicios -->
-    <div id="quoteModal" class="modal">
-        <div class="modal-content split-modal">
-            <span class="close-button" id="closeQuoteModalBtn">&times;</span>
-            
-            <div class="modal-selection-area">
-                <h2 class="modal-main-title">Arma tu Experiencia</h2>
-                <p class="modal-subtitle">Selecciona las mesas y servicios extra para tu evento.</p>
+    <div id="quoteModal" class="modal quote-overlay">
+        <div class="quote-split">
 
-                <div class="selection-group">
-                    <h3>1. Mesas Disponibles</h3>
-                    <div class="interactive-grid" id="modal-mesas-grid">
-                        <!-- Las mesas se cargan dinámicamente desde Firestore (colección 'tables') -->
-                        <p id="modal-mesas-loading" class="item-name" style="grid-column:1/-1;color:#888;">Cargando mesas…</p>
-                    </div>
+            <!-- ── IZQUIERDA: armar la experiencia ── -->
+            <div class="q-col q-col-left">
+                <div class="q-head">
+                    <h2>Arma tu Experiencia</h2>
+                    <p>Selecciona las mesas y los servicios extra para tu evento.</p>
                 </div>
-
-                <div class="selection-group">
-                    <h3>2. Servicios Extra</h3>
-                    <div class="interactive-grid extras-grid">
-                        <div class="item-card extra-card" data-type="Extra" data-name="Grabación y Fotos">
-                            <div class="extra-img-box">
-                                <img src="https://images.unsplash.com/photo-1520390138845-fd2d229dd553?q=80&w=1932&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Fotos del evento">
-                            </div>
-                            <span class="item-name">Grabación / Fotos</span>
+                <div class="q-body">
+                    <div class="q-group">
+                        <div class="q-step">
+                            <span class="q-step-n">1</span>
+                            <h3>Mesas disponibles</h3>
+                            <span class="q-opt">las que quieras</span>
                         </div>
-                        <div class="item-card extra-card" data-type="Extra" data-name="Barman y Mesero">
-                            <div class="extra-img-box">
-                                <img src="https://plus.unsplash.com/premium_photo-1753729729729-4e78444f30c0?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Barman">
-                            </div>
-                            <span class="item-name">Barman / Mesero</span>
-                        </div>
-                        <div class="item-card extra-card" data-type="Extra" data-name="Decoración">
-                            <div class="extra-img-box">
-                                <img src="https://images.unsplash.com/photo-1604668915840-580c30026e5f?q=80&w=1948&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Decoración">
-                            </div>
-                            <span class="item-name">Decoración</span>
+                        <!-- Las mesas se cargan desde Firestore (colección 'tables') -->
+                        <div class="q-grid-tables" id="modal-mesas-grid">
+                            <p id="modal-mesas-loading" class="q-loading">Cargando mesas…</p>
                         </div>
                     </div>
-                    <p class="disclaimer-text">* Estas son imágenes referenciales y aplican Términos y Condiciones.</p>
+
+                    <div class="q-group">
+                        <div class="q-step">
+                            <span class="q-step-n">2</span>
+                            <h3>Servicios extra</h3>
+                            <span class="q-opt">se cotizan aparte</span>
+                        </div>
+                        <!-- Los extras se generan en servicios.js (constante EXTRAS) -->
+                        <div class="q-grid-extras" id="modal-extras-grid"></div>
+                        <p class="q-legal">Cada mesa incluye su dealer profesional, fichas, montaje y
+                            desmontaje. Las sillas no están incluidas y el precio no incluye IGV.
+                            Imágenes referenciales; aplican términos y condiciones.</p>
+                    </div>
                 </div>
             </div>
 
-            <div class="modal-form-area">
-                <h2 class="modal-main-title">Tus Datos</h2>
-                <p id="modalQuoteFor" style="display:none;"></p> <form id="quoteForm">
-                    <div class="form-group">
-                        <label for="fullName">Nombre Completo:</label>
-                        <input type="text" id="fullName" name="fullName" required>
+            <!-- ── DERECHA: datos para la cotización ── -->
+            <div class="q-col q-col-right">
+                <div class="q-rain" id="quoteRain" aria-hidden="true"></div>
+                <button type="button" class="q-close" id="closeQuoteModalBtn" aria-label="Cerrar">&times;</button>
+
+                <div class="q-head">
+                    <h2>Datos para tu cotización</h2>
+                    <p>Lo marcado con <span class="q-req">*</span> es lo que necesitamos para cotizar.</p>
+                    <p id="modalQuoteFor" class="q-context" style="display:none;"></p>
+                </div>
+
+                <form id="quoteForm" novalidate>
+                    <div class="q-body">
+                        <div class="q-fieldset">
+                            <p class="q-sub">Datos del cliente</p>
+                            <div class="q-fields">
+                                <div class="q-field full">
+                                    <label for="fullName">Cliente / empresa <span class="q-req">*</span></label>
+                                    <input type="text" id="fullName" name="fullName"
+                                           placeholder="Nombre y apellido, o razón social" autocomplete="name">
+                                    <p class="q-err" data-err="fullName" hidden>Escribe tu nombre y apellido.</p>
+                                </div>
+                                <div class="q-field">
+                                    <label for="phone">WhatsApp <span class="q-req">*</span></label>
+                                    <input type="tel" id="phone" name="phone" placeholder="9 dígitos"
+                                           inputmode="numeric" autocomplete="tel" maxlength="12">
+                                    <p class="q-err" data-err="phone" hidden>Necesitamos 9 dígitos.</p>
+                                </div>
+                                <div class="q-field">
+                                    <label for="email">Correo <span class="q-opt">· opcional</span></label>
+                                    <input type="email" id="email" name="email"
+                                           placeholder="tucorreo@ejemplo.com" autocomplete="email">
+                                </div>
+                                <div class="q-field full">
+                                    <label for="receipt">Comprobante que necesita</label>
+                                    <select id="receipt" name="receipt">
+                                        <option>No necesito comprobante</option>
+                                        <option>Boleta (persona natural)</option>
+                                        <option>Factura (empresa con RUC)</option>
+                                        <option>Nota de venta</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="q-fieldset">
+                            <p class="q-sub">Datos del evento</p>
+
+                            <div class="q-field full q-mb">
+                                <label>Tipo de evento <span class="q-req">*</span></label>
+                                <div class="q-chips" data-group="eventType" role="group" aria-label="Tipo de evento">
+                                    <button type="button" class="q-chip" aria-pressed="false">Corporativo</button>
+                                    <button type="button" class="q-chip" aria-pressed="false">Matrimonio</button>
+                                    <button type="button" class="q-chip" aria-pressed="false">Cumpleaños</button>
+                                    <button type="button" class="q-chip" aria-pressed="false">Fiesta privada</button>
+                                    <button type="button" class="q-chip" aria-pressed="false">Otro</button>
+                                </div>
+                                <p class="q-err" data-err="eventType" hidden>Elige el tipo de evento.</p>
+                            </div>
+
+                            <div class="q-fields">
+                                <div class="q-field">
+                                    <label for="eventDate">Fecha del evento <span class="q-req">*</span></label>
+                                    <input type="date" id="eventDate" name="eventDate">
+                                    <p class="q-err" data-err="eventDate" hidden>Indica la fecha.</p>
+                                </div>
+                                <div class="q-field">
+                                    <label for="eventTime">Horario (inicio) <span class="q-req">*</span></label>
+                                    <input type="time" id="eventTime" name="eventTime">
+                                    <p class="q-err" data-err="eventTime" hidden>Indica la hora.</p>
+                                </div>
+                                <div class="q-field full">
+                                    <label for="district">Distrito / lugar <span class="q-req">*</span></label>
+                                    <select id="district" name="district">
+                                        <option value="">Selecciona…</option>
+                                    </select>
+                                    <p class="q-err" data-err="district" hidden>Elige el distrito.</p>
+                                </div>
+                            </div>
+
+                            <div class="q-field full q-mt">
+                                <label>Piso / nivel <span class="q-req">*</span></label>
+                                <div class="q-floors" data-group="floor" role="group" aria-label="Piso o nivel"></div>
+                                <div class="q-floors" id="floorMore" hidden></div>
+                                <p class="q-hint">Define cómo subimos las mesas el día del montaje.</p>
+                                <p class="q-err" data-err="floor" hidden>Indica el piso o nivel.</p>
+
+                                <div class="q-cond" id="accessBlock" hidden>
+                                    <p class="q-cond-lbl">¿Cómo se sube a ese piso? <span class="q-req">*</span></p>
+                                    <div class="q-chips" data-group="access" role="group" aria-label="Tipo de acceso">
+                                        <button type="button" class="q-chip" aria-pressed="false">Hay ascensor</button>
+                                        <button type="button" class="q-chip" aria-pressed="false">Solo escaleras</button>
+                                        <button type="button" class="q-chip" aria-pressed="false">No estoy seguro</button>
+                                    </div>
+                                    <p class="q-hint">Si es solo por escaleras coordinamos un ajuste en traslado y acceso.</p>
+                                    <p class="q-err" data-err="access" hidden>Cuéntanos cómo es el acceso.</p>
+                                </div>
+                            </div>
+
+                            <div class="q-field full q-mt">
+                                <label>N.º aprox. de invitados <span class="q-opt">· opcional</span></label>
+                                <div class="q-chips" data-group="guests" role="group" aria-label="Número de invitados">
+                                    <button type="button" class="q-chip" aria-pressed="false">Hasta 30</button>
+                                    <button type="button" class="q-chip" aria-pressed="false">30 a 60</button>
+                                    <button type="button" class="q-chip" aria-pressed="false">60 a 100</button>
+                                    <button type="button" class="q-chip" aria-pressed="false">100 a 200</button>
+                                    <button type="button" class="q-chip" aria-pressed="false">Más de 200</button>
+                                    <button type="button" class="q-chip" aria-pressed="false">Aún no lo sé</button>
+                                </div>
+                            </div>
+
+                            <div class="q-field full q-mt">
+                                <label for="notes">Observaciones <span class="q-opt">· opcional</span></label>
+                                <textarea id="notes" name="notes" rows="3"
+                                    placeholder="Ej. es en jardín, el salón se entrega recién a las 6 p.m., queremos premio para el ganador…"></textarea>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="email">Correo Electrónico:</label>
-                        <input type="email" id="email" name="email" required>
+
+                    <div class="q-foot">
+                        <p class="q-count" id="quoteCount">Aún no has elegido mesas ni extras.</p>
+                        <button type="submit" class="btn btn-primary" id="submitQuoteBtn">Enviar solicitud</button>
+                        <div id="formMessage" class="form-message"></div>
                     </div>
-                    <div class="form-group">
-                        <label for="phone">Teléfono (WhatsApp):</label>
-                        <input type="tel" id="phone" name="phone" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="eventType">Tipo de Evento:</label>
-                        <select id="eventType" name="eventType" required>
-                            <option value="">Selecciona...</option>
-                            <option value="corporativo">Corporativo</option>
-                            <option value="privado">Privado</option>
-                            <option value="boda">Boda</option>
-                            <option value="otro">Otro</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="eventDate">Fecha del Evento:</label>
-                        <input type="date" id="eventDate" name="eventDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="details">Tu Selección (Auto-completado):</label>
-                        <textarea id="details" name="details" rows="4" placeholder="Haz clic en las opciones de la izquierda y aparecerán aquí..." readonly></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary" id="submitQuoteBtn">Enviar Cotización</button>
-                    <div id="formMessage" class="form-message"></div>
                 </form>
+            </div>
+
+            <div class="q-burst" id="quoteBurst" aria-hidden="true"></div>
+
+            <!-- ── Pantalla de confirmación ── -->
+            <div class="q-done" id="quoteDone" hidden>
+                <div class="q-done-chip">♠</div>
+                <h2>¡Solicitud enviada!</h2>
+                <p id="quoteDoneText">Un asesor prepara tu cotización a medida.</p>
+                <a href="#" class="btn btn-primary" id="quoteWaBtn" target="_blank" rel="noopener">Continuar por WhatsApp</a>
+                <button type="button" class="btn btn-secondary" id="quoteCloseDone">Cerrar</button>
             </div>
         </div>
     </div>
