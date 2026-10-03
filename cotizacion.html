@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Cotización - Casino de Fantasía | DealerClub</title>
+    <link rel="icon" href="/assets/images/favicon_pokerchips.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="/assets/css/cotizacion.css">
+</head>
+<body>
+
+    <!-- Barra de acciones (no se imprime) -->
+    <div class="cz-bar" id="cz-bar" style="display:none;">
+        <button type="button" id="cz-print" class="cz-btn"><span>⬇</span> Descargar PDF</button>
+        <a href="#" id="cz-accept" class="cz-btn cz-btn-gold" target="_blank" rel="noopener">Quiero reservar esta fecha</a>
+    </div>
+
+    <p id="cz-status" class="cz-status">Cargando tu cotización…</p>
+
+    <main class="cz-sheet" id="cz-sheet" style="display:none;">
+
+        <header class="cz-head">
+            <div class="cz-brand">
+                <img src="/assets/images/isotipo_principal.png" alt="DealerClub">
+                <strong>Dealer<em>Club</em></strong>
+            </div>
+            <div class="cz-head-title">
+                <h1>Cotización de servicio</h1>
+                <p>Casino de Fantasía · <b>EL JUEGO</b> <i>a otro nivel</i></p>
+            </div>
+        </header>
+
+        <div class="cz-meta">
+            <span>Cotización N.° <b id="cz-number"></b></span>
+            <span>Fecha <b id="cz-date"></b></span>
+            <span>Válida hasta <b id="cz-valid"></b></span>
+            <span>Asesor(a) <b id="cz-advisor"></b></span>
+        </div>
+        <p id="cz-expired" class="cz-expired" style="display:none;">Esta cotización venció. Escríbenos y la actualizamos para tu fecha.</p>
+
+        <h2 class="cz-section">Datos del cliente y del evento</h2>
+        <dl class="cz-data" id="cz-data"></dl>
+
+        <h2 class="cz-section">Tu evento</h2>
+        <table class="cz-table">
+            <thead><tr><th>Servicio</th><th>Detalle</th><th>Precio</th></tr></thead>
+            <tbody id="cz-items"></tbody>
+        </table>
+
+        <div class="cz-totals">
+            <div><span>Subtotal</span><b id="cz-subtotal"></b></div>
+            <div><span id="cz-igv-label">IGV</span><b id="cz-igv"></b></div>
+            <div class="cz-total"><span>Total</span><b id="cz-total"></b></div>
+            <div><span id="cz-deposit-label">Adelanto para reservar</span><b id="cz-deposit"></b></div>
+            <div><span>Saldo, antes de iniciar el montaje</span><b id="cz-balance"></b></div>
+        </div>
+
+        <div id="cz-addons-wrap" style="display:none;">
+            <h2 class="cz-section cz-section-soft">Puedes agregar</h2>
+            <ul class="cz-addons" id="cz-addons"></ul>
+        </div>
+
+        <div class="cz-two">
+        <div class="cz-notes" id="cz-notes-wrap" style="display:none;">
+            <h3>Observaciones</h3>
+            <div id="cz-notes"></div>
+        </div>
+
+        <div class="cz-pay">
+            <h3>Medios de pago</h3>
+            <p>Transferencia bancaria a la cuenta de la empresa (se emite boleta o factura).</p>
+            <p><b>Interbank Soles:</b> 200-3008147025 &nbsp;·&nbsp; <b>CCI:</b> 003-200-003008147025-31</p>
+            <p>Titular: DEALERCLUB E.I.R.L. · RUC 20615317315</p>
+        </div>
+        </div><!-- /cz-two -->
+
+        <p class="cz-legal">
+            Las mesas no incluyen sillas. Servicio integral: cada mesa incluye siempre su dealer profesional y la dirección
+            del propio DealerClub; no se alquila el paño ni la mesa por separado. El cliente es responsable por daños,
+            pérdida o deterioro del equipo durante el evento. Precios en soles. Al abonar el adelanto aceptas las
+            <a href="/legal/condiciones-eventos" target="_blank" rel="noopener">condiciones del servicio</a>
+            (adelanto, cancelación, reprogramación y reposición): dealerclubpe.com/legal/condiciones-eventos
+        </p>
+
+        <footer class="cz-foot">
+            <div class="cz-brand">
+                <img src="/assets/images/isotipo_principal.png" alt="">
+                <strong>Dealer<em>Club</em></strong>
+            </div>
+            <div class="cz-foot-info">
+                <p><b>WhatsApp</b> +51 929 610 747 · www.dealerclubpe.com</p>
+                <p>Lima Metropolitana · 09:00–18:00</p>
+                <p>IG dealerclubpe · TikTok @dealerclubpe · FB dealerclubperu</p>
+            </div>
+        </footer>
+    </main>
+
+    <script type="module" src="/assets/js/cotizacion.js"></script>
+</body>
+</html>

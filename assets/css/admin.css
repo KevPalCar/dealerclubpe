@@ -829,3 +829,42 @@ button.att-cell:hover { border-color: #ffc107; }
 @media (max-width: 700px) {
     .daily-row { grid-template-columns: 1fr; }
 }
+
+/* ── COTIZACIONES: editor, tarifario e historial ─────────────── */
+.quote-modal { max-width: 960px; }
+.qe-title { color: #ffc107; font-size: 0.95em; margin: 20px 0 8px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+.qe-title small { color: #888; font-weight: 400; margin-left: 8px; }
+.qe-grid { display: grid; gap: 10px; }
+.qe-4 { grid-template-columns: repeat(4, 1fr); }
+.qe-3 { grid-template-columns: repeat(3, 1fr); }
+.qe-grid label { display: flex; flex-direction: column; gap: 4px; color: #999; font-size: 0.78em; }
+.qe-grid input, .qe-grid select, .qe-row input, .qe-row select, .qe-add select, .qe-notes {
+    background: #121212; border: 1px solid #444; color: #eee; border-radius: 6px; padding: 8px; font-size: 1.05em; font-family: inherit;
+}
+.qe-notes { width: 100%; box-sizing: border-box; resize: vertical; font-size: 0.9em; }
+.qe-rows { display: flex; flex-direction: column; gap: 6px; }
+.qe-row { display: grid; gap: 6px; align-items: center; }
+.qe-row.cols-item   { grid-template-columns: 1.2fr 2fr 110px 34px; }
+.qe-row.cols-adj    { grid-template-columns: 3fr 130px 34px; }
+.qe-row.cols-tariff { grid-template-columns: 120px 1.2fr 2fr 110px 34px; }
+.qe-row input, .qe-row select { font-size: 0.88em; min-width: 0; }
+.qe-del { background: none; border: 1px solid #444; color: #dc3545; border-radius: 6px; height: 34px; cursor: pointer; }
+.qe-del:hover { border-color: #dc3545; }
+.qe-add { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.qe-add select { font-size: 0.85em; }
+.qe-empty { color: #777; font-size: 0.85em; margin: 0; }
+.qe-totals {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 20px;
+    background: #121212; border: 1px solid #ffc107; border-radius: 10px; padding: 12px;
+}
+.qe-totals div { text-align: center; }
+.qe-totals span { display: block; color: #999; font-size: 0.75em; }
+.qe-totals b { color: #fff; font-size: 1.1em; }
+.qe-totals .qe-total b { color: #ffc107; font-size: 1.35em; }
+.qe-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.quotes-summary { color: #bbb; font-size: 0.85em; }
+.quotes-summary b { color: #ffc107; }
+@media (max-width: 760px) {
+    .qe-4, .qe-3, .qe-totals { grid-template-columns: 1fr 1fr; }
+    .qe-row.cols-item, .qe-row.cols-tariff { grid-template-columns: 1fr 1fr; }
+}

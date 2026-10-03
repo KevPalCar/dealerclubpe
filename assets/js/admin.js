@@ -239,6 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initSearch('tasks',       renderTaskRow,       'No hay tareas asignadas.');
         initSearch('progress',    renderProgressRow,   'No hay alumnos matriculados.');
         initSearch('students',    renderStudentRow,    'No hay alumnos registrados.');
+        initSearch('quotes',      renderQuoteRow,      'Aún no has emitido cotizaciones.');
     };
 
 
@@ -979,6 +980,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </select>
             </td>
             <td class="action-buttons">
+                <button class="btn btn-sm btn-approve btn-req-quote" title="Crear cotización"><i class="fas fa-file-invoice-dollar"></i> Cotizar</button>
                 <button class="btn btn-secondary btn-sm btn-req-view" title="Ver detalle"><i class="fas fa-eye"></i></button>
                 <button class="btn btn-secondary btn-sm btn-req-mail" title="Responder por correo"><i class="fas fa-envelope"></i></button>
                 <button class="btn btn-secondary btn-sm btn-req-wa" title="Responder por WhatsApp" ${r.phone ? '' : 'disabled'}><i class="fab fa-whatsapp"></i></button>
@@ -989,6 +991,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await updateDoc(doc(db, dbPath(`service_requests/${e.target.dataset.id}`)), { status: e.target.value });
             showToast('Estado de la solicitud actualizado.', 'success');
         });
+        tr.querySelector('.btn-req-quote').addEventListener('click', () => openQuoteEditor(quoteFromRequest(r)));
         tr.querySelector('.btn-req-view').addEventListener('click', () => openRequestDetail(r));
         tr.querySelector('.btn-req-mail').addEventListener('click', () => { window.open(buildGmailCompose(r), '_blank'); markRequestResponded(r); });
         tr.querySelector('.btn-req-wa').addEventListener('click', () => { const u = buildWa(r); if (u) { window.open(u, '_blank'); markRequestResponded(r); } });
@@ -1031,6 +1034,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .sort((a, b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0));
             applyRequestFilters();
         });
+        loadQuotes();
     };
 
 
@@ -2468,5 +2472,462 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => { _toGrade = res.data().count; renderDaily(); })
             .catch(() => { /* sin el conteo, el resto de la pantalla funciona igual */ });
     };
+
+    // ══════════════════════════════════════════════════════════
+    // COTIZACIONES DE EVENTOS — tarifario, editor e historial
+    // Una cotización tiene dos bloques: "Tu evento" (lo que se cobra)
+    // y "Puedes agregar" (otros juegos y extras, solo informativo).
+    // El cliente la abre en /cotizacion?id=… y la descarga en PDF.
+    // ══════════════════════════════════════════════════════════
+    const SITE_URL = 'https://dealerclubpe.com';
+    const QUOTE_STATUSES = ['Borrador', 'Enviada', 'Aceptada', 'Rechazada'];
+    const ADJUSTMENT_PRESETS = [
+        'Fecha de alta demanda',
+        'Servicio express (menos de 48 h)',
+        'Traslado y acceso',
+        'Tarifa corporativa',
+        'Descuento por más de una mesa (10 %)',
+        'Descuento especial'
+    ];
+    const TARIFF_KINDS = [['mesa', 'Mesa'], ['incluido', 'Incluido'], ['extra', 'Extra']];
+    const DEFAULT_QUOTE_SETTINGS = {
+        advisor: 'Kevin', validityDays: 4, depositPct: 30, igvRate: 18, extraHour: 150,
+        notes: 'Beneficio por confirmación rápida: si confirma su reserva dentro de las 48 h siguientes a esta cotización, se incluye el trofeo "The Chip Leader" para el ganador.\n' +
+               'El montaje considera acceso a nivel de calle o por ascensor. Si el acceso es solo por escaleras, se coordina un ajuste en la línea "Traslado y acceso".',
+        items: [
+            { kind: 'mesa', name: 'Mesa de Ruleta Profesional', detail: 'Disco profesional premium · 7 a 10 posturas, con accesorios.', price: 1300 },
+            { kind: 'mesa', name: 'Mesa en "D" Profesional',    detail: "Blackjack (7 posturas) o Ultimate Texas Hold'em (6 posturas), con accesorios.", price: 800 },
+            { kind: 'mesa', name: 'Mesa óvalo Profesional',     detail: 'Póker (10 posturas) o Baccarat (9 posturas), con accesorios.', price: 1000 },
+            { kind: 'incluido', name: 'Dealer uniformado + dirección DealerClub', detail: '1 dealer por mesa y la dirección del propio DealerClub.', price: null },
+            { kind: 'incluido', name: 'Fichas, montaje y desmontaje',             detail: 'Fichas y artefactos de casino; armado y retiro de todo el equipo.', price: null },
+            { kind: 'incluido', name: '3 h de evento · 2 h 30 de juego efectivo', detail: 'El montaje y el desmontaje no descuentan tiempo.', price: null },
+            { kind: 'incluido', name: 'Traslado en Lima Metropolitana',           detail: 'Con acceso a nivel de calle o por ascensor.', price: null },
+            { kind: 'extra', name: 'Sillas / taburetes',     detail: 'Las mesas no incluyen sillas.', price: null },
+            { kind: 'extra', name: 'Hora extra de juego',    detail: 'Por mesa y por hora.', price: 150 },
+            { kind: 'extra', name: 'Fichas personalizadas',  detail: 'Con el logo o motivo de su evento.', price: null },
+            { kind: 'extra', name: 'Barman / mesero',        detail: '', price: null },
+            { kind: 'extra', name: 'Fotos y grabación',      detail: '', price: null },
+            { kind: 'extra', name: 'Decoración temática',    detail: '', price: null },
+            { kind: 'extra', name: 'Cobertura fuera de Lima', detail: '', price: null }
+        ]
+    };
+    let _qs     = DEFAULT_QUOTE_SETTINGS;   // tarifario vigente
+    let _quotes = [];
+    let qEdit   = null;                     // cotización abierta en el editor
+
+    const money  = (n) => `S/ ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    const numOrNull = (v) => (v === '' || v == null || Number.isNaN(+v) ? null : +v);
+
+    // Suma N días hábiles (sin sábados ni domingos) a una fecha YYYY-MM-DD.
+    const addBusinessDays = (ymd, n) => {
+        const d = fromYmd(ymd);
+        while (n > 0) { d.setDate(d.getDate() + 1); if (d.getDay() !== 0 && d.getDay() !== 6) n--; }
+        return toYmd(d);
+    };
+
+    // Subtotal = líneas con precio + ajustes. Adelanto redondeado a decenas.
+    const quoteTotals = (q) => {
+        const subtotal = (q.items || []).reduce((s, i) => s + (i.price || 0), 0)
+                       + (q.adjustments || []).reduce((s, a) => s + (a.amount || 0), 0);
+        const igv     = Math.round(subtotal * (q.igvRate ?? 18)) / 100;
+        const total   = Math.round((subtotal + igv) * 100) / 100;
+        const deposit = Math.ceil(total * (q.depositPct ?? 30) / 100 / 10) * 10;
+        return { subtotal, igv, total, deposit, balance: Math.round((total - deposit) * 100) / 100 };
+    };
+
+    // ── Filas editables genéricas (líneas, ajustes, tarifario) ─
+    // cols: [{ key, type: 'text' | 'number' | 'select', placeholder, options }]
+    const renderRows = (boxId, rows, cols, layout, onChange, emptyMsg) => {
+        const box = document.getElementById(boxId);
+        box.innerHTML = rows.length ? '' : `<p class="qe-empty">${emptyMsg}</p>`;
+        rows.forEach((row, idx) => {
+            const el = document.createElement('div');
+            el.className = `qe-row ${layout}`;
+            cols.forEach(col => {
+                let input;
+                if (col.type === 'select') {
+                    input = document.createElement('select');
+                    col.options.forEach(([v, l]) => input.add(new Option(l, v, false, row[col.key] === v)));
+                } else {
+                    input = document.createElement('input');
+                    input.type = col.type;
+                    if (col.type === 'number') input.step = '0.01';
+                    input.placeholder = col.placeholder || '';
+                    input.value = row[col.key] ?? '';
+                }
+                input.addEventListener('input', () => {
+                    row[col.key] = col.type === 'number' ? numOrNull(input.value) : input.value;
+                    onChange();
+                });
+                el.appendChild(input);
+            });
+            const del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'qe-del';
+            del.title = 'Quitar';
+            del.innerHTML = '<i class="fas fa-times"></i>';
+            del.addEventListener('click', () => {
+                rows.splice(idx, 1);
+                renderRows(boxId, rows, cols, layout, onChange, emptyMsg);
+                onChange();
+            });
+            el.appendChild(del);
+            box.appendChild(el);
+        });
+    };
+
+    const ITEM_COLS = [
+        { key: 'name',   type: 'text',   placeholder: 'Servicio' },
+        { key: 'detail', type: 'text',   placeholder: 'Detalle' },
+        { key: 'price',  type: 'number', placeholder: 'S/' }
+    ];
+    const ADJ_COLS = [
+        { key: 'name',   type: 'text',   placeholder: 'Concepto' },
+        { key: 'amount', type: 'number', placeholder: '± S/' }
+    ];
+
+    const renderQuoteTotals = () => {
+        const t = quoteTotals(qEdit);
+        document.getElementById('quoteTotals').innerHTML = `
+            <div><span>Subtotal</span><b>${money(t.subtotal)}</b></div>
+            <div><span>IGV ${qEdit.igvRate}%</span><b>${money(t.igv)}</b></div>
+            <div class="qe-total"><span>Total</span><b>${money(t.total)}</b></div>
+            <div><span>Adelanto ${qEdit.depositPct}%</span><b>${money(t.deposit)}</b></div>
+            <div><span>Saldo al llegar</span><b>${money(t.balance)}</b></div>`;
+    };
+    const renderQuoteRows = () => {
+        renderRows('quoteItems', qEdit.items, ITEM_COLS, 'cols-item', renderQuoteTotals, 'Agrega al menos una mesa del tarifario.');
+        renderRows('quoteAdjustments', qEdit.adjustments, ADJ_COLS, 'cols-adj', renderQuoteTotals, 'Sin recargos ni descuentos.');
+        renderRows('quoteAddons', qEdit.addons, ITEM_COLS, 'cols-item', () => {}, 'Nada que ofrecer aparte.');
+        renderQuoteTotals();
+    };
+
+    // Otros juegos y extras del tarifario que no están en "Tu evento".
+    const suggestAddons = () => {
+        const used = new Set(qEdit.items.map(i => i.name));
+        return _qs.items
+            .filter(i => i.kind !== 'incluido' && !used.has(i.name))
+            .map(i => ({ name: i.name, detail: i.detail, price: i.price }));
+    };
+
+    const fillQuoteSelects = () => {
+        const itemSel = document.getElementById('quoteAddItem');
+        itemSel.innerHTML = '<option value="">+ Agregar del tarifario…</option>';
+        _qs.items.forEach((i, idx) => itemSel.add(new Option(
+            `${i.name}${i.price != null ? ` — ${money(i.price)}` : i.kind === 'incluido' ? ' — Incluido' : ' — A cotizar'}`, idx)));
+        const adjSel = document.getElementById('quoteAddAdjustment');
+        adjSel.innerHTML = '<option value="">+ Agregar ajuste…</option>';
+        ADJUSTMENT_PRESETS.forEach(p => adjSel.add(new Option(p, p)));
+    };
+
+    document.getElementById('quoteAddItem').addEventListener('change', (e) => {
+        const item = _qs.items[e.target.value];
+        e.target.value = '';
+        if (!item) return;
+        qEdit.items.push({ name: item.name, detail: item.detail, price: item.price, included: item.kind === 'incluido' });
+        renderQuoteRows();
+    });
+    document.getElementById('quoteAddFree').addEventListener('click', () => {
+        qEdit.items.push({ name: '', detail: '', price: null, included: false });
+        renderQuoteRows();
+    });
+    document.getElementById('quoteAddAdjustment').addEventListener('change', (e) => {
+        const name = e.target.value;
+        e.target.value = '';
+        if (!name) return;
+        let amount = null;
+        if (name.startsWith('Descuento por más de una mesa')) {
+            // 10 % de la mesa de menor precio, cuando hay dos o más con precio.
+            const prices = qEdit.items.map(i => i.price).filter(p => p > 0).sort((a, b) => a - b);
+            if (prices.length >= 2) amount = -Math.round(prices[0] * 0.10);
+        }
+        qEdit.adjustments.push({ name, amount });
+        renderQuoteRows();
+    });
+    document.getElementById('quoteSuggestAddons').addEventListener('click', () => {
+        qEdit.addons = suggestAddons();
+        renderQuoteRows();
+    });
+    document.getElementById('quoteAddAddon').addEventListener('click', () => {
+        qEdit.addons.push({ name: '', detail: '', price: null });
+        renderQuoteRows();
+    });
+
+    const nextQuoteNumber = () => {
+        const year = new Date().getFullYear();
+        const last = Math.max(0, ..._quotes
+            .map(q => new RegExp(`^${year}-(\\d+)$`).exec(q.number || ''))
+            .filter(Boolean).map(m => +m[1]));
+        return `${year}-${String(last + 1).padStart(3, '0')}`;
+    };
+
+    // Cotización nueva: líneas "incluidas" del tarifario ya cargadas.
+    const blankQuote = () => {
+        const today = toYmd(new Date());
+        return {
+            id: null, requestId: null, status: 'Borrador',
+            number: nextQuoteNumber(), date: today, validUntil: addBusinessDays(today, _qs.validityDays),
+            advisor: _qs.advisor, igvRate: _qs.igvRate, depositPct: _qs.depositPct, extraHour: _qs.extraHour,
+            client: { name: '', type: 'persona', doc: '', phone: '', email: '' },
+            event:  { type: '', date: '', time: '', district: '', address: '', floor: '', guests: '' },
+            items: _qs.items.filter(i => i.kind === 'incluido')
+                .map(i => ({ name: i.name, detail: i.detail, price: null, included: true })),
+            adjustments: [], addons: [], notes: _qs.notes
+        };
+    };
+
+    // A partir de una solicitud de la web: datos del cliente y mesas pedidas.
+    const quoteFromRequest = (r) => {
+        const q = blankQuote();
+        q.requestId = r.id;
+        q.client = { name: r.fullName || '', type: /factura/i.test(r.receipt || '') ? 'empresa' : 'persona', doc: '', phone: r.phone || '', email: r.email || '' };
+        q.event  = {
+            type: r.eventType || '', date: r.eventDate || '', time: r.eventTime || '', district: r.district || '', address: '',
+            floor: [r.floor, r.access].filter(Boolean).join(' · '), guests: r.guests || ''
+        };
+        // Cada juego pedido se asigna a su mesa del tarifario; el detalle dice qué juego.
+        const mesas = _qs.items.filter(i => i.kind === 'mesa');
+        const byMesa = new Map();
+        (r.tables || []).forEach(game => {
+            const g = String(game).toLowerCase();
+            const mesa = /ruleta/.test(g)                         ? mesas.find(m => /ruleta/i.test(m.name))
+                       : /black|ultimate|texas|uth/.test(g)       ? mesas.find(m => /"d"|en d/i.test(m.name))
+                       : /p[oó]ker|poker|baccarat|bacar/.test(g)  ? mesas.find(m => /[oó]valo/i.test(m.name))
+                       : null;
+            if (!mesa) { byMesa.set(game, { name: String(game), detail: '', price: null, included: false }); return; }
+            if (!byMesa.has(mesa.name)) byMesa.set(mesa.name, { name: mesa.name, detail: '', price: mesa.price, included: false, games: [] });
+            byMesa.get(mesa.name).games.push(String(game));
+        });
+        const lines = [...byMesa.values()].map(({ games, ...line }) =>
+            ({ ...line, detail: games ? `Juego: ${games.join(' / ')}` : line.detail }));
+        q.items = [...lines, ...q.items];
+        // Los extras que pidió quedan como líneas por cotizar.
+        (r.extras || []).forEach(x => q.items.push({ name: String(x), detail: '', price: null, included: false }));
+        const used = new Set(q.items.map(i => i.name));
+        q.addons = _qs.items
+            .filter(i => i.kind !== 'incluido' && !used.has(i.name))
+            .map(i => ({ name: i.name, detail: i.detail, price: i.price }));
+        return q;
+    };
+
+    const openQuoteEditor = (q) => {
+        qEdit = JSON.parse(JSON.stringify(q));   // copia: cancelar no altera el historial
+        fillQuoteSelects();
+        const set = (id, v) => { document.getElementById(id).value = v ?? ''; };
+        set('quoteNumber', qEdit.number);        set('quoteDate', qEdit.date);
+        set('quoteValidUntil', qEdit.validUntil); set('quoteStatus', qEdit.status);
+        set('quoteClientName', qEdit.client.name);   set('quoteClientType', qEdit.client.type);
+        set('quoteClientDoc', qEdit.client.doc);     set('quoteClientPhone', qEdit.client.phone);
+        set('quoteClientEmail', qEdit.client.email);
+        set('quoteEventType', qEdit.event.type);     set('quoteEventDate', qEdit.event.date);
+        set('quoteEventTime', qEdit.event.time);     set('quoteEventDistrict', qEdit.event.district);
+        set('quoteEventAddress', qEdit.event.address); set('quoteEventFloor', qEdit.event.floor);
+        set('quoteEventGuests', qEdit.event.guests);
+        set('quoteNotes', qEdit.notes);
+        renderQuoteRows();
+        showMsg(document.getElementById('quoteFormMessage'), '', '');
+        openModal(document.getElementById('quoteModal'));
+    };
+
+    // Lee el formulario, guarda y devuelve la cotización (o null si falta algo).
+    const saveQuote = async () => {
+        const msg = document.getElementById('quoteFormMessage');
+        const val = (id) => document.getElementById(id).value.trim();
+        if (!val('quoteClientName')) { showMsg(msg, 'Escribe el nombre del cliente.', 'error'); return null; }
+
+        const clean = (rows) => rows.filter(x => (x.name || '').trim());
+        const data = {
+            number: val('quoteNumber'), date: val('quoteDate'), validUntil: val('quoteValidUntil'),
+            status: val('quoteStatus'), advisor: qEdit.advisor,
+            igvRate: qEdit.igvRate, depositPct: qEdit.depositPct, extraHour: qEdit.extraHour,
+            requestId: qEdit.requestId || null,
+            client: { name: val('quoteClientName'), type: val('quoteClientType'), doc: val('quoteClientDoc'),
+                      phone: val('quoteClientPhone'), email: val('quoteClientEmail') },
+            event:  { type: val('quoteEventType'), date: val('quoteEventDate'), time: val('quoteEventTime'),
+                      district: val('quoteEventDistrict'), address: val('quoteEventAddress'),
+                      floor: val('quoteEventFloor'), guests: val('quoteEventGuests') },
+            items: clean(qEdit.items), adjustments: clean(qEdit.adjustments), addons: clean(qEdit.addons),
+            notes: val('quoteNotes'),
+            updatedAt: new Date()
+        };
+        data.totals = quoteTotals(data);
+        try {
+            if (qEdit.id) {
+                await updateDoc(doc(db, dbPath(`quotes/${qEdit.id}`)), data);
+            } else {
+                const ref = await addDoc(collection(db, dbPath('quotes')), { ...data, createdAt: new Date() });
+                qEdit.id = ref.id;
+            }
+            Object.assign(qEdit, data);
+            showMsg(msg, 'Cotización guardada.', 'success');
+            return qEdit;
+        } catch (err) { showMsg(msg, `Error: ${err.message}`, 'error'); return null; }
+    };
+
+    const quoteUrl = (q) => `${SITE_URL}/cotizacion?id=${q.id}`;
+    const quoteMessage = (q) =>
+        `Hola ${q.client.name}, te comparto tu cotización N.° ${q.number} de Casino de Fantasía (DealerClub):\n${quoteUrl(q)}\n\n` +
+        `Total: ${money(q.totals.total)} (incluye IGV). Para reservar tu fecha, el adelanto es de ${money(q.totals.deposit)}.\n` +
+        `Válida hasta el ${fmtDate(q.validUntil)}. Quedo atento a cualquier consulta.`;
+
+    // Marca como enviada (si seguía en borrador) y la solicitud de origen como respondida.
+    const markQuoteSent = async (q) => {
+        try {
+            if (q.status === 'Borrador') {
+                await updateDoc(doc(db, dbPath(`quotes/${q.id}`)), { status: 'Enviada', sentAt: new Date() });
+                q.status = 'Enviada';
+                if (qEdit && qEdit.id === q.id) document.getElementById('quoteStatus').value = 'Enviada';
+            }
+            if (q.requestId) {
+                await updateDoc(doc(db, dbPath(`service_requests/${q.requestId}`)), { status: 'Respondido', respondedAt: new Date() });
+            }
+        } catch { /* el envío ya se abrió; el estado se puede corregir a mano */ }
+    };
+
+    // La ventana se abre en el mismo clic (si no, el navegador la bloquea)
+    // y recibe la dirección cuando la cotización ya está guardada.
+    const withSavedQuote = async (buildUrl, { markSent = false } = {}) => {
+        const win = window.open('', '_blank');
+        const q = await saveQuote();
+        const url = q && buildUrl(q);
+        if (!url) { win?.close(); return; }
+        if (win) win.location = url; else window.location = url;
+        if (markSent) markQuoteSent(q);
+    };
+    const quoteWaUrl = (q) => {
+        const phone = (q.client.phone || '').replace(/\D/g, '');
+        if (!phone) { showMsg(document.getElementById('quoteFormMessage'), 'Falta el WhatsApp del cliente.', 'error'); return ''; }
+        return `${WA_PANEL_URL}?to=${phone.length === 9 ? `51${phone}` : phone}&msg=${encodeURIComponent(quoteMessage(q))}`;
+    };
+    const quoteMailUrl = (q) => {
+        if (!q.client.email) { showMsg(document.getElementById('quoteFormMessage'), 'Falta el correo del cliente.', 'error'); return ''; }
+        const params = new URLSearchParams({
+            view: 'cm', fs: '1', to: q.client.email,
+            su: `Cotización N.° ${q.number} — Casino de Fantasía DealerClub`,
+            body: `${quoteMessage(q)}\n\nSaludos cordiales,\n${q.advisor || 'Equipo DealerClub'}\nDealerClub`
+        });
+        return `https://mail.google.com/mail/?authuser=${encodeURIComponent(COMPANY_EMAIL)}&${params.toString()}`;
+    };
+
+    document.getElementById('quoteForm').addEventListener('submit', (e) => { e.preventDefault(); saveQuote(); });
+    document.getElementById('quoteViewBtn').addEventListener('click', () => withSavedQuote(quoteUrl));
+    document.getElementById('quoteWaBtn').addEventListener('click', () => withSavedQuote(quoteWaUrl, { markSent: true }));
+    document.getElementById('quoteMailBtn').addEventListener('click', () => withSavedQuote(quoteMailUrl, { markSent: true }));
+    document.getElementById('closeQuoteModalBtn').addEventListener('click', () => closeModal(document.getElementById('quoteModal')));
+    document.getElementById('new-quote-btn').addEventListener('click', () => openQuoteEditor(blankQuote()));
+
+    // ── Historial ─────────────────────────────────────────────
+    const renderQuoteRow = (q) => {
+        const tr      = document.getElementById('quotes-table-body').insertRow();
+        const expired = q.status === 'Enviada' && q.validUntil && q.validUntil < toYmd(new Date());
+        tr.innerHTML = `
+            <td><strong>${esc(q.number)}</strong></td>
+            <td>${fmtDate(q.date)}</td>
+            <td>${esc(q.client?.name)}<span class="student-sub">${esc(q.client?.phone)}</span></td>
+            <td>${esc(q.event?.type) || '-'}<span class="student-sub">${q.event?.date ? fmtDate(q.event.date) : ''}${q.event?.district ? ` · ${esc(q.event.district)}` : ''}</span></td>
+            <td><strong>${money(q.totals?.total)}</strong></td>
+            <td>
+                <select class="status-select quote-status">
+                    ${QUOTE_STATUSES.map(s => `<option ${q.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                </select>
+                ${expired ? '<span class="student-sub" style="color:#f1a7ae;">Vencida</span>' : ''}
+            </td>
+            <td class="action-buttons">
+                <button class="btn btn-secondary btn-sm q-edit" title="Editar"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-secondary btn-sm q-view" title="Ver hoja"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-secondary btn-sm q-copy" title="Duplicar como nueva"><i class="fas fa-copy"></i></button>
+                <button class="btn btn-danger btn-sm q-del" title="Eliminar"><i class="fas fa-trash"></i></button>
+            </td>`;
+        tr.querySelector('.quote-status').addEventListener('change', async (e) => {
+            await updateDoc(doc(db, dbPath(`quotes/${q.id}`)), { status: e.target.value });
+            showToast('Estado de la cotización actualizado.', 'success');
+        });
+        tr.querySelector('.q-edit').addEventListener('click', () => openQuoteEditor(q));
+        tr.querySelector('.q-view').addEventListener('click', () => window.open(quoteUrl(q), '_blank'));
+        tr.querySelector('.q-copy').addEventListener('click', () => {
+            const today = toYmd(new Date());
+            openQuoteEditor({ ...q, id: null, status: 'Borrador', number: nextQuoteNumber(),
+                              date: today, validUntil: addBusinessDays(today, _qs.validityDays) });
+        });
+        tr.querySelector('.q-del').addEventListener('click', () =>
+            confirmDelete(`¿Eliminar la cotización N.° ${q.number} de "${q.client?.name || ''}"? Su enlace dejará de funcionar.`,
+                () => deleteItem('quotes', q.id)));
+    };
+    const renderQuotesSummary = () => {
+        const sum = (list) => list.reduce((s, q) => s + (q.totals?.total || 0), 0);
+        const sent     = _quotes.filter(q => q.status !== 'Borrador');
+        const accepted = _quotes.filter(q => q.status === 'Aceptada');
+        document.getElementById('quotes-summary').innerHTML =
+            `Cotizado: <b>${money(sum(sent))}</b> en ${sent.length} · Aceptado: <b>${money(sum(accepted))}</b> en ${accepted.length}`;
+        document.getElementById('quotes-tab-count').textContent = `(${_quotes.length})`;
+    };
+
+    document.querySelectorAll('#quote-tabs .student-tab').forEach(btn =>
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#quote-tabs .student-tab').forEach(b => b.classList.toggle('active', b === btn));
+            document.getElementById('requests-view').style.display = btn.dataset.view === 'requests' ? 'block' : 'none';
+            document.getElementById('quotes-view').style.display   = btn.dataset.view === 'quotes'   ? 'block' : 'none';
+        }));
+
+    const loadQuotes = () => {
+        unsubscribeListeners.quotes = onSnapshot(collection(db, dbPath('quotes')), (snap) => {
+            _quotes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                .sort((a, b) => (b.number || '').localeCompare(a.number || ''));
+            pState.quotes.data = _quotes;
+            renderPaged('quotes', renderQuoteRow, 'Aún no has emitido cotizaciones.');
+            renderQuotesSummary();
+        });
+        unsubscribeListeners.quoteSettings = onSnapshot(doc(db, dbPath('quote_settings/main')), (snap) => {
+            _qs = snap.exists() ? { ...DEFAULT_QUOTE_SETTINGS, ...snap.data() } : DEFAULT_QUOTE_SETTINGS;
+        });
+    };
+
+    // ── Tarifario ─────────────────────────────────────────────
+    let tEdit = null;
+    const TARIFF_COLS = [
+        { key: 'kind',   type: 'select', options: TARIFF_KINDS },
+        { key: 'name',   type: 'text',   placeholder: 'Nombre' },
+        { key: 'detail', type: 'text',   placeholder: 'Detalle' },
+        { key: 'price',  type: 'number', placeholder: 'S/ (vacío = sin precio)' }
+    ];
+    const renderTariffRows = () =>
+        renderRows('tariffItems', tEdit.items, TARIFF_COLS, 'cols-tariff', () => {}, 'El tarifario está vacío.');
+
+    document.getElementById('open-tariff-btn').addEventListener('click', () => {
+        tEdit = JSON.parse(JSON.stringify(_qs));
+        document.getElementById('tariffAdvisor').value   = tEdit.advisor;
+        document.getElementById('tariffValidity').value  = tEdit.validityDays;
+        document.getElementById('tariffDeposit').value   = tEdit.depositPct;
+        document.getElementById('tariffIgv').value       = tEdit.igvRate;
+        document.getElementById('tariffExtraHour').value = tEdit.extraHour;
+        document.getElementById('tariffNotes').value     = tEdit.notes;
+        renderTariffRows();
+        showMsg(document.getElementById('tariffFormMessage'), '', '');
+        openModal(document.getElementById('tariffModal'));
+    });
+    document.getElementById('tariffAddItem').addEventListener('click', () => {
+        tEdit.items.push({ kind: 'extra', name: '', detail: '', price: null });
+        renderTariffRows();
+    });
+    document.getElementById('tariffForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg = document.getElementById('tariffFormMessage');
+        const num = (id, fallback) => numOrNull(document.getElementById(id).value) ?? fallback;
+        try {
+            await setDoc(doc(db, dbPath('quote_settings/main')), {
+                items:        tEdit.items.filter(i => (i.name || '').trim()),
+                advisor:      document.getElementById('tariffAdvisor').value.trim(),
+                validityDays: num('tariffValidity', 4),
+                depositPct:   num('tariffDeposit', 30),
+                igvRate:      num('tariffIgv', 18),
+                extraHour:    num('tariffExtraHour', 150),
+                notes:        document.getElementById('tariffNotes').value.trim(),
+                updatedAt:    new Date()
+            });
+            closeModal(document.getElementById('tariffModal'));
+            showToast('Tarifario guardado. Se aplicará a las cotizaciones nuevas.', 'success');
+        } catch (err) { showMsg(msg, `Error: ${err.message}`, 'error'); }
+    });
+    document.getElementById('closeTariffModalBtn').addEventListener('click', () => closeModal(document.getElementById('tariffModal')));
 
 }); // fin DOMContentLoaded

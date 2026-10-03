@@ -1,0 +1,167 @@
+/* ============================================================
+   HOJA DE COTIZACIÓN — vista del cliente (/cotizacion)
+   Papel blanco con cabecera y pie negros y acentos dorados,
+   como la plantilla de DealerClub. Pensada para una hoja A4.
+   ============================================================ */
+:root {
+    --cz-ink: #1c1c1c;
+    --cz-muted: #6b6b6b;
+    --cz-line: #dedad0;
+    --cz-gold: #f0a800;
+    --cz-gold-soft: #fff3d1;
+    --cz-dark: #121315;
+}
+
+* { box-sizing: border-box; }
+body {
+    margin: 0; padding: 20px 12px 40px;
+    background: #2a2a2a; color: var(--cz-ink);
+    font-family: 'Montserrat', Arial, sans-serif; font-size: 13px; line-height: 1.45;
+}
+
+/* Barra de acciones */
+.cz-bar {
+    max-width: 820px; margin: 0 auto 14px;
+    display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;
+}
+.cz-btn {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer; text-decoration: none;
+    background: #fff; color: var(--cz-ink); border: 0; border-radius: 8px;
+    padding: 10px 16px; font: inherit; font-weight: 700;
+}
+.cz-btn-gold { background: var(--cz-gold); }
+.cz-status { color: #eee; text-align: center; margin: 80px 16px; font-size: 15px; }
+
+/* Hoja */
+.cz-sheet {
+    max-width: 820px; margin: 0 auto; background: #fff;
+    padding: 28px 30px; box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
+}
+.cz-head, .cz-foot {
+    background: var(--cz-dark); color: #fff;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px;
+}
+.cz-brand { display: flex; align-items: center; gap: 10px; }
+.cz-brand img { height: 58px; width: auto; }
+.cz-brand strong { color: var(--cz-gold); font-size: 20px; font-weight: 800; }
+.cz-brand em { font-weight: 500; }
+.cz-head-title { text-align: right; }
+.cz-head-title h1 { margin: 0; font-size: 15px; letter-spacing: 3px; text-transform: uppercase; }
+.cz-head-title p { margin: 4px 0 0; color: var(--cz-gold); font-size: 12px; letter-spacing: 1px; }
+.cz-head-title i { color: #ddd; }
+
+.cz-meta {
+    display: flex; flex-wrap: wrap; gap: 6px 22px; justify-content: space-between;
+    padding: 12px 2px; border-bottom: 2px solid var(--cz-gold);
+    color: var(--cz-muted); font-size: 11px; font-weight: 700; text-transform: uppercase;
+}
+.cz-meta b { color: var(--cz-ink); }
+.cz-expired {
+    background: #fde8e8; border: 1px solid #e08a8a; color: #9c2b2b;
+    border-radius: 6px; padding: 8px 12px; margin: 12px 0 0; font-weight: 600;
+}
+
+.cz-section {
+    background: var(--cz-gold); color: var(--cz-ink); margin: 16px 0 0; padding: 6px 12px;
+    font-size: 12px; letter-spacing: 2.5px; text-transform: uppercase;
+}
+.cz-section-soft { background: var(--cz-gold-soft); }
+
+.cz-data {
+    display: grid; grid-template-columns: 150px 1fr 150px 1fr; margin: 8px 0 0;
+    border: 1px solid var(--cz-line); border-bottom: 0;
+}
+.cz-data dt, .cz-data dd { margin: 0; padding: 6px 10px; border-bottom: 1px solid var(--cz-line); }
+.cz-data dt { background: #faf6ea; font-weight: 700; font-size: 12px; }
+
+.cz-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.cz-table th {
+    background: var(--cz-dark); color: #fff; text-align: left; padding: 7px 10px;
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+}
+.cz-table th:last-child, .cz-price { text-align: right; white-space: nowrap; }
+.cz-table td { padding: 7px 10px; border-bottom: 1px solid var(--cz-line); vertical-align: top; }
+.cz-name { font-weight: 700; }
+.cz-detail { color: var(--cz-muted); font-size: 12px; }
+.cz-price { font-weight: 700; }
+.cz-incl td { background: #fbfaf6; }
+.cz-incl .cz-price { color: #2e7d32; font-weight: 600; }
+.cz-adj .cz-name { font-weight: 600; font-style: italic; }
+.cz-discount .cz-price { color: #2e7d32; }
+
+.cz-totals { margin-top: 0; border: 1px solid var(--cz-line); border-top: 0; }
+.cz-totals div { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid var(--cz-line); }
+.cz-totals div:last-child { border-bottom: 0; }
+.cz-totals span { color: var(--cz-muted); }
+.cz-totals .cz-total { background: var(--cz-gold); font-size: 16px; font-weight: 800; }
+.cz-totals .cz-total span { color: var(--cz-ink); letter-spacing: 1px; text-transform: uppercase; }
+
+.cz-addons { list-style: none; margin: 6px 0 0; padding: 0; border: 1px solid var(--cz-line); }
+.cz-addons li {
+    display: grid; grid-template-columns: 210px 1fr auto; gap: 10px;
+    padding: 5px 10px; border-bottom: 1px solid var(--cz-line); font-size: 12px;
+}
+.cz-addons li:last-child { border-bottom: 0; }
+.cz-addons span { color: var(--cz-muted); }
+.cz-addons b { white-space: nowrap; }
+
+.cz-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; }
+.cz-notes, .cz-pay { border: 1px solid var(--cz-line); background: #fbfaf6; padding: 10px 12px; margin-top: 12px; }
+.cz-notes h3, .cz-pay h3 { margin: 0 0 4px; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--cz-muted); }
+.cz-notes p, .cz-pay p { margin: 3px 0; font-size: 12px; }
+.cz-legal { color: var(--cz-muted); font-size: 10.5px; font-style: italic; margin: 10px 0 14px; }
+.cz-legal a { color: var(--cz-ink); }
+
+.cz-foot-info { text-align: right; font-size: 12px; }
+.cz-foot-info p { margin: 2px 0; color: #ddd; }
+.cz-foot-info b { color: var(--cz-gold); }
+
+@media (max-width: 640px) {
+    .cz-sheet { padding: 16px 14px; }
+    .cz-head, .cz-foot { flex-direction: column; text-align: center; }
+    .cz-head-title, .cz-foot-info { text-align: center; }
+    .cz-data { grid-template-columns: 130px 1fr; }
+    .cz-table .cz-detail, .cz-table th:nth-child(2) { display: none; }
+    .cz-addons li { grid-template-columns: 1fr auto; }
+    .cz-addons span { display: none; }
+    .cz-two { grid-template-columns: 1fr; gap: 0; }
+}
+
+/* Impresión / PDF: una hoja A4, sin la barra de acciones.
+   Todo se compacta: letra menor, menos relleno y "Puedes agregar" en dos columnas. */
+@page { size: A4; margin: 8mm; }
+@media print {
+    body { background: #fff; padding: 0; font-size: 9.5px; line-height: 1.35; }
+    .cz-bar, .cz-status { display: none !important; }
+    .cz-sheet { max-width: none; box-shadow: none; padding: 0; }
+    .cz-head, .cz-foot, .cz-section, .cz-table th, .cz-totals .cz-total, .cz-data dt, .cz-incl td {
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .cz-head, .cz-foot { padding: 9px 16px; }
+    .cz-brand img { height: 40px; }
+    .cz-brand strong { font-size: 16px; }
+    .cz-head-title h1 { font-size: 12px; }
+    .cz-head-title p, .cz-foot-info { font-size: 9.5px; }
+    .cz-meta { padding: 7px 2px; font-size: 8.5px; }
+    .cz-section { margin-top: 9px; padding: 4px 10px; font-size: 9.5px; }
+    .cz-data { margin-top: 5px; grid-template-columns: 110px 1fr 110px 1fr; }
+    .cz-data dt, .cz-data dd { padding: 3px 8px; }
+    .cz-data dt { font-size: 9px; }
+    .cz-table { margin-top: 5px; }
+    .cz-table th { padding: 4px 8px; font-size: 8.5px; }
+    .cz-table td { padding: 3.5px 8px; }
+    .cz-detail { font-size: 9px; }
+    .cz-totals div { padding: 3.5px 8px; }
+    .cz-totals .cz-total { font-size: 12.5px; }
+    .cz-addons { display: grid; grid-template-columns: 1fr 1fr; margin-top: 5px; }
+    .cz-addons li { grid-template-columns: 1fr auto; padding: 3px 8px; font-size: 9px; }
+    .cz-addons li:nth-child(odd) { border-right: 1px solid var(--cz-line); }
+    .cz-addons span { display: none; }
+    .cz-two { gap: 8px; }
+    .cz-notes, .cz-pay { padding: 6px 9px; margin-top: 8px; }
+    .cz-notes h3, .cz-pay h3 { font-size: 8.5px; }
+    .cz-notes p, .cz-pay p { font-size: 9px; margin: 2px 0; }
+    .cz-legal { font-size: 8px; margin: 6px 0 8px; }
+    .cz-table tr, .cz-totals, .cz-two, .cz-foot { break-inside: avoid; }
+    .cz-legal a { text-decoration: none; }
+}
