@@ -830,41 +830,81 @@ button.att-cell:hover { border-color: #ffc107; }
     .daily-row { grid-template-columns: 1fr; }
 }
 
-/* ── COTIZACIONES: editor, tarifario e historial ─────────────── */
-.quote-modal { max-width: 960px; }
-.qe-title { color: #ffc107; font-size: 0.95em; margin: 20px 0 8px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-.qe-title small { color: #888; font-weight: 400; margin-left: 8px; }
-.qe-grid { display: grid; gap: 10px; }
+/* ── MODALES ALTOS: nunca se corta la parte superior ─────────
+   Con align-items:center, un modal más alto que la pantalla quedaba
+   con la cabecera fuera de vista. Con margin:auto se centra cuando
+   cabe y, cuando no, arranca arriba y se desplaza completo. */
+.modal { align-items: flex-start; }
+.modal-content { margin: auto; }
+
+/* ── COTIZACIONES: editor, tarifario e historial ───────────────
+   El editor ocupa toda la pantalla: cabecera y pie fijos (totales y
+   acciones siempre a la vista) y dos columnas que se desplazan solas
+   solo si su contenido no entra. */
+.quote-modal {
+    width: min(1340px, 100%); max-width: none; height: calc(100vh - 40px);
+    padding: 0; display: flex; flex-direction: column; overflow: hidden;
+}
+.qe-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; border-bottom: 1px solid #333; flex: 0 0 auto;
+}
+.qe-head h2 { margin: 0; font-size: 1.15em; color: #ffc107; text-align: left; }
+.qe-head h2 small { color: #888; font-weight: 400; font-size: 0.72em; margin-left: 10px; }
+.qe-head .close-button { position: static; float: none; line-height: 1; }
+.qe-form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.qe-body { display: grid; grid-template-columns: 5fr 7fr; flex: 1 1 auto; min-height: 0; }
+.qe-body-tariff { grid-template-columns: 8fr 4fr; }
+.qe-col { padding: 12px 18px; overflow-y: auto; min-height: 0; }
+.qe-col + .qe-col { border-left: 1px solid #333; }
+.quote-modal .qe-title {
+    color: #ffc107; font-size: 0.85em; margin: 10px 0 6px; padding: 0 0 3px;
+    border-bottom: 1px solid #333; text-align: left;
+}
+.quote-modal .qe-title.qe-first { margin-top: 0; }
+.quote-modal .qe-title small { color: #888; font-weight: 400; margin-left: 8px; }
+.qe-grid { display: grid; gap: 6px 8px; }
 .qe-4 { grid-template-columns: repeat(4, 1fr); }
 .qe-3 { grid-template-columns: repeat(3, 1fr); }
-.qe-grid label { display: flex; flex-direction: column; gap: 4px; color: #999; font-size: 0.78em; }
+.qe-2 { grid-template-columns: repeat(2, 1fr); }
+.qe-span2 { grid-column: span 2; }
+.qe-grid label { display: flex; flex-direction: column; gap: 3px; color: #999; font-size: 0.74em; min-width: 0; }
 .qe-grid input, .qe-grid select, .qe-row input, .qe-row select, .qe-add select, .qe-notes {
-    background: #121212; border: 1px solid #444; color: #eee; border-radius: 6px; padding: 8px; font-size: 1.05em; font-family: inherit;
+    background: #121212; border: 1px solid #444; color: #eee; border-radius: 6px;
+    padding: 5px 8px; font-size: 13px; font-family: inherit; min-width: 0; width: 100%; box-sizing: border-box;
+    margin: 0; height: 30px;
 }
-.qe-notes { width: 100%; box-sizing: border-box; resize: vertical; font-size: 0.9em; }
-.qe-rows { display: flex; flex-direction: column; gap: 6px; }
-.qe-row { display: grid; gap: 6px; align-items: center; }
-.qe-row.cols-item   { grid-template-columns: 1.2fr 2fr 110px 34px; }
-.qe-row.cols-adj    { grid-template-columns: 3fr 130px 34px; }
-.qe-row.cols-tariff { grid-template-columns: 120px 1.2fr 2fr 110px 34px; }
-.qe-row input, .qe-row select { font-size: 0.88em; min-width: 0; }
-.qe-del { background: none; border: 1px solid #444; color: #dc3545; border-radius: 6px; height: 34px; cursor: pointer; }
+.quote-modal .qe-notes { height: auto; }
+.qe-notes { resize: vertical; line-height: 1.4; }
+.qe-rows { display: flex; flex-direction: column; gap: 4px; }
+.qe-row { display: grid; gap: 5px; align-items: center; }
+.qe-row.cols-item   { grid-template-columns: 1.3fr 2fr 96px 30px; }
+.qe-row.cols-adj    { grid-template-columns: 3fr 110px 30px; }
+.qe-row.cols-tariff { grid-template-columns: 104px 1.3fr 2fr 110px 30px; }
+.qe-del { background: none; border: 1px solid #444; color: #dc3545; border-radius: 6px; height: 30px; cursor: pointer; padding: 0; }
 .qe-del:hover { border-color: #dc3545; }
-.qe-add { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-.qe-add select { font-size: 0.85em; }
-.qe-empty { color: #777; font-size: 0.85em; margin: 0; }
-.qe-totals {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 20px;
-    background: #121212; border: 1px solid #ffc107; border-radius: 10px; padding: 12px;
+.qe-add { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.qe-add select { width: auto; max-width: 100%; }
+.qe-empty { color: #777; font-size: 0.82em; margin: 0; }
+.qe-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    padding: 10px 20px; border-top: 1px solid #333; background: #141414; flex: 0 0 auto;
 }
-.qe-totals div { text-align: center; }
-.qe-totals span { display: block; color: #999; font-size: 0.75em; }
-.qe-totals b { color: #fff; font-size: 1.1em; }
+.qe-totals { display: flex; gap: 22px; align-items: baseline; flex-wrap: wrap; }
+.qe-totals span { display: block; color: #999; font-size: 0.7em; }
+.qe-totals b { color: #fff; font-size: 1em; }
 .qe-totals .qe-total b { color: #ffc107; font-size: 1.35em; }
-.qe-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.qe-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-left: auto; }
+.qe-actions .form-message { margin: 0; padding: 6px 10px; font-size: 0.82em; }
 .quotes-summary { color: #bbb; font-size: 0.85em; }
 .quotes-summary b { color: #ffc107; }
-@media (max-width: 760px) {
-    .qe-4, .qe-3, .qe-totals { grid-template-columns: 1fr 1fr; }
+@media (max-width: 980px) {
+    /* Pantallas angostas: una sola columna y se desplaza todo el cuerpo */
+    .quote-modal { height: auto; overflow: visible; }
+    .qe-body, .qe-body-tariff { grid-template-columns: 1fr; }
+    .qe-col { overflow: visible; }
+    .qe-col + .qe-col { border-left: 0; border-top: 1px solid #333; }
+    .qe-4, .qe-3 { grid-template-columns: 1fr 1fr; }
     .qe-row.cols-item, .qe-row.cols-tariff { grid-template-columns: 1fr 1fr; }
+    .qe-foot { position: sticky; bottom: 0; }
 }

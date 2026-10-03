@@ -998,77 +998,89 @@
         </div>
     </div>
 
-    <!-- Modal: Editor de cotización -->
+    <!-- Modal: Editor de cotización (pantalla completa, dos columnas) -->
     <div id="quoteModal" class="modal">
         <div class="modal-content quote-modal">
-            <span class="close-button" id="closeQuoteModalBtn">&times;</span>
-            <h2>Cotización de evento</h2>
-            <form id="quoteForm">
-                <div class="qe-grid qe-4">
-                    <label>N.° <input type="text" id="quoteNumber" required></label>
-                    <label>Fecha <input type="date" id="quoteDate" required></label>
-                    <label>Válida hasta <input type="date" id="quoteValidUntil" required></label>
-                    <label>Estado
-                        <select id="quoteStatus">
-                            <option>Borrador</option><option>Enviada</option><option>Aceptada</option><option>Rechazada</option>
-                        </select>
-                    </label>
+            <div class="qe-head">
+                <h2>Cotización de evento</h2>
+                <span class="close-button" id="closeQuoteModalBtn">&times;</span>
+            </div>
+            <form id="quoteForm" class="qe-form">
+                <div class="qe-body">
+                    <!-- Columna izquierda: datos de la cotización, cliente y evento -->
+                    <div class="qe-col">
+                        <div class="qe-grid qe-4">
+                            <label>N.° <input type="text" id="quoteNumber" required></label>
+                            <label>Fecha <input type="date" id="quoteDate" required></label>
+                            <label>Válida hasta <input type="date" id="quoteValidUntil" required></label>
+                            <label>Estado
+                                <select id="quoteStatus">
+                                    <option>Borrador</option><option>Enviada</option><option>Aceptada</option><option>Rechazada</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <h3 class="qe-title">Cliente</h3>
+                        <div class="qe-grid qe-3">
+                            <label class="qe-span2">Cliente o empresa <input type="text" id="quoteClientName" required></label>
+                            <label>Tipo
+                                <select id="quoteClientType"><option value="persona">Persona natural</option><option value="empresa">Empresa</option></select>
+                            </label>
+                            <label>DNI o RUC <input type="text" id="quoteClientDoc"></label>
+                            <label>WhatsApp <input type="text" id="quoteClientPhone"></label>
+                            <label>Correo <input type="email" id="quoteClientEmail"></label>
+                        </div>
+
+                        <h3 class="qe-title">Evento</h3>
+                        <div class="qe-grid qe-3">
+                            <label>Tipo de evento <input type="text" id="quoteEventType"></label>
+                            <label>Fecha del evento <input type="date" id="quoteEventDate"></label>
+                            <label>Hora de inicio <input type="time" id="quoteEventTime"></label>
+                            <label>Distrito <input type="text" id="quoteEventDistrict"></label>
+                            <label class="qe-span2">Dirección <input type="text" id="quoteEventAddress"></label>
+                            <label class="qe-span2">Piso y acceso <input type="text" id="quoteEventFloor" placeholder="Ej: Piso 8 · ascensor"></label>
+                            <label>N.° de invitados <input type="text" id="quoteEventGuests"></label>
+                        </div>
+
+                        <h3 class="qe-title">Observaciones</h3>
+                        <textarea id="quoteNotes" rows="4" class="qe-notes"></textarea>
+                    </div>
+
+                    <!-- Columna derecha: lo que se cobra, ajustes y lo que puede agregar -->
+                    <div class="qe-col">
+                        <h3 class="qe-title qe-first">Tu evento <small>precio vacío = "Incluido" o "A cotizar"</small></h3>
+                        <div id="quoteItems" class="qe-rows"></div>
+                        <div class="qe-add">
+                            <select id="quoteAddItem"></select>
+                            <button type="button" class="btn btn-secondary btn-sm" id="quoteAddFree"><i class="fas fa-plus"></i> Línea libre</button>
+                        </div>
+
+                        <h3 class="qe-title">Ajustes <small>recargo en positivo, descuento en negativo</small></h3>
+                        <div id="quoteAdjustments" class="qe-rows"></div>
+                        <div class="qe-add">
+                            <select id="quoteAddAdjustment"></select>
+                        </div>
+
+                        <h3 class="qe-title">Puedes agregar <small>informativo: no suma al total</small></h3>
+                        <div id="quoteAddons" class="qe-rows"></div>
+                        <div class="qe-add">
+                            <button type="button" class="btn btn-secondary btn-sm" id="quoteSuggestAddons"><i class="fas fa-magic"></i> Sugerir según el tarifario</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="quoteAddAddon"><i class="fas fa-plus"></i> Línea libre</button>
+                        </div>
+                    </div>
                 </div>
 
-                <h3 class="qe-title">Cliente</h3>
-                <div class="qe-grid qe-3">
-                    <label>Cliente o empresa <input type="text" id="quoteClientName" required></label>
-                    <label>Tipo
-                        <select id="quoteClientType"><option value="persona">Persona natural</option><option value="empresa">Empresa</option></select>
-                    </label>
-                    <label>DNI o RUC <input type="text" id="quoteClientDoc"></label>
-                    <label>WhatsApp <input type="text" id="quoteClientPhone"></label>
-                    <label>Correo <input type="email" id="quoteClientEmail"></label>
+                <!-- Pie fijo: totales y acciones siempre a la vista -->
+                <div class="qe-foot">
+                    <div id="quoteTotals" class="qe-totals"></div>
+                    <div class="qe-actions">
+                        <div id="quoteFormMessage" class="form-message" style="display:none;"></div>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
+                        <button type="button" class="btn btn-secondary" id="quoteViewBtn"><i class="fas fa-eye"></i> Ver hoja</button>
+                        <button type="button" class="btn btn-secondary" id="quoteWaBtn"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+                        <button type="button" class="btn btn-secondary" id="quoteMailBtn"><i class="fas fa-envelope"></i> Correo</button>
+                    </div>
                 </div>
-
-                <h3 class="qe-title">Evento</h3>
-                <div class="qe-grid qe-3">
-                    <label>Tipo de evento <input type="text" id="quoteEventType"></label>
-                    <label>Fecha del evento <input type="date" id="quoteEventDate"></label>
-                    <label>Hora de inicio <input type="time" id="quoteEventTime"></label>
-                    <label>Distrito <input type="text" id="quoteEventDistrict"></label>
-                    <label>Dirección <input type="text" id="quoteEventAddress"></label>
-                    <label>Piso y acceso <input type="text" id="quoteEventFloor" placeholder="Ej: Piso 8 · ascensor"></label>
-                    <label>N.° aprox. de invitados <input type="text" id="quoteEventGuests"></label>
-                </div>
-
-                <h3 class="qe-title">Tu evento <small>lo que se cobra · deja el precio vacío para "Incluido" o "A cotizar"</small></h3>
-                <div id="quoteItems" class="qe-rows"></div>
-                <div class="qe-add">
-                    <select id="quoteAddItem"></select>
-                    <button type="button" class="btn btn-secondary btn-sm" id="quoteAddFree"><i class="fas fa-plus"></i> Línea libre</button>
-                </div>
-
-                <h3 class="qe-title">Ajustes <small>recargos en positivo, descuentos en negativo</small></h3>
-                <div id="quoteAdjustments" class="qe-rows"></div>
-                <div class="qe-add">
-                    <select id="quoteAddAdjustment"></select>
-                </div>
-
-                <h3 class="qe-title">Puedes agregar <small>informativo: no suma al total</small></h3>
-                <div id="quoteAddons" class="qe-rows"></div>
-                <div class="qe-add">
-                    <button type="button" class="btn btn-secondary btn-sm" id="quoteSuggestAddons"><i class="fas fa-magic"></i> Sugerir según el tarifario</button>
-                    <button type="button" class="btn btn-secondary btn-sm" id="quoteAddAddon"><i class="fas fa-plus"></i> Línea libre</button>
-                </div>
-
-                <h3 class="qe-title">Observaciones</h3>
-                <textarea id="quoteNotes" rows="3" class="qe-notes"></textarea>
-
-                <div id="quoteTotals" class="qe-totals"></div>
-
-                <div class="qe-actions">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
-                    <button type="button" class="btn btn-secondary" id="quoteViewBtn"><i class="fas fa-eye"></i> Ver hoja</button>
-                    <button type="button" class="btn btn-secondary" id="quoteWaBtn"><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</button>
-                    <button type="button" class="btn btn-secondary" id="quoteMailBtn"><i class="fas fa-envelope"></i> Enviar por correo</button>
-                </div>
-                <div id="quoteFormMessage" class="form-message" style="display:none;"></div>
             </form>
         </div>
     </div>
@@ -1076,30 +1088,38 @@
     <!-- Modal: Tarifario y valores por defecto de las cotizaciones -->
     <div id="tariffModal" class="modal">
         <div class="modal-content quote-modal">
-            <span class="close-button" id="closeTariffModalBtn">&times;</span>
-            <h2>Tarifario de eventos</h2>
-            <p class="activate-note">Precios base y textos que se cargan en cada cotización nueva. En la cotización siempre puedes cambiarlos.</p>
-            <form id="tariffForm">
-                <div id="tariffItems" class="qe-rows"></div>
-                <div class="qe-add">
-                    <button type="button" class="btn btn-secondary btn-sm" id="tariffAddItem"><i class="fas fa-plus"></i> Agregar línea</button>
+            <div class="qe-head">
+                <h2>Tarifario de eventos <small>precios base y textos de cada cotización nueva; en la cotización siempre puedes cambiarlos</small></h2>
+                <span class="close-button" id="closeTariffModalBtn">&times;</span>
+            </div>
+            <form id="tariffForm" class="qe-form">
+                <div class="qe-body qe-body-tariff">
+                    <div class="qe-col">
+                        <h3 class="qe-title qe-first">Mesas, incluidos y extras</h3>
+                        <div id="tariffItems" class="qe-rows"></div>
+                        <div class="qe-add">
+                            <button type="button" class="btn btn-secondary btn-sm" id="tariffAddItem"><i class="fas fa-plus"></i> Agregar línea</button>
+                        </div>
+                    </div>
+                    <div class="qe-col">
+                        <h3 class="qe-title qe-first">Valores por defecto</h3>
+                        <div class="qe-grid qe-2">
+                            <label>Asesor(a) <input type="text" id="tariffAdvisor"></label>
+                            <label>Vigencia (días hábiles) <input type="number" id="tariffValidity" min="1" max="60"></label>
+                            <label>Adelanto (%) <input type="number" id="tariffDeposit" min="0" max="100"></label>
+                            <label>IGV (%) <input type="number" id="tariffIgv" min="0" max="100"></label>
+                            <label>Hora extra por mesa (S/) <input type="number" id="tariffExtraHour" min="0"></label>
+                        </div>
+                        <h3 class="qe-title">Observaciones por defecto</h3>
+                        <textarea id="tariffNotes" rows="7" class="qe-notes"></textarea>
+                    </div>
                 </div>
-
-                <h3 class="qe-title">Valores por defecto</h3>
-                <div class="qe-grid qe-4">
-                    <label>Asesor(a) <input type="text" id="tariffAdvisor"></label>
-                    <label>Vigencia (días hábiles) <input type="number" id="tariffValidity" min="1" max="60"></label>
-                    <label>Adelanto (%) <input type="number" id="tariffDeposit" min="0" max="100"></label>
-                    <label>IGV (%) <input type="number" id="tariffIgv" min="0" max="100"></label>
-                    <label>Hora extra por mesa (S/) <input type="number" id="tariffExtraHour" min="0"></label>
+                <div class="qe-foot">
+                    <div class="qe-actions">
+                        <div id="tariffFormMessage" class="form-message" style="display:none;"></div>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar tarifario</button>
+                    </div>
                 </div>
-                <h3 class="qe-title">Observaciones por defecto</h3>
-                <textarea id="tariffNotes" rows="4" class="qe-notes"></textarea>
-
-                <div class="qe-actions">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar tarifario</button>
-                </div>
-                <div id="tariffFormMessage" class="form-message" style="display:none;"></div>
             </form>
         </div>
     </div>
