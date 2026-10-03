@@ -228,6 +228,7 @@
                 <div class="form-group"><input type="text" id="enrollFullName" placeholder="Nombre Completo" required></div>
                 <div class="form-group"><input type="email" id="enrollEmail" placeholder="Correo Electrónico" required></div>
                 <div class="form-group"><input type="tel" id="enrollPhone" placeholder="WhatsApp (Ej: 999888777)" required></div>
+                <div class="form-group"><input type="text" id="enrollDni" placeholder="DNI o carné de extranjería" maxlength="12" required></div>
                 
                 <div class="form-group">
                     <input type="password" id="enrollPassword" placeholder="Crea tu contraseña (mín. 6 caracteres)" required minlength="6" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #444; color: #fff; border-radius: 4px; margin-top: 5px;">
@@ -246,10 +247,10 @@
                 <p style="color: #ffc107; font-weight: bold; margin-top: 10px;">Titular: DealerClub E.I.R.L.</p>
                 
                 <div class="file-input-wrapper" style="margin-top: 15px;">
-                    <label>Link de tu Voucher (Drive/Imgur):</label>
-                    <input type="url" id="enrollVoucherUrl" placeholder="Opcional. También puedes enviarlo por WhatsApp" style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px;">
+                    <label>Foto o captura de tu constancia de pago:</label>
+                    <input type="file" id="enrollVoucherFile" accept="image/*" style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px;">
                 </div>
-                    <p style="font-size: 0.75em; color: #666; margin-top: 5px;">* Si prefieres, puedes enviarlo por WhatsApp.</p>
+                    <p style="font-size: 0.75em; color: #666; margin-top: 5px;">* Si aún no has depositado, podrás subirla después desde tu campus. Tu acceso se activa al validarla.</p>
                 </div>
                 <div class="form-group">
                     <textarea id="enrollComments" placeholder="¿Tienes alguna duda?" rows="2"></textarea>

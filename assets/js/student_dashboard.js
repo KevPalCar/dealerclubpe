@@ -5,32 +5,11 @@
 // ============================================================
 
 import { auth, db, dbPath } from './firebase.js';
+import { compressImage } from './image.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
-    doc, getDoc, setDoc, deleteDoc, collection, query, where, onSnapshot
+    doc, getDoc, setDoc, addDoc, deleteDoc, collection, query, where, onSnapshot
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-// Comprime imágenes en el navegador antes de guardarlas como Base64
-// (sin Firebase Storage). Máx 800px de ancho, 80% de calidad.
-const compressImage = (file, maxWidth = 800, quality = 0.8) =>
-    new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const scale  = Math.min(1, maxWidth / img.width);
-                canvas.width  = Math.round(img.width  * scale);
-                canvas.height = Math.round(img.height * scale);
-                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                resolve(canvas.toDataURL('image/jpeg', quality));
-            };
-            img.onerror = reject;
-            img.src = e.target.result;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
 
 // Protege el botón "Atrás" del BFCache (el usuario quedaría
 // logueado visualmente aunque su sesión ya haya caducado)
@@ -113,11 +92,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     fullName:    (roleData.fullName || user.email || 'Estudiante').split(' ')[0],
                     studentCode: roleData.studentCode || '',
                     email:       user.email || '',
-                    suspended:   roleData.status === 'suspended'
+                    suspended:   roleData.status === 'suspended',
+                    reason:      roleData.statusReason || ''
                 };
                 document.getElementById('dash-body').classList.add('dash-pending');
                 document.getElementById('preview-notice').style.display = 'block';
                 renderPendingHero();
+                if (!pendingInfo.suspended) initVoucherUpload(user, roleData);
             }
 
             hideOverlay();
@@ -193,7 +174,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pendingInfo.suspended) {
             document.getElementById('pending-title').textContent = 'Tu acceso al campus está suspendido';
             document.getElementById('pending-text').textContent =
+                (pendingInfo.reason ? `Motivo: ${pendingInfo.reason}. ` : '') +
                 'Tu progreso sigue guardado. Escríbenos para reactivar tu acceso y retomar donde te quedaste.';
+            // Los pasos de alta y la subida de constancia no aplican a un suspendido.
+            document.querySelector('.pending-steps').style.display = 'none';
+            document.getElementById('pending-upload').style.display = 'none';
+            document.getElementById('pending-wa-text').textContent = 'Reactivar mi acceso por WhatsApp';
         } else {
             if (onboardingCfg.title?.trim())
                 document.getElementById('pending-title').textContent = onboardingCfg.title;
@@ -227,6 +213,62 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.href   = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
         btn.target = '_blank';
         btn.rel    = 'noopener';
+    };
+
+    // ── CONSTANCIA DE PAGO (alumno pendiente) ────────────────
+    // El alumno sube la foto de su depósito; el admin la valida en
+    // Alumnos y el campus se abre solo. Si la rechaza, puede subir otra.
+    const initVoucherUpload = (user, roleData) => {
+        const box       = document.getElementById('pending-upload');
+        const review    = document.getElementById('pending-review');
+        const rejected  = document.getElementById('pending-rejected');
+        const fileInput = document.getElementById('pending-file');
+        const nameEl    = document.getElementById('pending-file-name');
+        const btn       = document.getElementById('pending-upload-btn');
+        const msg       = document.getElementById('pending-upload-msg');
+        const stepLabel = document.querySelector('.pending-steps .step.current .step-label');
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files[0]) nameEl.textContent = fileInput.files[0].name;
+        });
+
+        btn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) { msg.textContent = 'Primero elige la foto de tu constancia.'; return; }
+            if (file.size > 8 * 1024 * 1024) { msg.textContent = 'Imagen muy grande (máx 8MB).'; return; }
+            btn.disabled = true;
+            msg.textContent = 'Subiendo…';
+            try {
+                await addDoc(collection(db, dbPath('payments')), {
+                    uid:         user.uid,
+                    email:       user.email || '',
+                    studentName: roleData.fullName || '',
+                    type:        'matricula',
+                    imageUrl:    await compressImage(file),
+                    note:        '',
+                    status:      'reported',
+                    createdAt:   new Date()
+                });
+                fileInput.value = '';
+                nameEl.textContent = 'Elegir foto de mi constancia';
+            } catch { msg.textContent = 'No se pudo subir. Inténtalo de nuevo.'; }
+            btn.disabled = false;
+        });
+
+        onSnapshot(query(collection(db, dbPath('payments')), where('uid', '==', user.uid)), (snap) => {
+            const last = snap.docs.map(d => d.data())
+                .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))[0];
+            const inReview = last?.status === 'reported';
+            box.style.display    = inReview ? 'none' : 'block';
+            review.style.display = inReview ? 'flex' : 'none';
+            if (stepLabel) stepLabel.textContent = inReview ? 'Constancia en revisión' : 'Envía tu voucher de pago';
+            if (last?.status === 'rejected') {
+                rejected.textContent = `Tu constancia anterior no fue aceptada${last.rejectReason ? `: ${last.rejectReason}` : ''}. Sube una nueva.`;
+                rejected.style.display = 'block';
+            } else {
+                rejected.style.display = 'none';
+            }
+        });
     };
 
     // Quita el modo vitrina y oculta el hero (se llama al detectar aprobación,

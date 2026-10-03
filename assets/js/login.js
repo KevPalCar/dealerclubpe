@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (role === 'student') { window.location.href = '/panel-estudiante'; return; }
                 }
                 await signOut(auth);
-                showMessage(loginMessage, 'Rol de usuario no reconocido.', 'error');
+                showMessage(loginMessage, 'Esta cuenta no tiene acceso al campus. Escríbenos por WhatsApp para ayudarte.', 'error');
             } catch {
                 await signOut(auth);
                 showMessage(loginMessage, 'Error de autenticación.', 'error');
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (role === 'student') { showMessage(loginMessage, 'Redirigiendo al campus…', 'success');    window.location.href = '/panel-estudiante'; return; }
             }
             await signOut(auth);
-            showMessage(loginMessage, 'Rol de usuario no reconocido.', 'error');
+            showMessage(loginMessage, 'Esta cuenta no tiene acceso al campus. Escríbenos por WhatsApp para ayudarte.', 'error');
         } catch (error) {
             const msgs = {
                 'auth/user-not-found':     'Correo o contraseña incorrectos.',

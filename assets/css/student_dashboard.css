@@ -718,6 +718,34 @@ body {
 .pending-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37, 211, 102, 0.5); }
 .pending-cta-hint { color: #999; font-size: 0.85em; margin-top: 10px; }
 
+/* Subida de la constancia de pago */
+.pending-upload { display: block; }
+.pending-file {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    border: 1px dashed #555; border-radius: 10px; padding: 10px 16px;
+    color: #ccc; font-size: 0.9em; margin: 0 8px 12px 0; max-width: 100%;
+}
+.pending-file:hover { border-color: #ffc107; color: #fff; }
+.pending-file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
+.pending-cta-gold { background: #ffc107; color: #1a1405; border: none; cursor: pointer; font-family: inherit; }
+.pending-cta-gold:hover { box-shadow: 0 8px 24px rgba(255, 193, 7, 0.4); }
+.pending-cta-gold:disabled { opacity: 0.6; cursor: wait; transform: none; }
+.pending-rejected {
+    background: rgba(220, 53, 69, 0.12); border: 1px solid #dc3545; color: #f1a7ae;
+    border-radius: 10px; padding: 10px 14px; font-size: 0.9em; margin: 0 auto 14px; max-width: 520px;
+}
+.pending-review {
+    display: flex; align-items: center; gap: 14px; text-align: left;
+    background: rgba(255, 193, 7, 0.08); border: 1px solid #ffc107; border-radius: 12px;
+    padding: 14px 18px; max-width: 520px; margin: 0 auto;
+}
+.pending-review i { color: #ffc107; font-size: 1.4em; }
+.pending-review strong { display: block; color: #fff; }
+.pending-review span { color: #bbb; font-size: 0.88em; }
+.pending-wa-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; color: #25d366; font-size: 0.9em; text-decoration: none; }
+.pending-wa-link:hover { text-decoration: underline; }
+/* En modo vitrina los paneles se bloquean, pero el hero vive fuera de ellos. */
+
 /* Ganchos / prueba social */
 .pending-perks {
     list-style: none;

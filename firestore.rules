@@ -54,7 +54,20 @@ service cloud.firestore {
                       && request.resource.data.role == 'student'
                       && request.resource.data.status == 'pending'
                       && request.resource.data.keys().hasOnly(
-                           ['role', 'status', 'fullName', 'email', 'createdAt']);
+                           ['role', 'status', 'fullName', 'email', 'dni', 'phone', 'createdAt']);
+      }
+
+      // ── CONSTANCIAS DE PAGO ───────────────────────────────────
+      // El alumno sube la foto de su depósito y solo ve las suyas.
+      // Confirmar o rechazar es cosa del admin.
+      match /payments/{id} {
+        allow read:   if isAuth() && resource.data.uid == request.auth.uid;
+        allow create: if isAuth() && request.resource.data.uid == request.auth.uid
+                      && request.resource.data.status == 'reported'
+                      && request.resource.data.imageUrl.size() < 950000
+                      && request.resource.data.keys().hasOnly(
+                           ['uid', 'email', 'studentName', 'type', 'courseName',
+                            'imageUrl', 'note', 'status', 'createdAt']);
       }
 
       // ── CAMPUS VIRTUAL — solo alumnos activos ─────────────────

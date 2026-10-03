@@ -6,6 +6,7 @@
 // ============================================================
 
 import { auth, db, dbPath, generateStudentCode } from './firebase.js';
+import { compressImage } from './image.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
     collection, addDoc, setDoc, doc, updateDoc, deleteDoc,
@@ -20,6 +21,12 @@ const EJS_SERVICE  = 'service_w76xi5m';
 const EJS_TEMPLATE = 'template_n6t2bx8';
 emailjs.init('_S-T8AGnU-LZveZ7y');
 
+// ── ESCAPE DE HTML ──────────────────────────────────────────
+// Todo dato escrito por un visitante o alumno (nombres, correos,
+// comentarios) pasa por aquí antes de insertarse en el panel.
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 // ── SISTEMA DE NOTIFICACIONES TOAST ─────────────────────────
 // Reemplaza todos los alert() con mensajes no bloqueantes.
 const showToast = (message, type = 'success') => {
@@ -33,30 +40,6 @@ const showToast = (message, type = 'success') => {
     requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('visible')));
     setTimeout(() => { toast.classList.remove('visible'); setTimeout(() => toast.remove(), 350); }, 4000);
 };
-
-// ── COMPRESIÓN DE IMAGEN (Canvas API) ───────────────────────
-// Reduce imágenes de la PC antes de guardarlas en Firestore como
-// Base64. Limita a 800px de ancho y 80% de calidad JPEG.
-// Evita documentos de varios MB que degradan la carga.
-const compressImage = (file, maxWidth = 800, quality = 0.8) =>
-    new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const scale  = Math.min(1, maxWidth / img.width);
-                canvas.width  = Math.round(img.width  * scale);
-                canvas.height = Math.round(img.height * scale);
-                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                resolve(canvas.toDataURL('image/jpeg', quality));
-            };
-            img.onerror = reject;
-            img.src = e.target.result;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
 
 // ── PAGINACIÓN GENÉRICA ──────────────────────────────────────
 // Un objeto de estado por sección (key = nombre de sección).
@@ -136,6 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     initSearches();
                     loadSection('courses');
                     reconcileApprovedStudents();
+                    watchVoucherQueue();
                 } else {
                     await signOut(auth);
                     window.location.replace('/iniciar-sesion');
@@ -211,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
             enrollments: 'Inscripciones',          referrals: 'Referidos & Marketing',
             requests: 'Solicitudes de Contacto',   announcements: 'Config & Anuncios',
             materials: 'Material Didáctico',        tasks: 'Asignar Tareas',
-            progress: 'Progreso de Alumnos'
+            progress: 'Progreso de Alumnos',      students: 'Alumnos'
         };
         document.getElementById('admin-main-title').textContent = titles[sectionName] || sectionName;
 
@@ -222,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
             enrollments: loadEnrollments,  referrals: loadReferrals,
             requests: loadRequests,    announcements: loadAnnouncements,
             materials: loadMaterials,  tasks: loadTasks,
-            progress: loadProgress
+            progress: loadProgress,    students: loadStudents
         };
         if (loaders[sectionName]) loaders[sectionName]();
     };
@@ -252,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initSearch('materials',   renderMaterialRow,   'No hay materiales subidos aún.');
         initSearch('tasks',       renderTaskRow,       'No hay tareas asignadas.');
         initSearch('progress',    renderProgressRow,   'No hay alumnos registrados.');
+        initSearch('students',    renderStudentRow,    'No hay alumnos registrados.');
     };
 
 
@@ -818,29 +803,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const statusBadge = e.status === 'Aprobado'
             ? `<span class="badge badge-success">Aprobado</span><br>
-               <small style="color:#ffc107; font-weight:bold;">Cód: ${e.studentCode || e.referralCode || 'N/A'}</small>`
+               <small style="color:#ffc107; font-weight:bold;">Cód: ${esc(e.studentCode || e.referralCode) || 'N/A'}</small>`
             : `<span class="badge badge-warning">Pendiente</span>`;
 
-        const voucherLink = e.voucherUrl
-            ? `<a href="${e.voucherUrl}" target="_blank" style="color:#007bff;">Ver Comprobante</a>`
-            : `<span style="color:#888;">Por WhatsApp</span>`;
+        // Constancia: la foto subida al campus, el enlace antiguo o nada.
+        const voucher = _reported.find(p => lower(p.email) === lower(e.email));
+        const voucherLink = voucher
+            ? `<a href="#" class="btn-view-voucher" style="color:#ffc107;">Ver constancia</a>`
+            : /^https?:\/\//i.test(e.voucherUrl || '')
+                ? `<a href="${esc(e.voucherUrl)}" target="_blank" rel="noopener" style="color:#007bff;">Ver Comprobante</a>`
+                : `<span style="color:#888;">${e.status === 'Aprobado' ? 'Validada' : 'Sin constancia'}</span>`;
 
         const approveBtn = e.status !== 'Aprobado'
             ? `<button class="btn btn-sm btn-approve"
                    data-id="${e.id}"
-                   data-name="${e.fullName}"
-                   data-email="${e.email || ''}"
-                   data-course="${e.courseName || ''}"
-                   data-code="${e.studentCode || ''}">
+                   data-name="${esc(e.fullName)}"
+                   data-email="${esc(e.email)}"
+                   data-course="${esc(e.courseName)}"
+                   data-code="${esc(e.studentCode)}">
                    <i class="fas fa-check"></i> Aprobar
                </button>`
             : '';
 
         tr.innerHTML = `
             <td>${e.timestamp ? new Date(e.timestamp.seconds * 1000).toLocaleDateString('es-PE') : '-'}</td>
-            <td><strong>${e.courseName || '-'}</strong></td>
-            <td>${e.fullName || '-'}<br><small>${e.email || '-'}</small></td>
-            <td>${e.phone || '-'}</td>
+            <td><strong>${esc(e.courseName) || '-'}</strong></td>
+            <td>${esc(e.fullName) || '-'}<br><small>${esc(e.email) || '-'}${e.dni ? ` · DNI ${esc(e.dni)}` : ''}</small></td>
+            <td>${esc(e.phone) || '-'}</td>
             <td>${voucherLink}</td>
             <td>${statusBadge}</td>
             <td class="action-buttons">
@@ -863,7 +852,9 @@ document.addEventListener('DOMContentLoaded', () => {
             try { referralCode = await resolveStudentCode({ existingCode, email }); }
             catch (err) { showToast(`Error al aprobar: ${err.message}`, 'error'); return; }
 
-            if (!confirm(`¿Confirmas el pago de ${name}?\nSe activará con código: ${referralCode}`)) return;
+            const noVoucher = voucher ? '' :
+                '\n\nNo hay constancia de pago subida. Confirma solo si verificaste el pago por otro medio.';
+            if (!confirm(`¿Confirmas el pago de ${name}?\nSe activará con código: ${referralCode}${noVoucher}`)) return;
 
             try {
                 // 1. Actualizar inscripción en Firestore
@@ -873,27 +864,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // 2. Activar el campus del alumno si ya tiene cuenta
                 const { found } = await activateStudent({ code: referralCode, email });
-
-                showToast(`Inscripción de ${name} aprobada. Código: ${referralCode}`, 'success');
-                if (!found) showToast(`${name} aún no tiene cuenta en el campus con ese correo. Se activará cuando la tenga y vuelvas a abrir el admin.`, 'warning');
-
-                // 3. Enviar email de confirmación al alumno vía EmailJS
-                if (email) {
-                    try {
-                        await emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
-                            to_name:      name,
-                            to_email:     email,
-                            course_name:  course,
-                            student_code: referralCode
-                        });
-                        showToast(`Email de confirmación enviado a ${email}`, 'info');
-                    } catch {
-                        // El email falló pero la inscripción ya fue aprobada en Firestore
-                        showToast('Inscripción aprobada, pero el email no se pudo enviar. Revisa EmailJS.', 'warning');
-                    }
+                if (voucher) {
+                    await updateDoc(doc(db, dbPath(`payments/${voucher.id}`)), { status: 'confirmed', reviewedAt: new Date() });
                 }
 
+                showToast(`Inscripción de ${esc(name)} aprobada. Código: ${referralCode}`, 'success');
+                if (!found) showToast(`${esc(name)} aún no tiene cuenta en el campus con ese correo. Se activará cuando la tenga y vuelvas a abrir el admin.`, 'warning');
+
+                // 3. Enviar email de confirmación al alumno vía EmailJS
+                sendApprovalEmail({ name, email, course, code: referralCode });
+
             } catch (err) { showToast(`Error al aprobar: ${err.message}`, 'error'); }
+        });
+
+        tr.querySelector('.btn-view-voucher')?.addEventListener('click', (evt) => {
+            evt.preventDefault();
+            viewImage(voucher.imageUrl);
         });
 
         tr.querySelector('.btn-delete').addEventListener('click', () =>
@@ -1022,16 +1008,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const openRequestDetail = (r) => {
         const date = r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleString('es-PE') : '-';
         document.getElementById('requestDetailBody').innerHTML = `
-            <p><strong>Nombre:</strong> ${r.fullName || '-'}</p>
-            <p><strong>Email:</strong> <a href="mailto:${r.email || ''}">${r.email || '-'}</a></p>
-            <p><strong>Teléfono:</strong> ${r.phone || '-'}</p>
-            <p><strong>Tipo de evento:</strong> ${r.eventType || '-'}</p>
-            <p><strong>Fecha del evento:</strong> ${r.eventDate || '-'}</p>
-            ${r.quoteContext ? `<p><strong>Contexto:</strong> ${r.quoteContext}</p>` : ''}
+            <p><strong>Nombre:</strong> ${esc(r.fullName) || '-'}</p>
+            <p><strong>Email:</strong> <a href="mailto:${esc(r.email)}">${esc(r.email) || '-'}</a></p>
+            <p><strong>Teléfono:</strong> ${esc(r.phone) || '-'}</p>
+            <p><strong>Tipo de evento:</strong> ${esc(r.eventType) || '-'}</p>
+            <p><strong>Fecha del evento:</strong> ${esc(r.eventDate) || '-'}</p>
+            ${r.quoteContext ? `<p><strong>Contexto:</strong> ${esc(r.quoteContext)}</p>` : ''}
             <p><strong>Recibido:</strong> ${date}</p>
-            <p><strong>Estado:</strong> ${r.status || 'Nuevo'}</p>
+            <p><strong>Estado:</strong> ${esc(r.status) || 'Nuevo'}</p>
             <p><strong>Detalle / Mensaje:</strong></p>
-            <pre class="request-detail-msg">${r.details || r.message || '-'}</pre>
+            <pre class="request-detail-msg">${esc(r.details || r.message) || '-'}</pre>
         `;
         const mailBtn = document.getElementById('requestDetailMail');
         const waBtn   = document.getElementById('requestDetailWa');
@@ -1055,8 +1041,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const dateStr = r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleDateString('es-PE') : '-';
         tr.innerHTML = `
             <td>${dateStr}</td>
-            <td>${r.fullName || '-'}</td><td>${r.email || '-'}</td>
-            <td>${r.eventType || r.subject || r.quoteContext || '-'}</td>
+            <td>${esc(r.fullName) || '-'}</td><td>${esc(r.email) || '-'}</td>
+            <td>${esc(r.eventType || r.subject || r.quoteContext) || '-'}</td>
             <td>
                 <select class="status-select req-status" data-id="${r.id}">
                     ${REQUEST_STATUSES.map(s => `<option value="${s}" ${status === s ? 'selected' : ''}>${s}</option>`).join('')}
@@ -1414,23 +1400,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     .sort((a, b) => (a.studentName || '').localeCompare(b.studentName || ''))
                     .forEach(s => {
                         const ev = s.imageUrl
-                            ? `<a href="${s.imageUrl}" target="_blank" rel="noopener">Ver foto</a>`
-                            : s.link ? `<a href="${s.link}" target="_blank" rel="noopener">${s.link}</a>`
+                            ? `<a href="#" class="sub-view-img">Ver foto</a>`
+                            : /^https?:\/\//i.test(s.link || '') ? `<a href="${esc(s.link)}" target="_blank" rel="noopener">${esc(s.link)}</a>`
+                            : s.link ? esc(s.link)
                             : '<span style="color:#888;">Sin evidencia (marcada como hecha)</span>';
                         const card = document.createElement('div');
                         card.className = 'submission-card';
                         card.innerHTML = `
                             <div class="submission-head">
-                                <strong>${s.studentName || s.studentCode || 'Alumno'}</strong>
-                                <span class="sub-status ${s.status}">${s.status === 'reviewed' ? 'Revisada' : 'Entregada'}</span>
+                                <strong>${esc(s.studentName || s.studentCode) || 'Alumno'}</strong>
+                                <span class="sub-status ${s.status === 'reviewed' ? 'reviewed' : 'submitted'}">${s.status === 'reviewed' ? 'Revisada' : 'Entregada'}</span>
                             </div>
                             <p class="submission-ev">Evidencia: ${ev}</p>
                             <div class="submission-grade">
                                 <input type="number" class="sub-grade" min="0" max="20" step="0.1" placeholder="/20" value="${s.grade ?? ''}">
-                                <input type="text" class="sub-feedback" placeholder="Feedback para el alumno" value="${(s.feedback || '').replace(/"/g, '&quot;')}">
+                                <input type="text" class="sub-feedback" placeholder="Feedback para el alumno" value="${esc(s.feedback)}">
                                 <button type="button" class="btn btn-primary btn-sm sub-save"><i class="fas fa-check"></i></button>
                             </div>
                         `;
+                        card.querySelector('.sub-view-img')?.addEventListener('click', (evt) => {
+                            evt.preventDefault();
+                            viewImage(s.imageUrl);
+                        });
                         card.querySelector('.sub-save').addEventListener('click', async () => {
                             const g = card.querySelector('.sub-grade').value;
                             try {
@@ -1647,9 +1638,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const grade = (s.weeklyGrades && s.weeklyGrades.length) ? gradesAvg(s.weeklyGrades) : (s.grades ?? null);
 
         tr.innerHTML = `
-            <td><code style="color:#ffc107;">${s.studentCode || '-'}</code></td>
-            <td>${s.fullName || '-'}</td>
-            <td>${s.email || '-'}</td>
+            <td><code style="color:#ffc107;">${esc(s.studentCode) || '-'}</code></td>
+            <td>${esc(s.fullName) || '-'}</td>
+            <td>${esc(s.email) || '-'}</td>
             <td><span style="color:${levelColor}; font-weight:bold;">${s.level || 'Rookie'}</span></td>
             <td>${aPct  != null ? `${aPct}%`   : '--'}</td>
             <td>${grade != null ? `${grade}/20` : '--'}</td>
@@ -1721,5 +1712,332 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('closeProgressModalBtn').addEventListener('click', () =>
         closeModal(document.getElementById('progressModal'))
     );
+
+    // ══════════════════════════════════════════════════════════
+    // VISOR DE IMÁGENES (constancias y evidencias en Base64)
+    // El navegador bloquea abrir una imagen Base64 en pestaña nueva,
+    // así que se muestran en un modal.
+    // ══════════════════════════════════════════════════════════
+    const viewImage = (src) => {
+        document.getElementById('imageViewImg').src = src;
+        openModal(document.getElementById('imageViewModal'));
+    };
+    document.getElementById('closeImageViewBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('imageViewModal'))
+    );
+
+    // ══════════════════════════════════════════════════════════
+    // CAMPUS VIRTUAL — ALUMNOS
+    // Estados: pending → active → suspended. Suspender nunca borra
+    // el progreso; eliminar es definitivo y solo para no activos.
+    // ══════════════════════════════════════════════════════════
+    const STUDENT_STATUS = {
+        pending:   { label: 'Pendiente',  badge: 'badge-warning' },
+        active:    { label: 'Activo',     badge: 'badge-success' },
+        suspended: { label: 'Suspendido', badge: 'badge-danger'  }
+    };
+    const statusOf = (s) => (STUDENT_STATUS[s.status] ? s.status : 'pending');
+    const lower    = (v) => (v || '').trim().toLowerCase();
+    const DAY_LABELS = [[1, 'L'], [2, 'M'], [3, 'M'], [4, 'J'], [5, 'V'], [6, 'S'], [0, 'D']];   // valor = getDay()
+
+    let _students       = [];   // user_roles con role 'student'
+    let _stuEnrollments = [];   // course_enrollments (para curso y aprobación)
+    let _reported       = [];   // constancias de pago por revisar
+
+    const coursesOf = (s) => [...new Set(_stuEnrollments
+        .filter(e => lower(e.email) === lower(s.email) && e.type !== 'Lista de Espera')
+        .map(e => e.courseName).filter(Boolean))];
+
+    const sendApprovalEmail = async ({ name, email, course, code }) => {
+        if (!email) return;
+        try {
+            await emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
+                to_name: name, to_email: email, course_name: course, student_code: code
+            });
+            showToast(`Email de confirmación enviado a ${esc(email)}`, 'info');
+        } catch {
+            showToast('Alumno aprobado, pero el email no se pudo enviar. Revisa EmailJS.', 'warning');
+        }
+    };
+
+    // Aprueba al alumno: le asigna código, activa su campus, aprueba sus
+    // inscripciones pendientes y, si vino de una constancia, la confirma.
+    const approveStudent = async (s, payment = null) => {
+        const name = s.fullName || s.email || 'Alumno';
+        let code;
+        try { code = await resolveStudentCode({ existingCode: s.studentCode, email: s.email }); }
+        catch (err) { showToast(`Error al aprobar: ${esc(err.message)}`, 'error'); return; }
+
+        const noVoucher = payment ? '' :
+            '\n\nNo hay constancia de pago subida. Confirma solo si verificaste el pago por otro medio.';
+        if (!confirm(`¿Confirmas el pago de ${name}?\nSe activará con código: ${code}${noVoucher}`)) return;
+
+        try {
+            const pendings = _stuEnrollments.filter(e =>
+                lower(e.email) === lower(s.email) && e.status !== 'Aprobado' && e.type !== 'Lista de Espera');
+            for (const e of pendings) {
+                await updateDoc(doc(db, dbPath(`course_enrollments/${e.id}`)), {
+                    status: 'Aprobado', studentCode: code, referralCode: code, approvedAt: new Date()
+                });
+            }
+            await updateDoc(doc(db, dbPath(`user_roles/${s.uid}`)), {
+                status: 'active', studentCode: code, statusReason: '', statusChangedAt: new Date()
+            });
+            if (payment) {
+                await updateDoc(doc(db, dbPath(`payments/${payment.id}`)), { status: 'confirmed', reviewedAt: new Date() });
+            }
+            showToast(`${esc(name)} quedó activo. Código: ${code}`, 'success');
+            sendApprovalEmail({ name, email: s.email, course: coursesOf(s).join(', ') || 'Curso DealerClub', code });
+        } catch (err) { showToast(`Error al aprobar: ${esc(err.message)}`, 'error'); }
+    };
+
+    const setStudentStatus = async (s, status, reason = '') => {
+        try {
+            await updateDoc(doc(db, dbPath(`user_roles/${s.uid}`)), {
+                status, statusReason: reason, statusChangedAt: new Date()
+            });
+            showToast(status === 'suspended'
+                ? `${esc(s.fullName || 'Alumno')} quedó suspendido. Su progreso se conserva.`
+                : `${esc(s.fullName || 'Alumno')} fue reactivado.`, 'success');
+        } catch (err) { showToast(`Error: ${esc(err.message)}`, 'error'); }
+    };
+
+    // Eliminación definitiva: ficha, progreso, inscripciones, entregas y constancias.
+    const deleteStudent = (s) => {
+        const name = s.fullName || s.email || 'este alumno';
+        confirmDelete(
+            `¿Eliminar DEFINITIVAMENTE a "${name}"? Se borrarán su ficha, progreso, inscripciones, entregas y constancias. No se puede deshacer.`,
+            async () => {
+                const msg = document.getElementById('deleteFormMessage');
+                if (prompt('Para confirmar, escribe ELIMINAR') !== 'ELIMINAR') {
+                    showMsg(msg, 'Eliminación cancelada.', 'error');
+                    return;
+                }
+                showMsg(msg, 'Eliminando...', 'loading');
+                try {
+                    const refs = _stuEnrollments
+                        .filter(e => lower(e.email) === lower(s.email))
+                        .map(e => doc(db, dbPath(`course_enrollments/${e.id}`)));
+                    const pays = await getDocs(query(collection(db, dbPath('payments')), where('uid', '==', s.uid)));
+                    pays.forEach(d => refs.push(d.ref));
+                    if (s.studentCode) {
+                        const subs = await getDocs(query(
+                            collection(db, dbPath('task_submissions')), where('studentCode', '==', s.studentCode)));
+                        subs.forEach(d => refs.push(d.ref));
+                    }
+                    for (const ref of refs) await deleteDoc(ref);
+                    await deleteDoc(doc(db, dbPath(`user_roles/${s.uid}`)));
+                    showMsg(msg, 'Eliminado.', 'success');
+                    setTimeout(() => closeModal(confirmModal), 900);
+                } catch (err) { showMsg(msg, `Error: ${err.message}`, 'error'); }
+            }
+        );
+    };
+
+    // ── Ficha del alumno (datos, modalidad y días propios) ────
+    let _studentDays = new Set();
+    const renderStudentDays = () => {
+        const box = document.getElementById('studentDays');
+        box.innerHTML = DAY_LABELS.map(([v, l]) =>
+            `<button type="button" class="day-pick ${_studentDays.has(v) ? 'on' : ''}" data-day="${v}">${l}</button>`).join('');
+        box.querySelectorAll('.day-pick').forEach(b => b.addEventListener('click', () => {
+            const v = +b.dataset.day;
+            if (_studentDays.has(v)) _studentDays.delete(v); else _studentDays.add(v);
+            renderStudentDays();
+        }));
+    };
+    const toggleStudentDays = () => {
+        document.getElementById('studentDaysGroup').style.display =
+            document.getElementById('studentModality').value === 'personalizado' ? 'block' : 'none';
+    };
+    document.getElementById('studentModality').addEventListener('change', toggleStudentDays);
+
+    const openStudentModal = (s) => {
+        document.getElementById('studentUid').value      = s.uid;
+        document.getElementById('studentFullName').value = s.fullName || '';
+        document.getElementById('studentDni').value      = s.dni || '';
+        document.getElementById('studentPhone').value    = s.phone || '';
+        document.getElementById('studentModality').value = s.modality === 'personalizado' ? 'personalizado' : 'regular';
+        _studentDays = new Set(s.customDays || []);
+        renderStudentDays();
+        toggleStudentDays();
+        showMsg(document.getElementById('studentFormMessage'), '', '');
+        openModal(document.getElementById('studentModal'));
+    };
+
+    document.getElementById('studentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msg      = document.getElementById('studentFormMessage');
+        const modality = document.getElementById('studentModality').value;
+        if (modality === 'personalizado' && !_studentDays.size) {
+            showMsg(msg, 'Marca al menos un día de clase para el horario personalizado.', 'error');
+            return;
+        }
+        showMsg(msg, 'Guardando…', 'loading');
+        try {
+            await updateDoc(doc(db, dbPath(`user_roles/${document.getElementById('studentUid').value}`)), {
+                fullName:   document.getElementById('studentFullName').value.trim(),
+                dni:        document.getElementById('studentDni').value.trim(),
+                phone:      document.getElementById('studentPhone').value.trim(),
+                modality,
+                customDays: modality === 'personalizado' ? [..._studentDays].sort() : []
+            });
+            closeModal(document.getElementById('studentModal'));
+            showToast('Ficha del alumno actualizada.', 'success');
+        } catch (err) { showMsg(msg, `Error: ${err.message}`, 'error'); }
+    });
+    document.getElementById('closeStudentModalBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('studentModal'))
+    );
+
+    // ── Tabla ─────────────────────────────────────────────────
+    const renderStudentRow = (s) => {
+        const tr     = document.getElementById('students-table-body').insertRow();
+        const st     = statusOf(s);
+        const info   = STUDENT_STATUS[st];
+        const custom = s.modality === 'personalizado';
+        const days   = custom && (s.customDays || []).length
+            ? DAY_LABELS.filter(([v]) => s.customDays.includes(v)).map(([, l]) => l).join(' ')
+            : '';
+        const hasVoucher = _reported.some(p => p.uid === s.uid);
+
+        const btns = [];
+        if (st === 'pending')   btns.push(`<button class="btn btn-sm btn-approve btn-stu-approve"><i class="fas fa-check"></i> Activar</button>`);
+        if (st === 'suspended') btns.push(`<button class="btn btn-sm btn-approve btn-stu-reactivate"><i class="fas fa-undo"></i> Reactivar</button>`);
+        btns.push(`<button class="btn btn-secondary btn-sm btn-stu-edit" title="Ficha"><i class="fas fa-id-card"></i></button>`);
+        if (st === 'active')    btns.push(`<button class="btn btn-secondary btn-sm btn-stu-suspend" title="Suspender"><i class="fas fa-pause"></i> Suspender</button>`);
+        if (st !== 'active')    btns.push(`<button class="btn btn-danger btn-sm btn-stu-delete" title="Eliminar definitivamente"><i class="fas fa-trash"></i></button>`);
+
+        tr.innerHTML = `
+            <td><code style="color:#ffc107;">${esc(s.studentCode) || '—'}</code></td>
+            <td>${esc(s.fullName) || '-'}
+                <span class="student-sub">${esc(s.email) || ''}${s.dni ? ` · DNI ${esc(s.dni)}` : ''}</span></td>
+            <td>${s.courses.length ? s.courses.map(esc).join('<br>') : '<span style="color:#888;">Sin inscripción</span>'}</td>
+            <td>${custom
+                ? `<span class="badge badge-info">Personalizado</span>${days ? `<span class="student-sub">${days}</span>` : ''}`
+                : 'Regular'}</td>
+            <td><span class="badge ${info.badge}">${info.label}</span>
+                ${hasVoucher ? '<span class="student-sub" style="color:#ffc107;">Constancia por revisar</span>' : ''}
+                ${st === 'suspended' && s.statusReason ? `<span class="student-reason">${esc(s.statusReason)}</span>` : ''}</td>
+            <td class="action-buttons">${btns.join('')}</td>
+        `;
+
+        tr.querySelector('.btn-stu-approve')?.addEventListener('click', () =>
+            approveStudent(s, _reported.find(p => p.uid === s.uid) || null));
+        tr.querySelector('.btn-stu-reactivate')?.addEventListener('click', () => {
+            if (confirm(`¿Reactivar el campus de ${s.fullName || 'este alumno'}? Conserva todo su progreso.`)) setStudentStatus(s, 'active');
+        });
+        tr.querySelector('.btn-stu-edit').addEventListener('click', () => openStudentModal(s));
+        tr.querySelector('.btn-stu-suspend')?.addEventListener('click', () => {
+            const reason = prompt(`Motivo de la suspensión de ${s.fullName || 'este alumno'} (el alumno lo verá):`, 'Inasistencia');
+            if (reason !== null) setStudentStatus(s, 'suspended', reason.trim());
+        });
+        tr.querySelector('.btn-stu-delete')?.addEventListener('click', () => deleteStudent(s));
+    };
+
+    const applyStudentFilters = () => {
+        if (!pState.students) return;
+        const st  = document.getElementById('filter-student-status').value;
+        const mod = document.getElementById('filter-student-modality').value;
+        pState.students.data = _students
+            .filter(s => !st  || statusOf(s) === st)
+            .filter(s => !mod || (s.modality === 'personalizado' ? 'personalizado' : 'regular') === mod)
+            .map(s => ({ ...s, courses: coursesOf(s) }));
+        renderPaged('students', renderStudentRow, 'No hay alumnos con esos filtros.');
+    };
+    ['filter-student-status', 'filter-student-modality'].forEach(id =>
+        document.getElementById(id).addEventListener('change', () => {
+            pState.students.page = 1;
+            applyStudentFilters();
+        }));
+
+    // ── Constancias por revisar ───────────────────────────────
+    const renderVoucherQueue = () => {
+        const box = document.getElementById('voucher-queue');
+        if (!_reported.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+        box.style.display = 'block';
+        box.innerHTML = `<h3><i class="fas fa-file-invoice-dollar"></i> Constancias de pago por revisar (${_reported.length})</h3>
+                         <div class="voucher-cards"></div>`;
+        const cards = box.querySelector('.voucher-cards');
+
+        _reported.forEach(p => {
+            const student = _students.find(s => s.uid === p.uid);
+            const date    = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString('es-PE') : '';
+            const card    = document.createElement('div');
+            card.className = 'voucher-card';
+            card.innerHTML = `
+                <img class="voucher-thumb" alt="Constancia" title="Ver en grande">
+                <div class="voucher-info">
+                    <strong>${esc(student?.fullName || p.studentName || p.email)}</strong>
+                    <small>${date}${p.courseName ? ` · ${esc(p.courseName)}` : ''}</small>
+                    <div class="voucher-actions">
+                        <button class="btn btn-sm btn-approve btn-v-ok"><i class="fas fa-check"></i> Aprobar</button>
+                        <button class="btn btn-danger btn-sm btn-v-no"><i class="fas fa-times"></i> Rechazar</button>
+                    </div>
+                </div>`;
+            const img = card.querySelector('.voucher-thumb');
+            img.src = p.imageUrl;
+            img.addEventListener('click', () => viewImage(p.imageUrl));
+
+            card.querySelector('.btn-v-ok').addEventListener('click', async () => {
+                if (!student) { showToast('Esa cuenta ya no existe. Rechaza la constancia para quitarla de la lista.', 'warning'); return; }
+                if (statusOf(student) === 'pending') { approveStudent(student, p); return; }
+                // Alumno ya activo o suspendido: solo se confirma el pago.
+                if (!confirm(`¿Confirmar el pago de ${student.fullName || 'este alumno'}?`)) return;
+                try {
+                    await updateDoc(doc(db, dbPath(`payments/${p.id}`)), { status: 'confirmed', reviewedAt: new Date() });
+                    showToast('Pago confirmado.', 'success');
+                } catch (err) { showToast(`Error: ${esc(err.message)}`, 'error'); }
+            });
+            card.querySelector('.btn-v-no').addEventListener('click', async () => {
+                const reason = prompt('Motivo del rechazo (el alumno lo verá):', 'La imagen no se lee bien');
+                if (reason === null) return;
+                try {
+                    await updateDoc(doc(db, dbPath(`payments/${p.id}`)), {
+                        status: 'rejected', rejectReason: reason.trim(), reviewedAt: new Date()
+                    });
+                    showToast('Constancia rechazada. El alumno podrá subir otra.', 'info');
+                } catch (err) { showToast(`Error: ${esc(err.message)}`, 'error'); }
+            });
+            cards.appendChild(card);
+        });
+    };
+
+    // Vigila las constancias por revisar desde cualquier sección (contador
+    // en el menú). Arranca una vez al entrar al admin y no se detiene.
+    const watchVoucherQueue = () => {
+        onSnapshot(
+            query(collection(db, dbPath('payments')), where('status', '==', 'reported')),
+            (snap) => {
+                _reported = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0));
+                const badge = document.getElementById('nav-students-badge');
+                badge.textContent   = _reported.length;
+                badge.style.display = _reported.length ? 'inline-flex' : 'none';
+                if (document.getElementById('students-management').style.display === 'block') {
+                    renderVoucherQueue();
+                    applyStudentFilters();
+                }
+            }
+        );
+    };
+
+    const loadStudents = () => {
+        document.getElementById('students-table-body').innerHTML =
+            `<tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        unsubscribeListeners.students = onSnapshot(
+            query(collection(db, dbPath('user_roles')), where('role', '==', 'student')),
+            (snap) => {
+                _students = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+                    .sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+                renderVoucherQueue();
+                applyStudentFilters();
+            }
+        );
+        unsubscribeListeners.studentEnrollments = onSnapshot(collection(db, dbPath('course_enrollments')), (snap) => {
+            _stuEnrollments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            applyStudentFilters();
+        });
+    };
 
 }); // fin DOMContentLoaded
