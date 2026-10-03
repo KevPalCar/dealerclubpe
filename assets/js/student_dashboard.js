@@ -514,6 +514,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // vuelve a bloquear si el alumno pasa a suspendido.
             if (!isAdminUser) {
                 if (pendingInfo && d.status === 'active') {
+                    // El código se asigna al aprobar: lo mostramos al momento.
+                    document.getElementById('dash-student-code').textContent =
+                        d.studentCode ? `Código: ${d.studentCode}` : '';
                     unlockDashboard();
                     startCampus(d);
                 } else if (!pendingInfo && d.status !== 'active') {

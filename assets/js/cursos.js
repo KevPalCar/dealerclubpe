@@ -1,4 +1,4 @@
-import { auth, db, dbPath, generateStudentCode } from './firebase.js';
+import { auth, db, dbPath } from './firebase.js';
 import { onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -202,14 +202,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const submitBtn = document.getElementById('submitEnrollmentBtn');
         if (submitBtn) submitBtn.disabled = true;
-        showFormMessage(enrollFormMessage, 'Generando tu código de alumno…', 'loading');
+        showFormMessage(enrollFormMessage, 'Registrando tu inscripción…', 'loading');
 
         const isWl           = enrollIsWaitlist?.value === 'true';
-        const newStudentCode = generateStudentCode();
         const enrollPassword = document.getElementById('enrollPassword').value;
 
         const enrollmentData = {
-            studentCode: newStudentCode,
             courseId:    enrollCourseId?.value || '',
             courseName:  enrollCourseName?.textContent.replace('Curso: ', '') || '',
             type:        isWl ? 'Lista de Espera' : 'Matrícula',
@@ -230,7 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
             await setDoc(doc(db, dbPath(`user_roles/${user.uid}`)), {
                 role:        'student',
                 status:      'pending',
-                studentCode: newStudentCode,
                 fullName:    enrollmentData.fullName,
                 email:       enrollmentData.email
             });
@@ -244,11 +241,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // 5. Cerrar sesión (el alumno debe iniciar sesión explícitamente)
             await signOut(auth);
 
-            const successMsg = `¡Todo listo! Tu código de alumno es:<br>
-                <strong style="font-size:1.5em;color:#fff;display:block;margin-top:10px;letter-spacing:3px;">
-                    ${newStudentCode}
-                </strong><br>
-                <span style="font-size:0.8em;">Haz una captura. Te enviamos un correo de verificación: revísalo (incluida la carpeta de spam) y confirma tu cuenta. Ya puedes iniciar sesión con tu correo y contraseña.</span>`;
+            // El código de alumno se asigna cuando el admin confirma el pago.
+            const successMsg = `¡Inscripción registrada!<br>
+                <span style="font-size:0.8em;">Te enviamos un correo de verificación: revísalo (incluida la carpeta de spam) y confirma tu cuenta. Ya puedes iniciar sesión con tu correo y contraseña. Recibirás tu código de alumno cuando confirmemos tu pago.</span>`;
             showFormMessage(enrollFormMessage, successMsg, 'success');
 
             setTimeout(() => {

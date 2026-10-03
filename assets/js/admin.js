@@ -5,7 +5,7 @@
 // Nunca dupliques la config ni llames initializeApp aquí.
 // ============================================================
 
-import { auth, db, dbPath } from './firebase.js';
+import { auth, db, dbPath, generateStudentCode } from './firebase.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
     collection, addDoc, setDoc, doc, updateDoc, deleteDoc,
@@ -849,8 +849,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </td>
         `;
 
-        // Aprobar: usa el studentCode generado durante el registro como código de referido.
-        // Así un solo código sirve tanto para identificar al alumno como para referidos.
+        // Aprobar: el código de alumno nace aquí, al confirmar el pago, y sirve
+        // también como código de referido. Si el alumno ya tenía uno, se reutiliza.
         tr.querySelector('.btn-approve')?.addEventListener('click', async (evt) => {
             const btn          = evt.currentTarget;
             const id           = btn.dataset.id;
@@ -859,20 +859,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const course       = btn.dataset.course || 'Curso DealerClub';
             const existingCode = btn.dataset.code;
 
-            // Reutiliza el studentCode existente o genera uno nuevo con formato DC-
-            const referralCode = existingCode || (() => {
-                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-                let code = '';
-                for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
-                return `DC-${new Date().getFullYear().toString().slice(-2)}${code}`;
-            })();
+            let referralCode;
+            try { referralCode = await resolveStudentCode({ existingCode, email }); }
+            catch (err) { showToast(`Error al aprobar: ${err.message}`, 'error'); return; }
 
             if (!confirm(`¿Confirmas el pago de ${name}?\nSe activará con código: ${referralCode}`)) return;
 
             try {
                 // 1. Actualizar inscripción en Firestore
                 await updateDoc(doc(db, dbPath(`course_enrollments/${id}`)), {
-                    status: 'Aprobado', referralCode, approvedAt: new Date()
+                    status: 'Aprobado', studentCode: referralCode, referralCode, approvedAt: new Date()
                 });
 
                 // 2. Activar el campus del alumno si ya tiene cuenta
@@ -905,10 +901,8 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     };
 
-    // Activa en user_roles la cuenta del alumno de una inscripción aprobada.
-    // Busca por código y por correo (las cuentas antiguas no tenían código).
-    // No toca a los suspendidos: esos solo se reactivan a mano.
-    const activateStudent = async ({ code, email }) => {
+    // Cuentas (user_roles) de un alumno, buscadas por correo y/o código.
+    const findStudentAccounts = async ({ code, email }) => {
         const col     = collection(db, dbPath('user_roles'));
         const emails  = [...new Set([email, (email || '').trim().toLowerCase()].filter(Boolean))];
         const lookups = emails.map(em => getDocs(query(col, where('email', '==', em))));
@@ -916,6 +910,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const accounts = new Map();
         (await Promise.all(lookups)).forEach(snap => snap.forEach(d => accounts.set(d.id, d.data())));
+        return accounts;
+    };
+
+    // Código del alumno al aprobar: el que ya tenga (en la inscripción o en
+    // su cuenta, p. ej. por un curso anterior) o uno nuevo que no se repita.
+    const resolveStudentCode = async ({ existingCode, email }) => {
+        if (existingCode) return existingCode;
+        for (const data of (await findStudentAccounts({ email })).values()) {
+            if (data.studentCode) return data.studentCode;
+        }
+        for (let i = 0; i < 5; i++) {
+            const code  = generateStudentCode();
+            const clash = await getDocs(query(
+                collection(db, dbPath('user_roles')), where('studentCode', '==', code)));
+            if (clash.empty) return code;
+        }
+        throw new Error('No se pudo generar un código único. Inténtalo de nuevo.');
+    };
+
+    // Activa en user_roles la cuenta del alumno de una inscripción aprobada.
+    // Busca por código y por correo (las cuentas antiguas no tenían código).
+    // No toca a los suspendidos: esos solo se reactivan a mano.
+    const activateStudent = async ({ code, email }) => {
+        const accounts = await findStudentAccounts({ code, email });
 
         let activated = 0;
         for (const [uid, data] of accounts) {

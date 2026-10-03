@@ -213,3 +213,25 @@ body {
     font-size: 28px;
     font-weight: bold;
 }
+
+/* =========================================
+   LLUVIA 3D DE FICHAS (fondo del inicio de sesión)
+   ========================================= */
+.auth-rain {
+    position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+    perspective: 900px; perspective-origin: 50% 40%;
+}
+.auth-rain::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(13, 13, 13, .44), rgba(13, 13, 13, .64));
+}
+.rain-ficha {
+    position: absolute; top: 0; left: 0; border-radius: 50%; will-change: transform;
+    background-image: url('/assets/images/fichas-sheet.webp'); background-repeat: no-repeat;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .35) inset, 0 6px 14px -6px rgba(0, 0, 0, .85);
+}
+/* El contenido queda por encima de la lluvia. */
+.auth-header, .auth-main, .auth-footer { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) {
+    .auth-rain { display: none; }
+}
