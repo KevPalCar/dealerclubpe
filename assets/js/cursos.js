@@ -1,6 +1,6 @@
 import { auth, db, dbPath } from './firebase.js';
 import { compressImage } from './image.js';
-import { onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -57,30 +57,16 @@ document.addEventListener('DOMContentLoaded', () => {
         currentStep = 1;
         enrollmentForm?.reset();
         showFormMessage(enrollFormMessage, '', '');
+        showFormMessage(document.getElementById('enrollPayMessage'), '', '');
+        const voucherBtn = document.getElementById('enrollVoucherBtn');
+        if (voucherBtn) { voucherBtn.style.display = ''; voucherBtn.disabled = false; }
+        const laterLink = document.getElementById('enrollLaterLink');
+        if (laterLink) laterLink.textContent = 'Lo haré después';
         updateWizard();
     };
 
     document.querySelectorAll('.btn-next').forEach(btn => btn.addEventListener('click', (e) => {
-        if (currentStep === 1) {
-            const enrollPassword = document.getElementById('enrollPassword');
-            if (!enrollFullName.value || !enrollEmail.value || !enrollPhone.value || !enrollPassword.value) {
-                showFormMessage(enrollFormMessage, 'Por favor completa todos tus datos personales.', 'error');
-                return;
-            }
-            if (!/^[A-Za-z0-9]{8,12}$/.test(enrollDni.value.trim())) {
-                showFormMessage(enrollFormMessage, 'Ingresa un DNI o carné de extranjería válido (8 a 12 caracteres).', 'error');
-                return;
-            }
-            if (enrollPassword.value.length < 6) {
-                showFormMessage(enrollFormMessage, 'La contraseña debe tener al menos 6 caracteres.', 'error');
-                return;
-            }
-        }
         currentStep = parseInt(e.currentTarget.dataset.next);
-        updateWizard();
-    }));
-    document.querySelectorAll('.btn-prev').forEach(btn => btn.addEventListener('click', (e) => {
-        currentStep = parseInt(e.currentTarget.dataset.prev);
         updateWizard();
     }));
 
@@ -204,15 +190,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── FORMULARIO DE INSCRIPCIÓN ─────────────────────────────
+    // Paso 1 crea la cuenta y la inscripción; el alumno queda con sesión
+    // iniciada y su campus en modo limitado. Paso 2 se lo confirma y
+    // paso 3 le deja enviar la constancia de pago ahora o más tarde.
+    let createdUser = null, createdEnrollment = null;
+
     enrollmentForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const submitBtn = document.getElementById('submitEnrollmentBtn');
-        if (submitBtn) submitBtn.disabled = true;
-        showFormMessage(enrollFormMessage, 'Registrando tu inscripción…', 'loading');
-
-        const isWl           = enrollIsWaitlist?.value === 'true';
+        const submitBtn      = document.getElementById('submitEnrollmentBtn');
         const enrollPassword = document.getElementById('enrollPassword').value;
 
+        if (!enrollFullName.value || !enrollEmail.value || !enrollPhone.value || !enrollPassword) {
+            showFormMessage(enrollFormMessage, 'Por favor completa todos tus datos personales.', 'error');
+            return;
+        }
+        if (!/^[A-Za-z0-9]{8,12}$/.test(enrollDni.value.trim())) {
+            showFormMessage(enrollFormMessage, 'Ingresa un DNI o carné de extranjería válido (8 a 12 caracteres).', 'error');
+            return;
+        }
+        if (enrollPassword.length < 6) {
+            showFormMessage(enrollFormMessage, 'La contraseña debe tener al menos 6 caracteres.', 'error');
+            return;
+        }
+
+        if (submitBtn) submitBtn.disabled = true;
+        showFormMessage(enrollFormMessage, 'Creando tu cuenta…', 'loading');
+
+        const isWl = enrollIsWaitlist?.value === 'true';
         const enrollmentData = {
             courseId:    enrollCourseId?.value || '',
             courseName:  enrollCourseName?.textContent.replace('Curso: ', '') || '',
@@ -230,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 1. Crear cuenta Firebase Auth
             const { user } = await createUserWithEmailAndPassword(auth, enrollmentData.email, enrollPassword);
 
-            // 2. Guardar rol en Firestore
+            // 2. Guardar rol en Firestore (sin código: se asigna al confirmar el pago)
             await setDoc(doc(db, dbPath(`user_roles/${user.uid}`)), {
                 role:        'student',
                 status:      'pending',
@@ -243,52 +247,64 @@ document.addEventListener('DOMContentLoaded', () => {
             // 3. Guardar inscripción
             await addDoc(collection(db, dbPath('course_enrollments')), enrollmentData);
 
-            // 3b. Constancia de pago (foto). Si falla, podrá subirla desde su campus.
-            const voucherFile = isWl ? null : enrollVoucherFile?.files[0];
-            let voucherSent = false;
-            if (voucherFile) {
-                try {
-                    await addDoc(collection(db, dbPath('payments')), {
-                        uid:         user.uid,
-                        email:       enrollmentData.email,
-                        studentName: enrollmentData.fullName,
-                        type:        'matricula',
-                        courseName:  enrollmentData.courseName,
-                        imageUrl:    await compressImage(voucherFile),
-                        note:        '',
-                        status:      'reported',
-                        createdAt:   new Date()
-                    });
-                    voucherSent = true;
-                } catch (err) { console.warn('No se pudo subir la constancia:', err); }
-            }
-
             // 4. Enviar correo de verificación (no bloquea el registro si falla)
             try { await sendEmailVerification(user); } catch (err) { console.warn('No se pudo enviar la verificación:', err); }
 
-            // 5. Cerrar sesión (el alumno debe iniciar sesión explícitamente)
-            await signOut(auth);
+            createdUser = user;
+            createdEnrollment = enrollmentData;
+            if (studentAccessLink) {
+                studentAccessLink.textContent = 'Mi Campus';
+                studentAccessLink.href = '/panel-estudiante';
+            }
 
-            // El código de alumno se asigna cuando el admin confirma el pago.
-            const successMsg = `¡Inscripción registrada!<br>
-                <span style="font-size:0.8em;">Te enviamos un correo de verificación: revísalo (incluida la carpeta de spam) y confirma tu cuenta. Ya puedes iniciar sesión con tu correo y contraseña. ${isWl ? '' : voucherSent
-                    ? 'Recibimos tu constancia: activaremos tu campus y tu código de alumno al validarla.'
-                    : 'Sube la foto de tu constancia de pago desde tu campus para activar tu acceso y recibir tu código de alumno.'}</span>`;
-            showFormMessage(enrollFormMessage, successMsg, 'success');
-
-            setTimeout(() => {
-                if (enrollCourseModal) enrollCourseModal.style.display = 'none';
-                document.body.style.overflow = 'auto';
-                if (submitBtn) submitBtn.disabled = false;
-                window.location.href = '/iniciar-sesion';
-            }, 7000);
+            // 5. Paso 2: registro confirmado
+            document.getElementById('enrollDoneText').innerHTML = isWl
+                ? 'Ya estás en la <strong>lista de espera</strong> de este curso. Te avisaremos apenas se abra un cupo. Mientras tanto, tu campus ya está disponible en modo limitado.'
+                : 'Tu campus ya está abierto en <strong>modo limitado</strong>: puedes entrar y conocerlo desde ahora. Solo falta tu pago; al validarlo se desbloquea por completo y recibes tu código de alumno.';
+            document.getElementById('enrollGoPayBtn').style.display = isWl ? 'none' : '';
+            showFormMessage(enrollFormMessage, '', '');
+            currentStep = 2;
+            updateWizard();
 
         } catch (error) {
             let msg = 'Error al procesar tu inscripción. Inténtalo de nuevo.';
             if (error.code === 'auth/email-already-in-use') msg = 'Este correo ya está registrado. Por favor, inicia sesión.';
             if (error.code === 'auth/weak-password')        msg = 'La contraseña debe tener al menos 6 caracteres.';
+            if (error.code === 'auth/invalid-email')        msg = 'El formato del correo es inválido.';
             showFormMessage(enrollFormMessage, msg, 'error');
-            if (submitBtn) submitBtn.disabled = false;
+        }
+        if (submitBtn) submitBtn.disabled = false;
+    });
+
+    // ── PASO 3: CONSTANCIA DE PAGO ────────────────────────────
+    document.getElementById('enrollVoucherBtn')?.addEventListener('click', async (e) => {
+        const btn  = e.currentTarget;
+        const msg  = document.getElementById('enrollPayMessage');
+        const file = enrollVoucherFile?.files[0];
+        if (!createdUser) return;
+        if (!file) { showFormMessage(msg, 'Elige la foto o captura de tu constancia.', 'error'); return; }
+        if (file.size > 8 * 1024 * 1024) { showFormMessage(msg, 'Imagen muy grande (máx 8MB).', 'error'); return; }
+
+        btn.disabled = true;
+        showFormMessage(msg, 'Enviando tu constancia…', 'loading');
+        try {
+            await addDoc(collection(db, dbPath('payments')), {
+                uid:         createdUser.uid,
+                email:       createdEnrollment.email,
+                studentName: createdEnrollment.fullName,
+                type:        'matricula',
+                courseName:  createdEnrollment.courseName,
+                imageUrl:    await compressImage(file),
+                note:        '',
+                status:      'reported',
+                createdAt:   new Date()
+            });
+            showFormMessage(msg, '¡Constancia recibida! Activaremos tu campus completo y tu código de alumno al validarla.', 'success');
+            btn.style.display = 'none';
+            document.getElementById('enrollLaterLink').textContent = 'Ir a mi campus';
+        } catch {
+            showFormMessage(msg, 'No se pudo enviar. Inténtalo de nuevo o súbela desde tu campus.', 'error');
+            btn.disabled = false;
         }
     });
 

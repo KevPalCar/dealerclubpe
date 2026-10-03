@@ -224,51 +224,59 @@
             <input type="hidden" id="enrollCourseId">
             <input type="hidden" id="enrollIsWaitlist">
 
+            <!-- PASO 1: datos y creación de la cuenta -->
             <div class="wizard-step active" id="step1">
                 <div class="form-group"><input type="text" id="enrollFullName" placeholder="Nombre Completo" required></div>
                 <div class="form-group"><input type="email" id="enrollEmail" placeholder="Correo Electrónico" required></div>
                 <div class="form-group"><input type="tel" id="enrollPhone" placeholder="WhatsApp (Ej: 999888777)" required></div>
-                <div class="form-group"><input type="text" id="enrollDni" placeholder="DNI o carné de extranjería" maxlength="12" required></div>
-                
+                <div class="form-group">
+                    <input type="text" id="enrollDni" placeholder="DNI o carné de extranjería" maxlength="12" required>
+                    <p style="font-size: 0.75em; color: #888; margin-top: 5px;">* Lo usamos solo para emitir tu certificado al finalizar el curso.</p>
+                </div>
+
                 <div class="form-group">
                     <input type="password" id="enrollPassword" placeholder="Crea tu contraseña (mín. 6 caracteres)" required minlength="6" style="width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #444; color: #fff; border-radius: 4px; margin-top: 5px;">
                     <p style="font-size: 0.75em; color: #888; margin-top: 5px;">* Esta será tu contraseña para ingresar a tu Panel de Estudiante.</p>
                 </div>
+                <div class="form-group">
+                    <textarea id="enrollComments" placeholder="¿Tienes alguna duda? (opcional)" rows="2"></textarea>
+                </div>
 
-                <button type="button" class="btn btn-primary btn-next" data-next="2" style="width:100%; margin-top: 15px;">Continuar</button>
+                <button type="submit" class="btn btn-primary" id="submitEnrollmentBtn" style="width:100%; margin-top: 15px;">Crear mi cuenta</button>
+                <div id="enrollFormMessage" class="form-message"></div>
             </div>
 
+            <!-- PASO 2: registro confirmado, campus ya disponible en modo limitado -->
             <div class="wizard-step" id="step2">
+                <h3 style="color: #28a745;"><i class="fas fa-check-circle"></i> ¡Registro creado!</h3>
+                <p id="enrollDoneText" style="font-size: 0.95em; margin-bottom: 12px;"></p>
+                <p style="font-size: 0.8em; color: #888; margin-bottom: 20px;">Te enviamos un correo de verificación: revísalo (incluida la carpeta de spam) y confirma tu cuenta.</p>
+                <div class="wizard-actions">
+                    <a href="/panel-estudiante" class="btn btn-secondary">Entrar a mi campus</a>
+                    <button type="button" class="btn btn-primary btn-next" data-next="3" id="enrollGoPayBtn">Continuar al pago</button>
+                </div>
+            </div>
+
+            <!-- PASO 3: pago y constancia (se puede dejar para después) -->
+            <div class="wizard-step" id="step3">
                 <div id="paymentBox" class="payment-info-box">
                 <h4>Cuentas Bancarias:</h4>
                 <p><strong>Interbank Soles:</strong> 003-200-003008147025-31</p>
                 <p><strong>CCI:</strong> 200-3008147025</p>
                 <p><strong>Interbank(Plin):</strong> 929 610 747</p>
                 <p style="color: #ffc107; font-weight: bold; margin-top: 10px;">Titular: DealerClub E.I.R.L.</p>
-                
+
                 <div class="file-input-wrapper" style="margin-top: 15px;">
                     <label>Foto o captura de tu constancia de pago:</label>
                     <input type="file" id="enrollVoucherFile" accept="image/*" style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px;">
                 </div>
-                    <p style="font-size: 0.75em; color: #666; margin-top: 5px;">* Si aún no has depositado, podrás subirla después desde tu campus. Tu acceso se activa al validarla.</p>
-                </div>
-                <div class="form-group">
-                    <textarea id="enrollComments" placeholder="¿Tienes alguna duda?" rows="2"></textarea>
+                    <p style="font-size: 0.75em; color: #666; margin-top: 5px;">* ¿Aún no has depositado? Puedes subirla después desde tu campus. Tu acceso completo y tu código de alumno se activan al validarla.</p>
                 </div>
                 <div class="wizard-actions">
-                    <button type="button" class="btn btn-secondary btn-prev" data-prev="1">Atrás</button>
-                    <button type="button" class="btn btn-primary btn-next" data-next="3">Siguiente</button>
+                    <a href="/panel-estudiante" class="btn btn-secondary" id="enrollLaterLink">Lo haré después</a>
+                    <button type="button" class="btn btn-primary" id="enrollVoucherBtn">Enviar constancia</button>
                 </div>
-            </div>
-
-            <div class="wizard-step" id="step3">
-                <h3 style="color: #ffc107;">¡Confirmación Final!</h3>
-                <p style="font-size: 0.9em; margin-bottom: 20px;">Al hacer clic en enviar, procesaremos tu solicitud. Tu código de alumno se genera cuando confirmemos tu pago.</p>
-                <div class="wizard-actions">
-                    <button type="button" class="btn btn-secondary btn-prev" data-prev="2">Atrás</button>
-                    <button type="submit" class="btn btn-primary" id="submitEnrollmentBtn">Finalizar Inscripción</button>
-                </div>
-                <div id="enrollFormMessage" class="form-message"></div>
+                <div id="enrollPayMessage" class="form-message"></div>
             </div>
         </form>
     </div>

@@ -1135,3 +1135,7 @@ h2 {
 }
 
 /* he notado que tengo un maincss, deseo que lo revises ya que de alli parte para todos creo /*
+
+/* Botones del asistente de inscripción (lado a lado, apilados en móvil) */
+.wizard-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 15px; }
+.wizard-actions .btn { flex: 1 1 160px; text-align: center; text-decoration: none; }
