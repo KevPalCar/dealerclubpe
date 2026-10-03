@@ -49,3 +49,13 @@ export const db   = getFirestore(app);
 //   dbPath('config/announceBar') → /artifacts/default-app-id/public/data/config/announceBar
 //   dbPath(`user_roles/${uid}`)  → /artifacts/default-app-id/public/data/user_roles/{uid}
 export const dbPath = (path) => `/artifacts/${APP_SCOPE}/public/data/${path}`;
+
+// ── CÓDIGO DE ALUMNO ─────────────────────────────────────────
+// Formato DC-{YY}{5 caracteres}, p. ej. DC-26ABCDE. Las reglas de
+// Firestore validan este formato al crear el registro del alumno.
+export const generateStudentCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 5; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+    return `DC-${new Date().getFullYear().toString().slice(-2)}${code}`;
+};

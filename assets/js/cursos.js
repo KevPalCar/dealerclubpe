@@ -1,13 +1,6 @@
-import { auth, db, dbPath } from './firebase.js';
+import { auth, db, dbPath, generateStudentCode } from './firebase.js';
 import { onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-function generateStudentCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 5; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-    return `DC-${new Date().getFullYear().toString().slice(-2)}${code}`;
-}
 
 document.addEventListener('DOMContentLoaded', () => {
     const studentAccessLink       = document.getElementById('student-access-link');
@@ -221,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
             courseName:  enrollCourseName?.textContent.replace('Curso: ', '') || '',
             type:        isWl ? 'Lista de Espera' : 'Matrícula',
             fullName:    enrollFullName?.value || '',
-            email:       enrollEmail?.value    || '',
+            email:       (enrollEmail?.value || '').trim().toLowerCase(),
             phone:       enrollPhone?.value    || '',
             comments:    enrollComments?.value || '',
             voucherUrl:  enrollVoucherUrl?.value || null,

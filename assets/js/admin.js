@@ -135,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         `<span>Bienvenido, Admin</span><i class="fas fa-user-circle"></i>`;
                     initSearches();
                     loadSection('courses');
+                    reconcileApprovedStudents();
                 } else {
                     await signOut(auth);
                     window.location.replace('/iniciar-sesion');
@@ -874,15 +875,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     status: 'Aprobado', referralCode, approvedAt: new Date()
                 });
 
-                // 2. Activar user_roles si el alumno ya se registró con cuenta
-                const userRolesSnap = await getDocs(
-                    query(collection(db, dbPath('user_roles')), where('studentCode', '==', referralCode))
-                );
-                userRolesSnap.forEach(async (userDoc) => {
-                    await updateDoc(doc(db, dbPath(`user_roles/${userDoc.id}`)), { status: 'active' });
-                });
+                // 2. Activar el campus del alumno si ya tiene cuenta
+                const { found } = await activateStudent({ code: referralCode, email });
 
                 showToast(`Inscripción de ${name} aprobada. Código: ${referralCode}`, 'success');
+                if (!found) showToast(`${name} aún no tiene cuenta en el campus con ese correo. Se activará cuando la tenga y vuelvas a abrir el admin.`, 'warning');
 
                 // 3. Enviar email de confirmación al alumno vía EmailJS
                 if (email) {
@@ -906,6 +903,45 @@ document.addEventListener('DOMContentLoaded', () => {
         tr.querySelector('.btn-delete').addEventListener('click', () =>
             confirmDelete(`¿Eliminar la inscripción de "${e.fullName}"?`, () => deleteItem('course_enrollments', e.id))
         );
+    };
+
+    // Activa en user_roles la cuenta del alumno de una inscripción aprobada.
+    // Busca por código y por correo (las cuentas antiguas no tenían código).
+    // No toca a los suspendidos: esos solo se reactivan a mano.
+    const activateStudent = async ({ code, email }) => {
+        const col     = collection(db, dbPath('user_roles'));
+        const emails  = [...new Set([email, (email || '').trim().toLowerCase()].filter(Boolean))];
+        const lookups = emails.map(em => getDocs(query(col, where('email', '==', em))));
+        if (code) lookups.push(getDocs(query(col, where('studentCode', '==', code))));
+
+        const accounts = new Map();
+        (await Promise.all(lookups)).forEach(snap => snap.forEach(d => accounts.set(d.id, d.data())));
+
+        let activated = 0;
+        for (const [uid, data] of accounts) {
+            if (data.role !== 'student' || ['active', 'suspended'].includes(data.status)) continue;
+            const patch = { status: 'active' };
+            if (!data.studentCode && code) patch.studentCode = code;
+            await updateDoc(doc(db, dbPath(`user_roles/${uid}`)), patch);
+            activated++;
+        }
+        return { found: accounts.size, activated };
+    };
+
+    // Repara a los alumnos con inscripción aprobada cuya cuenta quedó sin
+    // activar (antes el campus se abría solo con la inscripción; ahora las
+    // reglas exigen status 'active'). Corre una vez al entrar al admin.
+    const reconcileApprovedStudents = async () => {
+        try {
+            const snap = await getDocs(query(
+                collection(db, dbPath('course_enrollments')), where('status', '==', 'Aprobado')));
+            let activated = 0;
+            for (const d of snap.docs) {
+                const e = d.data();
+                activated += (await activateStudent({ code: e.referralCode || e.studentCode, email: e.email })).activated;
+            }
+            if (activated) showToast(`${activated} alumno(s) aprobados quedaron con el campus activado.`, 'info');
+        } catch (err) { console.warn('No se pudo sincronizar alumnos aprobados:', err); }
     };
 
     const loadEnrollments = () => {

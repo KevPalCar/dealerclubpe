@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── HELPERS ────────────────────────────────────────────────
+    function isAuth() {
+      return request.auth != null
+          && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+    function myRole() {
+      return get(/databases/$(database)/documents/artifacts/default-app-id/public/data/user_roles/$(request.auth.uid)).data;
+    }
+    function isAdmin() { return isAuth() && myRole().role == 'admin'; }
+    // Alumno con acceso completo: aprobado por el admin y no suspendido.
+    function isActiveStudent() {
+      return isAuth()
+          && (myRole().role == 'admin'
+              || (myRole().role == 'student' && myRole().get('status', '') == 'active'));
+    }
+
+    // Las reglas se SUMAN: si una permite, el acceso pasa. Por eso aquí NO
+    // hay un "allow read: if true" general; cada excepción se declara abajo.
+    match /artifacts/default-app-id/public/data {
+
+      // ── POR DEFECTO: solo el admin lee y escribe ──────────────
+      match /{document=**} {
+        allow read, write: if isAdmin();
+      }
+
+      // ── CONTENIDO PÚBLICO DEL SITIO (solo lectura) ────────────
+      match /{col}/{id} {
+        allow read: if col in ['courses', 'professors', 'alumni', 'dealers',
+                               'tables', 'services', 'config'];
+      }
+
+      // ── FORMULARIOS PÚBLICOS (solo crear, sin fijar el estado) ─
+      match /course_enrollments/{id} {
+        allow read:   if isAuth() && resource.data.email == request.auth.token.email;
+        allow create: if request.resource.data.status == 'Pendiente'
+                      && !request.resource.data.keys().hasAny(['approvedAt', 'referralCode']);
+      }
+
+      match /service_requests/{id} {
+        allow create: if !request.resource.data.keys().hasAny(['status', 'respondedAt']);
+      }
+
+      // ── ROLES DE USUARIO ──────────────────────────────────────
+      // El alumno solo puede CREAR su propio registro, siempre como
+      // estudiante pendiente. Rol, estado y progreso los cambia el admin.
+      match /user_roles/{uid} {
+        allow read:   if isAuth() && request.auth.uid == uid;
+        allow create: if isAuth() && request.auth.uid == uid
+                      && request.resource.data.role == 'student'
+                      && request.resource.data.status == 'pending'
+                      && request.resource.data.studentCode.matches('^DC-[0-9]{2}[A-Z0-9]{5}$')
+                      && request.resource.data.keys().hasOnly(
+                           ['role', 'status', 'studentCode', 'fullName', 'email', 'createdAt']);
+      }
+
+      // ── CAMPUS VIRTUAL — solo alumnos activos ─────────────────
+      match /materials/{id} {
+        allow read: if isActiveStudent();
+      }
+
+      match /tasks/{id} {
+        allow read: if isActiveStudent();
+      }
+
+      // Entregas: el alumno solo ve y escribe las suyas, y no puede
+      // calificarse ni tocar una entrega ya revisada.
+      match /task_submissions/{id} {
+        allow read: if isActiveStudent()
+                    && resource.data.studentCode == myRole().studentCode;
+        allow create, update: if isActiveStudent()
+                    && request.resource.data.studentCode == myRole().studentCode
+                    && id == request.resource.data.taskId + '_' + myRole().studentCode
+                    && request.resource.data.status == 'submitted'
+                    && request.resource.data.keys().hasOnly(
+                         ['taskId', 'taskTitle', 'studentCode', 'studentName',
+                          'status', 'link', 'imageUrl', 'submittedAt'])
+                    && (resource == null || resource.data.status != 'reviewed');
+        allow delete: if isActiveStudent()
+                    && resource.data.studentCode == myRole().studentCode
+                    && resource.data.status != 'reviewed';
+      }
+    }
+  }
+}

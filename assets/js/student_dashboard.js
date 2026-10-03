@@ -7,7 +7,7 @@
 import { auth, db, dbPath } from './firebase.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
-    doc, getDoc, setDoc, deleteDoc, collection, query, where, onSnapshot, getDocs
+    doc, getDoc, setDoc, deleteDoc, collection, query, where, onSnapshot
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Comprime imágenes en el navegador antes de guardarlas como Base64
@@ -45,7 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const hideOverlay = () => { if (overlay) overlay.style.display = 'none'; };
 
     // ── ESTADO DE ONBOARDING (alumno pendiente de aprobación) ─
-    let pendingInfo   = null;   // {fullName, studentCode, email} si NO está aprobado
+    let pendingInfo   = null;   // {fullName, studentCode, email, suspended} si NO tiene acceso
+    let campusStarted = false;  // tareas/material solo se cargan con acceso activo
+    let isAdminUser   = false;
     let onboardingCfg = {};     // {videoUrl, title, text, whatsapp}
 
     // ── ANNOUNCE BAR + CONFIG DE BIENVENIDA ──────────────────
@@ -101,26 +103,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const levelColors = { 'Pro Dealer': 'level-pro', 'Élite VIP': 'level-elite' };
             levelEl.classList.add(levelColors[roleData.level] || 'level-rookie');
 
-            // ¿Aprobado? El admin siempre; el alumno con status 'active'.
-            // Si aún no tiene 'active', confirmamos contra sus inscripciones
-            // ANTES de revelar la interfaz, para no mostrar el modo pendiente
-            // por error y luego corregir (evita el parpadeo).
-            let isApproved = roleData.role === 'admin' || roleData.status === 'active';
-            if (!isApproved) {
-                try {
-                    const enrollSnap = await getDocs(query(
-                        collection(db, dbPath('course_enrollments')),
-                        where('email', '==', user.email)
-                    ));
-                    isApproved = enrollSnap.docs.some(d =>
-                        ['active', 'activo', 'aprobado'].includes((d.data().status || '').toLowerCase()));
-                } catch { /* ante un fallo de red, se trata como pendiente */ }
-            }
+            // ¿Con acceso? El admin siempre; el alumno solo con status 'active'
+            // (lo pone el admin al aprobar). Pendiente o suspendido ve la vitrina.
+            // Las reglas de Firestore aplican el mismo criterio a tareas y material.
+            isAdminUser = roleData.role === 'admin';
+            const isApproved = isAdminUser || roleData.status === 'active';
             if (!isApproved) {
                 pendingInfo = {
                     fullName:    (roleData.fullName || user.email || 'Estudiante').split(' ')[0],
                     studentCode: roleData.studentCode || '',
-                    email:       user.email || ''
+                    email:       user.email || '',
+                    suspended:   roleData.status === 'suspended'
                 };
                 document.getElementById('dash-body').classList.add('dash-pending');
                 document.getElementById('preview-notice').style.display = 'block';
@@ -133,11 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Inicia los listeners de cada tab
             listenCourses(user.email);
             listenProgress(user.uid);
-            listenTasks(roleData.studentCode, roleData.fullName);
-            listenMaterials();
-
-            // Promoción de referidos: solo alumnos aprobados con código.
-            if (isApproved && roleData.studentCode) renderReferral(roleData.studentCode, roleData.fullName);
+            if (isApproved) startCampus(roleData);
+            else            lockCampusPanels();
 
             switchTab('courses');
 
@@ -146,6 +136,23 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.replace('/iniciar-sesion');
         }
     });
+
+    // ── CONTENIDO DEL CAMPUS (solo con acceso activo) ────────
+    const startCampus = (roleData) => {
+        if (campusStarted) return;
+        campusStarted = true;
+        listenTasks(roleData.studentCode, roleData.fullName);
+        listenMaterials();
+        // Promoción de referidos: solo alumnos aprobados con código.
+        if (roleData.studentCode) renderReferral(roleData.studentCode, roleData.fullName);
+    };
+
+    const lockCampusPanels = () => {
+        document.getElementById('tasks-panel-content').innerHTML =
+            emptyState('Tus tareas aparecerán aquí al activar tu acceso.', 'fa-lock');
+        document.getElementById('materials-panel-content').innerHTML =
+            emptyState('El material se desbloquea al activar tu acceso.', 'fa-lock');
+    };
 
     // ── SISTEMA DE TABS ──────────────────────────────────────
     const switchTab = (tabName) => {
@@ -183,10 +190,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!pendingInfo) return;                       // solo aplica a no aprobados
         document.getElementById('pending-hero').style.display = 'block';
 
-        if (onboardingCfg.title?.trim())
-            document.getElementById('pending-title').textContent = onboardingCfg.title;
-        if (onboardingCfg.text?.trim())
-            document.getElementById('pending-text').textContent = onboardingCfg.text;
+        if (pendingInfo.suspended) {
+            document.getElementById('pending-title').textContent = 'Tu acceso al campus está suspendido';
+            document.getElementById('pending-text').textContent =
+                'Tu progreso sigue guardado. Escríbenos para reactivar tu acceso y retomar donde te quedaste.';
+        } else {
+            if (onboardingCfg.title?.trim())
+                document.getElementById('pending-title').textContent = onboardingCfg.title;
+            if (onboardingCfg.text?.trim())
+                document.getElementById('pending-text').textContent = onboardingCfg.text;
+        }
 
         // Video de bienvenida (opcional)
         const wrap  = document.getElementById('pending-video-wrap');
@@ -207,7 +220,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // CTA: enviar voucher por WhatsApp con datos prellenados
         const phone    = onboardingCfg.whatsapp || '51929610747';
         const codePart = pendingInfo.studentCode ? ` (código ${pendingInfo.studentCode})` : '';
-        const msg      = `Hola DealerClub, soy ${pendingInfo.fullName}${codePart}. Acabo de hacer mi depósito y quiero enviar mi voucher de pago para activar mi acceso al campus virtual.`;
+        const msg      = pendingInfo.suspended
+            ? `Hola DealerClub, soy ${pendingInfo.fullName}${codePart}. Mi acceso al campus está suspendido y quiero reactivarlo.`
+            : `Hola DealerClub, soy ${pendingInfo.fullName}${codePart}. Acabo de hacer mi depósito y quiero enviar mi voucher de pago para activar mi acceso al campus virtual.`;
         const btn      = document.getElementById('pending-voucher-btn');
         btn.href   = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
         btn.target = '_blank';
@@ -318,14 +333,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const q = query(collection(db, dbPath('course_enrollments')), where('email', '==', email));
 
         onSnapshot(q, (snap) => {
-            // Red de seguridad: si hay una inscripción aprobada, desbloquea el
-            // campus aunque user_roles.status no se haya marcado 'active'.
-            // También desbloquea EN VIVO cuando el admin valida el pago.
-            if (pendingInfo && snap.docs.some(d =>
-                ['active', 'activo', 'aprobado'].includes((d.data().status || '').toLowerCase()))) {
-                unlockDashboard();
-            }
-
             container.innerHTML = '';
             if (snap.empty) {
                 container.innerHTML = emptyState('No tienes cursos inscritos aún.', 'fa-graduation-cap');
@@ -502,6 +509,18 @@ document.addEventListener('DOMContentLoaded', () => {
         onSnapshot(doc(db, dbPath(`user_roles/${uid}`)), (snap) => {
             if (!snap.exists()) return;
             const d = snap.data();
+
+            // Acceso EN VIVO: se desbloquea cuando el admin aprueba y se
+            // vuelve a bloquear si el alumno pasa a suspendido.
+            if (!isAdminUser) {
+                if (pendingInfo && d.status === 'active') {
+                    unlockDashboard();
+                    startCampus(d);
+                } else if (!pendingInfo && d.status !== 'active') {
+                    window.location.reload();
+                    return;
+                }
+            }
 
             // Nivel
             const levelEl = document.getElementById('prog-level-val');

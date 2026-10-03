@@ -1,4 +1,4 @@
-import { auth, db, dbPath } from './firebase.js';
+import { auth, db, dbPath, generateStudentCode } from './firebase.js';
 import { onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -49,10 +49,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const { user } = await createUserWithEmailAndPassword(auth, email, password);
 
             await setDoc(doc(db, dbPath(`user_roles/${user.uid}`)), {
-                role:      'student',
-                email,
+                role:        'student',
+                status:      'pending',
+                studentCode: generateStudentCode(),
+                email:       user.email,
                 fullName,
-                createdAt: new Date()
+                createdAt:   new Date()
             });
 
             // Enviar correo de verificación (no bloquea el registro si falla)
