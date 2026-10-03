@@ -776,3 +776,13 @@ button.att-cell:hover { border-color: #ffc107; }
 .pay-row small { display: block; color: #999; }
 .pay-row .pay-row-actions { display: flex; gap: 6px; }
 .pay-row a { color: #64b5f6; font-size: 0.82em; }
+
+/* ── ALUMNOS: grupos (matriculados / inscritos / espera / suspendidos) ── */
+.student-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.student-tab {
+    background: #1a1a1a; border: 1px solid #333; color: #bbb; border-radius: 20px;
+    padding: 7px 14px; font-size: 0.85em; font-weight: 600; cursor: pointer;
+}
+.student-tab:hover { border-color: #ffc107; color: #fff; }
+.student-tab.active { background: #ffc107; border-color: #ffc107; color: #1a1405; }
+.student-tab span { opacity: 0.75; margin-left: 4px; }

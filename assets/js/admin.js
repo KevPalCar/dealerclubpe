@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initSearch('requests',    renderRequestRow,    'No hay solicitudes.');
         initSearch('materials',   renderMaterialRow,   'No hay materiales subidos aún.');
         initSearch('tasks',       renderTaskRow,       'No hay tareas asignadas.');
-        initSearch('progress',    renderProgressRow,   'No hay alumnos registrados.');
+        initSearch('progress',    renderProgressRow,   'No hay alumnos matriculados.');
         initSearch('students',    renderStudentRow,    'No hay alumnos registrados.');
     };
 
@@ -1577,10 +1577,12 @@ document.addEventListener('DOMContentLoaded', () => {
         unsubscribeListeners.progress = onSnapshot(
             query(collection(db, dbPath('user_roles')), where('role', '==', 'student')),
             (snap) => {
+                // Solo matriculados: un inscrito sin pago aún no tiene progreso que llevar.
                 const data = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+                    .filter(s => s.status === 'active')
                     .sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
                 pState.progress.data = data;
-                renderPaged('progress', renderProgressRow, 'No hay alumnos registrados todavía.');
+                renderPaged('progress', renderProgressRow, 'No hay alumnos matriculados todavía.');
             }
         );
     };
@@ -1632,8 +1634,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // el progreso; eliminar es definitivo y solo para no activos.
     // ══════════════════════════════════════════════════════════
     const STUDENT_STATUS = {
-        pending:   { label: 'Pendiente',  badge: 'badge-warning' },
-        active:    { label: 'Activo',     badge: 'badge-success' },
+        pending:   { label: 'Inscrito',    badge: 'badge-warning' },
+        active:    { label: 'Matriculado', badge: 'badge-success' },
         suspended: { label: 'Suspendido', badge: 'badge-danger'  }
     };
     const statusOf = (s) => (STUDENT_STATUS[s.status] ? s.status : 'pending');
@@ -2054,9 +2056,29 @@ document.addEventListener('DOMContentLoaded', () => {
         tr.querySelector('.btn-stu-delete')?.addEventListener('click', () => deleteStudent(s));
     };
 
+    // Grupo visible: por defecto los matriculados, que es con quienes se
+    // trabaja a diario. Un inscrito aún no pagó; la lista de espera va aparte.
+    let _studentTab = 'active';
+    const inStudentTab = (s, tab) =>
+        !tab                 ? true
+        : tab === 'waitlist' ? isWaitlisted(s)
+        : tab === 'pending'  ? statusOf(s) === 'pending' && !isWaitlisted(s)
+        : statusOf(s) === tab;
+
+    document.querySelectorAll('#student-tabs .student-tab').forEach(btn =>
+        btn.addEventListener('click', () => {
+            _studentTab = btn.dataset.status;
+            document.querySelectorAll('#student-tabs .student-tab').forEach(b => b.classList.toggle('active', b === btn));
+            pState.students.page = 1;
+            applyStudentFilters();
+        }));
+
     const applyStudentFilters = () => {
         if (!pState.students) return;
-        const st  = document.getElementById('filter-student-status').value;
+        const st  = _studentTab;
+        document.querySelectorAll('#student-tabs .student-tab').forEach(b => {
+            b.querySelector('span').textContent = `(${_students.filter(x => inStudentTab(x, b.dataset.status)).length})`;
+        });
         const mod = document.getElementById('filter-student-modality').value;
         const pay = document.getElementById('filter-student-pay').value;
         const payMatches = (s) => {
@@ -2067,7 +2089,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         pState.students.data = _students
             .filter(payMatches)
-            .filter(s => !st  || (st === 'waitlist' ? isWaitlisted(s) : statusOf(s) === st))
+            .filter(s => inStudentTab(s, st))
             .filter(s => !mod || (s.modality === 'personalizado' ? 'personalizado' : 'regular') === mod)
             .map(s => {
                 const list  = enrollmentsOf(s);
@@ -2081,9 +2103,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     enrolledAt: first ? new Date(first * 1000).toLocaleDateString('es-PE') : ''
                 };
             });
-        renderPaged('students', renderStudentRow, 'No hay alumnos con esos filtros.');
+        renderPaged('students', renderStudentRow, 'No hay alumnos en este grupo.');
     };
-    ['filter-student-status', 'filter-student-modality', 'filter-student-pay'].forEach(id =>
+    ['filter-student-modality', 'filter-student-pay'].forEach(id =>
         document.getElementById(id).addEventListener('change', () => {
             pState.students.page = 1;
             applyStudentFilters();

@@ -392,9 +392,9 @@
                                 <textarea id="onboardingText" rows="2" placeholder="Ej: Envía tu voucher de pago y desbloquea todo el campus virtual."></textarea>
                             </div>
                             <div class="form-group">
-                                <label>URL del Video de Bienvenida (YouTube, opcional):</label>
-                                <input type="text" id="onboardingVideoUrl" placeholder="https://www.youtube.com/watch?v=...  (déjalo vacío para ocultarlo)">
-                                <small style="color:#888;">Sube tu video a YouTube como "Oculto/No listado" y pega el enlace aquí. Sin costo.</small>
+                                <label>Enlace del video de bienvenida (opcional):</label>
+                                <input type="text" id="onboardingVideoUrl" placeholder="Pega el enlace del video (déjalo vacío para usar el video de presentación del sitio)">
+                                <small style="color:#888;">Se reproduce dentro del campus si es de YouTube, Vimeo, Instagram, TikTok, Facebook, Google Drive o un archivo .mp4. Con otros enlaces se muestra un botón que abre el video. Recomendado: YouTube como "No listado", sin costo y con la mejor calidad.</small>
                             </div>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i> Guardar Bienvenida
@@ -468,6 +468,7 @@
             <section id="progress-management" class="content-section">
                 <div class="section-header">
                     <h2>Progreso de Alumnos</h2>
+                    <small style="color:#888;">Solo alumnos matriculados. Los inscritos sin pago y los suspendidos están en Alumnos.</small>
                 </div>
                 <div class="table-toolbar">
                     <input type="text" class="table-search" id="search-progress" placeholder="Buscar por nombre o código...">
@@ -502,15 +503,17 @@
                 <!-- Constancias de pago por revisar (solo aparece si hay alguna) -->
                 <div id="voucher-queue" class="voucher-queue" style="display:none;"></div>
 
+                <!-- Grupos: los matriculados primero; los inscritos sin pago van aparte -->
+                <div class="student-tabs" id="student-tabs">
+                    <button type="button" class="student-tab active" data-status="active">Matriculados <span></span></button>
+                    <button type="button" class="student-tab" data-status="pending">Inscritos sin pago <span></span></button>
+                    <button type="button" class="student-tab" data-status="waitlist">Lista de espera <span></span></button>
+                    <button type="button" class="student-tab" data-status="suspended">Suspendidos <span></span></button>
+                    <button type="button" class="student-tab" data-status="">Todos <span></span></button>
+                </div>
+
                 <div class="table-toolbar requests-toolbar">
                     <input type="text" class="table-search" id="search-students" placeholder="Buscar por nombre, código, DNI o correo...">
-                    <select id="filter-student-status" class="filter-select">
-                        <option value="">Todos los estados</option>
-                        <option value="pending">Pendientes</option>
-                        <option value="active">Activos</option>
-                        <option value="suspended">Suspendidos</option>
-                        <option value="waitlist">En lista de espera</option>
-                    </select>
                     <select id="filter-student-modality" class="filter-select">
                         <option value="">Todas las modalidades</option>
                         <option value="regular">Regular</option>

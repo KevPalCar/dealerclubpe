@@ -161,14 +161,56 @@ document.addEventListener('DOMContentLoaded', () => {
     // ════════════════════════════════════════════════════════
     // HERO DE ALUMNO PENDIENTE (vitrina + persuasión)
     // ════════════════════════════════════════════════════════
-    // Convierte una URL de YouTube (watch / youtu.be / embed) a embed.
-    const toYouTubeEmbed = (url) => {
-        if (!url) return '';
-        if (url.includes('/embed/')) return url;
-        const yt    = url.match(/[?&]v=([^&]+)/);
-        const short = url.match(/youtu\.be\/([^?&]+)/);
-        const id    = yt ? yt[1] : (short ? short[1] : '');
-        return id ? `https://www.youtube.com/embed/${id}` : '';
+    // Convierte el enlace del video de bienvenida en algo reproducible:
+    //   { kind: 'iframe' | 'video' | 'link', src, vertical }
+    // 'link' es el respaldo para sitios que no permiten incrustarse.
+    const resolveVideo = (raw) => {
+        let url = (raw || '').trim();
+        if (!url.includes('.')) return null;
+        if (!/^https?:\/\//i.test(url)) url = `https://${url}`;   // pegado sin "https://"
+        let m;
+        if (url.includes('youtube.com/embed/')) return { kind: 'iframe', src: url };
+        if ((m = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|live\/)|youtu\.be\/)([\w-]{6,})/)))
+            return { kind: 'iframe', src: `https://www.youtube.com/embed/${m[1]}`, vertical: url.includes('/shorts/') };
+        if ((m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/)))
+            return { kind: 'iframe', src: `https://player.vimeo.com/video/${m[1]}` };
+        if ((m = url.match(/instagram\.com\/(?:[\w.]+\/)?(reels?|p|tv)\/([\w-]+)/)))
+            return { kind: 'iframe', src: `https://www.instagram.com/${m[1] === 'reels' ? 'reel' : m[1]}/${m[2]}/embed`, vertical: true };
+        if ((m = url.match(/tiktok\.com\/.*\/video\/(\d+)/)))
+            return { kind: 'iframe', src: `https://www.tiktok.com/embed/v2/${m[1]}`, vertical: true };
+        if (/facebook\.com|fb\.watch/i.test(url))
+            return { kind: 'iframe', src: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false` };
+        if ((m = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/)))
+            return { kind: 'iframe', src: `https://drive.google.com/file/d/${m[1]}/preview` };
+        if (/\.(mp4|webm|mov)([?#]|$)/i.test(url)) return { kind: 'video', src: url };
+        return { kind: 'link', src: url };
+    };
+
+    const buildVideoEl = (v) => {
+        let el;
+        if (v.kind === 'iframe') {
+            el = document.createElement('iframe');
+            el.title = 'Bienvenida DealerClub';
+            el.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+            el.allowFullscreen = true;
+            el.setAttribute('frameborder', '0');
+            el.src = v.src;
+        } else if (v.kind === 'video') {
+            el = document.createElement('video');
+            el.controls = true;
+            el.playsInline = true;
+            el.preload = 'none';
+            if (v.poster) el.poster = v.poster;
+            el.src = v.src;
+        } else {
+            el = document.createElement('a');
+            el.className = 'pending-video-link';
+            el.href = v.src;
+            el.target = '_blank';
+            el.rel = 'noopener';
+            el.innerHTML = '<i class="fas fa-play-circle"></i> Ver el video de bienvenida';
+        }
+        return el;
     };
 
     const renderPendingHero = () => {
@@ -192,20 +234,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (onboardingCfg.text?.trim())
                 document.getElementById('pending-text').textContent = onboardingCfg.text;
 
-            // Video: el de YouTube configurado en el admin; si no hay,
-            // el video de presentación del sitio (no se reproduce solo).
+            // Video: el enlace configurado en el admin; si no hay, el video
+            // de presentación del sitio (nunca se reproduce solo).
             const box   = document.getElementById('pending-video');
-            const embed = toYouTubeEmbed(onboardingCfg.videoUrl);
-            const src   = embed || 'local';
-            if (box.dataset.src !== src) {              // evita recargar el reproductor
-                box.dataset.src = src;
-                box.innerHTML = embed
-                    ? `<iframe src="${embed}" title="Bienvenida DealerClub" frameborder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowfullscreen></iframe>`
-                    : `<video controls playsinline preload="none"
-                        poster="/assets/video/presentacion-dealerclub-poster.webp"
-                        src="/assets/video/presentacion-dealerclub.mp4"></video>`;
+            const video = resolveVideo(onboardingCfg.videoUrl) || {
+                kind: 'video',
+                src: '/assets/video/presentacion-dealerclub.mp4',
+                poster: '/assets/video/presentacion-dealerclub-poster.webp'
+            };
+            if (box.dataset.src !== video.src) {        // evita recargar el reproductor
+                box.dataset.src = video.src;
+                box.className = `pending-video${video.vertical ? ' is-vertical' : ''}${video.kind === 'link' ? ' is-link' : ''}`;
+                box.replaceChildren(buildVideoEl(video));
             }
         }
 
