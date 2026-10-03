@@ -1041,3 +1041,63 @@ body {
 .aula-btn-alt { background: #2196f3; color: #fff; }
 .aula-btn:hover { filter: brightness(1.08); }
 @media (max-width: 600px) { .aula-content { padding: 20px; } }
+
+/* =========================================
+   MIS PAGOS — resumen, línea de tiempo y reporte
+   ========================================= */
+.payments-panel { max-width: 760px; }
+.pay-summary {
+    display: flex; gap: 20px; align-items: center;
+    background: #1a1a1a; border: 1px solid #333; border-left: 5px solid #17a2b8;
+    border-radius: 14px; padding: 20px; margin-bottom: 22px;
+}
+.pay-summary.pay-soon     { border-left-color: #ffc107; }
+.pay-summary.pay-overdue  { border-left-color: #dc3545; }
+.pay-summary.pay-complete { border-left-color: #28a745; }
+.pay-days {
+    flex: 0 0 96px; height: 96px; border-radius: 50%; border: 3px solid #17a2b8;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+}
+.pay-soon .pay-days     { border-color: #ffc107; }
+.pay-overdue .pay-days  { border-color: #dc3545; }
+.pay-complete .pay-days { border-color: #28a745; color: #28a745; font-size: 2em; }
+.pay-days strong { font-size: 2em; line-height: 1; }
+.pay-days span   { font-size: 0.75em; color: #aaa; }
+.pay-summary-body { flex: 1; min-width: 0; }
+.pay-summary-body h3 { color: #fff; font-size: 1.1em; margin: 0 0 4px; }
+.pay-summary-body p  { color: #bbb; font-size: 0.9em; margin: 0 0 12px; }
+.pay-summary-body small { color: #888; font-size: 0.8em; }
+.pay-bar { height: 8px; background: #2c2c2c; border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+.pay-bar div { height: 100%; background: linear-gradient(90deg, #ffc107, #ffda6a); border-radius: 4px; transition: width 0.6s ease; }
+
+.pay-timeline { list-style: none; padding: 0; margin: 0 0 24px; }
+.pay-item { display: flex; gap: 14px; align-items: flex-start; position: relative; padding-bottom: 18px; }
+.pay-item:not(:last-child)::before {
+    content: ''; position: absolute; left: 15px; top: 32px; bottom: 0; width: 2px; background: #2c2c2c;
+}
+.pay-item.paid:not(:last-child)::before { background: #28a745; }
+.pay-dot {
+    flex: 0 0 32px; height: 32px; border-radius: 50%; background: #2c2c2c; color: #777;
+    display: flex; align-items: center; justify-content: center; font-size: 0.8em; z-index: 1;
+}
+.pay-item.future .pay-dot i { font-size: 0.5em; }
+.pay-item.paid .pay-dot    { background: #28a745; color: #fff; }
+.pay-item.next .pay-dot    { background: #17a2b8; color: #fff; }
+.pay-item.soon .pay-dot    { background: #ffc107; color: #1a1405; }
+.pay-item.overdue .pay-dot { background: #dc3545; color: #fff; }
+.pay-item strong { display: block; color: #fff; font-size: 0.95em; }
+.pay-item span:not(.pay-dot) { color: #999; font-size: 0.85em; }
+.pay-item.future strong { color: #888; }
+.pay-item.overdue span:not(.pay-dot) { color: #f1a7ae; }
+
+.pay-report { max-width: 760px; background: #161616; border: 1px dashed #444; border-radius: 12px; padding: 18px; text-align: center; }
+.pay-report h3 { color: #fff; font-size: 1em; margin: 0 0 4px; }
+.pay-report-hint { color: #999; font-size: 0.85em; margin: 0 0 12px; }
+.pay-report-btn {
+    background: #ffc107; color: #1a1405; border: none; border-radius: 8px; padding: 10px 18px;
+    font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.pay-report-btn:disabled { opacity: 0.6; cursor: wait; }
+@media (max-width: 600px) {
+    .pay-summary { flex-direction: column; text-align: center; }
+}

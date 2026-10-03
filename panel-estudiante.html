@@ -66,6 +66,11 @@
             <span>Mis Tareas</span>
             <span id="tasks-badge" class="tab-badge" style="display:none;">0</span>
         </button>
+        <button class="tab-btn" data-tab="payments">
+            <i class="fas fa-wallet"></i>
+            <span>Mis Pagos</span>
+            <span id="payments-badge" class="tab-badge" style="display:none;">!</span>
+        </button>
         <button class="tab-btn" data-tab="materials">
             <i class="fas fa-book-open"></i>
             <span>Material</span>
@@ -287,6 +292,35 @@
         </section>
 
         <!-- TAB: MATERIAL DIDÁCTICO -->
+        <section id="panel-payments" class="tab-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-wallet"></i> Mis Pagos</h2>
+            </div>
+            <div id="payments-panel-content" class="payments-panel panel-loading">
+                <div class="spinner-large"></div>
+            </div>
+            <!-- Reportar un pago (solo con acceso activo) -->
+            <div id="pay-report" class="pay-report" style="display:none;">
+                <div id="pay-report-form">
+                    <h3>¿Ya pagaste tu siguiente cuota?</h3>
+                    <p class="pay-report-hint">Sube la foto de tu constancia y la validamos.</p>
+                    <label class="pending-file">
+                        <i class="fas fa-camera"></i> <span id="pay-report-name">Elegir foto de mi constancia</span>
+                        <input type="file" id="pay-report-file" accept="image/*" hidden>
+                    </label>
+                    <button type="button" id="pay-report-btn" class="pay-report-btn"><i class="fas fa-upload"></i> Enviar constancia</button>
+                    <p id="pay-report-msg" class="pay-report-hint"></p>
+                </div>
+                <div id="pay-report-review" class="pending-review" style="display:none;">
+                    <i class="fas fa-hourglass-half"></i>
+                    <div>
+                        <strong>Constancia recibida</strong>
+                        <span>La estamos validando. Tu cuota se marcará como pagada aquí mismo.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section id="panel-materials" class="tab-panel">
             <div class="panel-header">
                 <h2><i class="fas fa-book-open"></i> Material Didáctico</h2>

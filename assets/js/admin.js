@@ -7,6 +7,7 @@
 
 import { auth, db, dbPath, generateStudentCode } from './firebase.js';
 import { compressImage } from './image.js';
+import { toYmd, fmtDate, nextMonday, billingSchedule, billingSummary, daysLabel } from './billing.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
     collection, addDoc, setDoc, doc, updateDoc, deleteDoc,
@@ -1639,6 +1640,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lower    = (v) => (v || '').trim().toLowerCase();
     const DAY_LABELS = [[1, 'L'], [2, 'M'], [3, 'M'], [4, 'J'], [5, 'V'], [6, 'S'], [0, 'D']];   // valor = getDay()
 
+    let _courses        = [];   // cursos (precio y duración sugieren el plan de pagos)
     let _students       = [];   // user_roles con role 'student'
     let _stuEnrollments = [];   // course_enrollments (para curso y aprobación)
     let _reported       = [];   // constancias de pago por revisar
@@ -1665,36 +1667,229 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Aprueba al alumno: le asigna código, activa su campus, aprueba sus
-    // inscripciones pendientes y, si vino de una constancia, la confirma.
+    // Plan sugerido según el curso del alumno: mensualidad y número de cuotas.
+    const courseDefaults = (s) => {
+        const name   = coursesOf(s)[0] || enrollmentsOf(s)[0]?.courseName;
+        const course = _courses.find(c => c.name === name) || {};
+        const months = /(\d+)\s*mes/i.exec(course.duration || '');
+        return {
+            amount:       parseFloat(String(course.price || '').replace(/[^\d.]/g, '')) || '',
+            installments: months ? +months[1] : 1
+        };
+    };
+
+    // Registra una cuota pagada: deja la constancia en payments (confirmando
+    // la que subió el alumno o creando una del admin) y devuelve el plan
+    // actualizado, listo para guardarse en user_roles.
+    const recordInstallment = async (s, billing, { n, amount, paidAt, voucher }) => {
+        const data = { type: 'mensualidad', installment: n, amount, paidAt, status: 'confirmed', reviewedAt: new Date() };
+        let paymentId;
+        if (voucher) {
+            await updateDoc(doc(db, dbPath(`payments/${voucher.id}`)), data);
+            paymentId = voucher.id;
+        } else {
+            const ref = await addDoc(collection(db, dbPath('payments')), {
+                uid: s.uid, email: s.email || '', studentName: s.fullName || '',
+                note: 'Registrado por el admin', createdAt: new Date(), ...data
+            });
+            paymentId = ref.id;
+        }
+        const paid = [...(billing.paid || []).filter(p => p.n !== n), { n, amount, paidAt, paymentId }]
+            .sort((a, b) => a.n - b.n);
+        return { ...billing, paid };
+    };
+
+    // Aprobar a un alumno abre el modal de activación: ahí se confirma su
+    // primer pago y se define su plan (inicio de clases, mensualidad, cuotas).
+    let activateCtx = null;
     const approveStudent = async (s, payment = null) => {
-        const name = s.fullName || s.email || 'Alumno';
         let code;
         try { code = await resolveStudentCode({ existingCode: s.studentCode, email: s.email }); }
         catch (err) { showToast(`Error al aprobar: ${esc(err.message)}`, 'error'); return; }
 
-        const noVoucher = payment ? '' :
-            '\n\nNo hay constancia de pago subida. Confirma solo si verificaste el pago por otro medio.';
-        if (!confirm(`¿Confirmas el pago de ${name}?\nSe activará con código: ${code}${noVoucher}`)) return;
+        const fromWaitlist = isWaitlisted(s);
+        activateCtx = { s, payment, code, fromWaitlist };
 
+        const defaults = courseDefaults(s);
+        document.getElementById('activateSummary').textContent =
+            `${s.fullName || s.email || 'El alumno'} se activará con el código ${code}.`;
+        const warnings = [];
+        if (!payment)     warnings.push('No hay constancia de pago subida: activa solo si verificaste el pago por otro medio.');
+        if (fromWaitlist) warnings.push('Está en lista de espera: al activarlo pasa a matriculado.');
+        const warnEl = document.getElementById('activateWarning');
+        warnEl.textContent   = warnings.join(' ');
+        warnEl.style.display = warnings.length ? 'block' : 'none';
+        document.getElementById('activateStart').value        = nextMonday();
+        document.getElementById('activateAmount').value       = defaults.amount;
+        document.getElementById('activateInstallments').value = defaults.installments;
+        showMsg(document.getElementById('activateFormMessage'), '', '');
+        openModal(document.getElementById('activateModal'));
+    };
+
+    document.getElementById('activateForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!activateCtx) return;
+        const { s, payment, code, fromWaitlist } = activateCtx;
+        const msg          = document.getElementById('activateFormMessage');
+        const name         = s.fullName || s.email || 'Alumno';
+        const startDate    = document.getElementById('activateStart').value;
+        const amount       = parseFloat(document.getElementById('activateAmount').value);
+        const installments = parseInt(document.getElementById('activateInstallments').value);
+        if (!startDate || !(amount >= 0) || !(installments >= 1)) {
+            showMsg(msg, 'Completa el inicio de clases, la mensualidad y las cuotas.', 'error');
+            return;
+        }
+
+        showMsg(msg, 'Activando…', 'loading');
         try {
-            const pendings = _stuEnrollments.filter(e =>
-                lower(e.email) === lower(s.email) && e.status !== 'Aprobado' && e.type !== 'Lista de Espera');
-            for (const e of pendings) {
-                await updateDoc(doc(db, dbPath(`course_enrollments/${e.id}`)), {
-                    status: 'Aprobado', studentCode: code, referralCode: code, approvedAt: new Date()
+            const pendings = enrollmentsOf(s).filter(en =>
+                en.status !== 'Aprobado' && (fromWaitlist || en.type !== 'Lista de Espera'));
+            for (const en of pendings) {
+                await updateDoc(doc(db, dbPath(`course_enrollments/${en.id}`)), {
+                    status: 'Aprobado', type: 'Matrícula', studentCode: code, referralCode: code, approvedAt: new Date()
                 });
             }
+            const billing = await recordInstallment(s, { startDate, amount, installments, paid: [] },
+                { n: 1, amount, paidAt: toYmd(new Date()), voucher: payment });
             await updateDoc(doc(db, dbPath(`user_roles/${s.uid}`)), {
-                status: 'active', studentCode: code, statusReason: '', statusChangedAt: new Date()
+                status: 'active', studentCode: code, statusReason: '', statusChangedAt: new Date(),
+                billing, courseStartDate: startDate
             });
-            if (payment) {
-                await updateDoc(doc(db, dbPath(`payments/${payment.id}`)), { status: 'confirmed', reviewedAt: new Date() });
-            }
+            activateCtx = null;
+            closeModal(document.getElementById('activateModal'));
             showToast(`${esc(name)} quedó activo. Código: ${code}`, 'success');
             sendApprovalEmail({ name, email: s.email, course: coursesOf(s).join(', ') || 'Curso DealerClub', code });
-        } catch (err) { showToast(`Error al aprobar: ${esc(err.message)}`, 'error'); }
+        } catch (err) { showMsg(msg, `Error: ${err.message}`, 'error'); }
+    });
+    document.getElementById('closeActivateModalBtn').addEventListener('click', () =>
+        closeModal(document.getElementById('activateModal'))
+    );
+
+    // ── Pagos del alumno: plan, cuotas, registrar y anular ────
+    let payCtx = null;   // { uid, voucher } mientras el modal está abierto
+
+    const paymentsStudent = () => payCtx && _students.find(x => x.uid === payCtx.uid);
+
+    const renderPaymentsModal = () => {
+        const s = paymentsStudent();
+        if (!s) return;
+        const b        = s.billing || {};
+        const defaults = courseDefaults(s);
+        document.getElementById('paymentsStudentName').textContent = s.fullName || s.email || 'Alumno';
+
+        const note = document.getElementById('paymentsVoucherNote');
+        note.textContent   = payCtx.voucher ? 'Estás confirmando la constancia que subió el alumno: al registrar el pago quedará vinculada a la cuota.' : '';
+        note.style.display = payCtx.voucher ? 'block' : 'none';
+
+        document.getElementById('billingStart').value        = b.startDate || s.courseStartDate || nextMonday();
+        document.getElementById('billingAmount').value       = b.amount ?? defaults.amount;
+        document.getElementById('billingInstallments').value = b.installments ?? defaults.installments;
+
+        const schedule = billingSchedule(b);
+        const lastPaid = Math.max(0, ...(b.paid || []).map(p => p.n));
+        const box      = document.getElementById('paymentsSchedule');
+        box.innerHTML  = schedule.length ? '' : '<p style="color:#888;">Guarda el plan para ver las cuotas.</p>';
+
+        schedule.forEach(c => {
+            const row = document.createElement('div');
+            row.className = `pay-row ${c.state}`;
+            const detail = c.state === 'paid'
+                ? `Pagado el ${fmtDate(c.payment.paidAt)} · S/ ${c.payment.amount}`
+                : c.days != null ? daysLabel(c.days) : 'Pendiente';
+            row.innerHTML = `
+                <b>Cuota ${c.n}</b>
+                <div>Vence el ${fmtDate(c.due)}<small>${detail}</small></div>
+                <div class="pay-row-actions">
+                    ${c.state === 'paid' && c.payment.paymentId ? '<a href="#" class="pay-view">Ver constancia</a>' : ''}
+                    ${c.state === 'paid' && c.n === lastPaid ? '<button type="button" class="btn btn-danger btn-sm pay-void">Anular</button>' : ''}
+                </div>`;
+            row.querySelector('.pay-view')?.addEventListener('click', async (evt) => {
+                evt.preventDefault();
+                try {
+                    const snap = await getDoc(doc(db, dbPath(`payments/${c.payment.paymentId}`)));
+                    if (snap.exists() && snap.data().imageUrl) viewImage(snap.data().imageUrl);
+                    else showToast('Este pago se registró sin constancia.', 'info');
+                } catch (err) { showToast(`Error: ${esc(err.message)}`, 'error'); }
+            });
+            row.querySelector('.pay-void')?.addEventListener('click', async () => {
+                if (!confirm(`¿Anular el pago de la cuota ${c.n}? Volverá a figurar como pendiente.`)) return;
+                try {
+                    await updateDoc(doc(db, dbPath(`user_roles/${s.uid}`)), {
+                        billing: { ...b, paid: (b.paid || []).filter(p => p.n !== c.n) }
+                    });
+                    if (c.payment.paymentId) {
+                        await updateDoc(doc(db, dbPath(`payments/${c.payment.paymentId}`)), { status: 'voided', reviewedAt: new Date() });
+                    }
+                    showToast(`Pago de la cuota ${c.n} anulado.`, 'info');
+                } catch (err) { showToast(`Error: ${esc(err.message)}`, 'error'); }
+            });
+            box.appendChild(row);
+        });
+
+        // Formulario para registrar la primera cuota sin pagar
+        const current = schedule.find(c => c.state !== 'paid');
+        const form    = document.getElementById('registerPaymentForm');
+        form.style.display = current ? 'flex' : 'none';
+        if (current) {
+            form.dataset.n = current.n;
+            document.getElementById('registerPaymentLabel').textContent = `Registrar pago de la cuota ${current.n} (vence el ${fmtDate(current.due)})`;
+            document.getElementById('registerPaymentDate').value   = toYmd(new Date());
+            document.getElementById('registerPaymentAmount').value = b.amount ?? '';
+        }
     };
+
+    const openPaymentsModal = (s, voucher = null) => {
+        payCtx = { uid: s.uid, voucher };
+        showMsg(document.getElementById('paymentsFormMessage'), '', '');
+        renderPaymentsModal();
+        openModal(document.getElementById('paymentsModal'));
+    };
+    document.getElementById('closePaymentsModalBtn').addEventListener('click', () => {
+        payCtx = null;
+        closeModal(document.getElementById('paymentsModal'));
+    });
+
+    document.getElementById('billingForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const s   = paymentsStudent();
+        const msg = document.getElementById('paymentsFormMessage');
+        if (!s) return;
+        const startDate    = document.getElementById('billingStart').value;
+        const amount       = parseFloat(document.getElementById('billingAmount').value);
+        const installments = parseInt(document.getElementById('billingInstallments').value);
+        if (!startDate || !(amount >= 0) || !(installments >= 1)) {
+            showMsg(msg, 'Completa el inicio de clases, la mensualidad y las cuotas.', 'error');
+            return;
+        }
+        try {
+            await updateDoc(doc(db, dbPath(`user_roles/${s.uid}`)), {
+                billing: {
+                    startDate, amount, installments,
+                    paid: (s.billing?.paid || []).filter(p => p.n <= installments)
+                },
+                courseStartDate: startDate
+            });
+            showMsg(msg, 'Plan guardado.', 'success');
+        } catch (err) { showMsg(msg, `Error: ${err.message}`, 'error'); }
+    });
+
+    document.getElementById('registerPaymentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const s   = paymentsStudent();
+        const msg = document.getElementById('paymentsFormMessage');
+        if (!s) return;
+        if (!s.billing?.startDate) { showMsg(msg, 'Primero guarda el plan de pagos.', 'error'); return; }
+        const n      = parseInt(e.currentTarget.dataset.n);
+        const amount = parseFloat(document.getElementById('registerPaymentAmount').value);
+        const paidAt = document.getElementById('registerPaymentDate').value;
+        if (!paidAt || !(amount >= 0)) { showMsg(msg, 'Completa la fecha y el monto.', 'error'); return; }
+        try {
+            const billing = await recordInstallment(s, s.billing, { n, amount, paidAt, voucher: payCtx.voucher });
+            payCtx.voucher = null;
+            await updateDoc(doc(db, dbPath(`user_roles/${s.uid}`)), { billing });
+            showMsg(msg, `Cuota ${n} registrada.`, 'success');
+        } catch (err) { showMsg(msg, `Error: ${err.message}`, 'error'); }
+    });
 
     const setStudentStatus = async (s, status, reason = '') => {
         try {
@@ -1809,9 +2004,19 @@ document.addEventListener('DOMContentLoaded', () => {
             : '';
         const hasVoucher = _reported.some(p => p.uid === s.uid);
 
+        // Pago: estado de la cuota vigente (solo alumnos ya activados)
+        const pay = s.pay;
+        const payCell = st === 'pending'        ? '<span style="color:#666;">—</span>'
+            : pay.state === 'unset'             ? '<span style="color:#888;">Sin configurar</span>'
+            : pay.state === 'complete'          ? '<span class="badge badge-success">Completo</span>'
+            : `<span class="badge ${pay.state === 'overdue' ? 'badge-danger' : pay.state === 'soon' ? 'badge-warning' : 'badge-success'}">${
+                    pay.state === 'next' ? 'Al día' : daysLabel(pay.days)}</span>
+               <span class="student-sub">Cuota ${pay.n} de ${pay.total} · ${fmtDate(pay.due)}</span>`;
+
         const btns = [];
         if (st === 'pending')   btns.push(`<button class="btn btn-sm btn-approve btn-stu-approve"><i class="fas fa-check"></i> Activar</button>`);
         if (st === 'suspended') btns.push(`<button class="btn btn-sm btn-approve btn-stu-reactivate"><i class="fas fa-undo"></i> Reactivar</button>`);
+        if (st !== 'pending')   btns.push(`<button class="btn btn-secondary btn-sm btn-stu-pay" title="Pagos"><i class="fas fa-coins"></i> Pagos</button>`);
         btns.push(`<button class="btn btn-secondary btn-sm btn-stu-edit" title="Ficha"><i class="fas fa-id-card"></i></button>`);
         if (st === 'active')    btns.push(`<button class="btn btn-secondary btn-sm btn-stu-suspend" title="Suspender"><i class="fas fa-pause"></i> Suspender</button>`);
         if (st !== 'active')    btns.push(`<button class="btn btn-danger btn-sm btn-stu-delete" title="Eliminar definitivamente"><i class="fas fa-trash"></i></button>`);
@@ -1831,9 +2036,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <td><span class="badge ${info.badge}">${info.label}</span>
                 ${hasVoucher ? '<span class="student-sub" style="color:#ffc107;">Constancia por revisar</span>' : ''}
                 ${st === 'suspended' && s.statusReason ? `<span class="student-reason">${esc(s.statusReason)}</span>` : ''}</td>
+            <td>${payCell}</td>
             <td class="action-buttons">${btns.join('')}</td>
         `;
 
+        tr.querySelector('.btn-stu-pay')?.addEventListener('click', () => openPaymentsModal(s));
         tr.querySelector('.btn-stu-approve')?.addEventListener('click', () =>
             approveStudent(s, _reported.find(p => p.uid === s.uid) || null));
         tr.querySelector('.btn-stu-reactivate')?.addEventListener('click', () => {
@@ -1851,7 +2058,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!pState.students) return;
         const st  = document.getElementById('filter-student-status').value;
         const mod = document.getElementById('filter-student-modality').value;
+        const pay = document.getElementById('filter-student-pay').value;
+        const payMatches = (s) => {
+            if (!pay) return true;
+            if (statusOf(s) === 'pending') return false;
+            const state = billingSummary(s.billing).state;
+            return pay === 'ok' ? ['next', 'complete'].includes(state) : state === pay;
+        };
         pState.students.data = _students
+            .filter(payMatches)
             .filter(s => !st  || (st === 'waitlist' ? isWaitlisted(s) : statusOf(s) === st))
             .filter(s => !mod || (s.modality === 'personalizado' ? 'personalizado' : 'regular') === mod)
             .map(s => {
@@ -1859,6 +2074,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const first = list.map(e => e.timestamp?.seconds ?? 0).filter(Boolean).sort()[0];
                 return {
                     ...s,
+                    pay:        billingSummary(s.billing),
                     courses:    coursesOf(s),
                     waitlist:   [...new Set(list.filter(e => e.type === 'Lista de Espera').map(e => e.courseName).filter(Boolean))],
                     phone:      s.phone || list.find(e => e.phone)?.phone || '',
@@ -1867,7 +2083,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         renderPaged('students', renderStudentRow, 'No hay alumnos con esos filtros.');
     };
-    ['filter-student-status', 'filter-student-modality'].forEach(id =>
+    ['filter-student-status', 'filter-student-modality', 'filter-student-pay'].forEach(id =>
         document.getElementById(id).addEventListener('change', () => {
             pState.students.page = 1;
             applyStudentFilters();
@@ -1904,12 +2120,8 @@ document.addEventListener('DOMContentLoaded', () => {
             card.querySelector('.btn-v-ok').addEventListener('click', async () => {
                 if (!student) { showToast('Esa cuenta ya no existe. Rechaza la constancia para quitarla de la lista.', 'warning'); return; }
                 if (statusOf(student) === 'pending') { approveStudent(student, p); return; }
-                // Alumno ya activo o suspendido: solo se confirma el pago.
-                if (!confirm(`¿Confirmar el pago de ${student.fullName || 'este alumno'}?`)) return;
-                try {
-                    await updateDoc(doc(db, dbPath(`payments/${p.id}`)), { status: 'confirmed', reviewedAt: new Date() });
-                    showToast('Pago confirmado.', 'success');
-                } catch (err) { showToast(`Error: ${esc(err.message)}`, 'error'); }
+                // Alumno ya activado: la constancia se asigna a su cuota vigente.
+                openPaymentsModal(student, p);
             });
             card.querySelector('.btn-v-no').addEventListener('click', async () => {
                 const reason = prompt('Motivo del rechazo (el alumno lo verá):', 'La imagen no se lee bien');
@@ -1946,7 +2158,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadStudents = () => {
         document.getElementById('students-table-body').innerHTML =
-            `<tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+            `<tr><td colspan="7" class="spinner-cell"><div class="spinner"></div></td></tr>`;
+        getDocs(collection(db, dbPath('courses')))
+            .then(snap => { _courses = snap.docs.map(d => d.data()); })
+            .catch(() => { /* sin cursos no hay plan sugerido; se escribe a mano */ });
         unsubscribeListeners.students = onSnapshot(
             query(collection(db, dbPath('user_roles')), where('role', '==', 'student')),
             (snap) => {
@@ -1954,6 +2169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     .sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
                 renderVoucherQueue();
                 applyStudentFilters();
+                if (payCtx) renderPaymentsModal();
             }
         );
         unsubscribeListeners.studentEnrollments = onSnapshot(collection(db, dbPath('course_enrollments')), (snap) => {

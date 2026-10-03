@@ -516,6 +516,13 @@
                         <option value="regular">Regular</option>
                         <option value="personalizado">Personalizado</option>
                     </select>
+                    <select id="filter-student-pay" class="filter-select">
+                        <option value="">Todos los pagos</option>
+                        <option value="overdue">Vencidos</option>
+                        <option value="soon">Vencen en 7 días</option>
+                        <option value="ok">Al día</option>
+                        <option value="unset">Sin configurar</option>
+                    </select>
                     <span class="results-count" id="count-students"></span>
                 </div>
                 <div class="admin-table-container">
@@ -523,11 +530,11 @@
                         <thead>
                             <tr>
                                 <th>Código</th><th>Alumno</th><th>Curso</th><th>Modalidad</th>
-                                <th>Estado</th><th>Acciones</th>
+                                <th>Estado</th><th>Pago</th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="students-table-body">
-                            <tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>
+                            <tr><td colspan="7" class="spinner-cell"><div class="spinner"></div></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -856,6 +863,59 @@
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar ficha</button>
                 <div id="studentFormMessage" class="form-message" style="display:none;"></div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal: Activar alumno (confirma el primer pago y define su plan) -->
+    <div id="activateModal" class="modal">
+        <div class="modal-content" style="max-width:480px;">
+            <span class="close-button" id="closeActivateModalBtn">&times;</span>
+            <h2>Activar alumno</h2>
+            <p id="activateSummary" class="activate-summary"></p>
+            <p id="activateWarning" class="activate-warning" style="display:none;"></p>
+            <form id="activateForm">
+                <div class="form-group">
+                    <label>Inicio de clases (fija su día de pago de cada mes):</label>
+                    <input type="date" id="activateStart" required>
+                </div>
+                <div class="form-group">
+                    <label>Mensualidad (S/):</label>
+                    <input type="number" id="activateAmount" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Número de cuotas del curso:</label>
+                    <input type="number" id="activateInstallments" min="1" max="24" step="1" required>
+                </div>
+                <p class="activate-note">El pago de hoy queda registrado como la cuota 1.</p>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Confirmar pago y activar</button>
+                <div id="activateFormMessage" class="form-message" style="display:none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Pagos del alumno (plan, cuotas y registro) -->
+    <div id="paymentsModal" class="modal">
+        <div class="modal-content" style="max-width:640px;">
+            <span class="close-button" id="closePaymentsModalBtn">&times;</span>
+            <h2>Pagos: <span id="paymentsStudentName" style="color:#ffc107;"></span></h2>
+            <p id="paymentsVoucherNote" class="activate-warning" style="display:none;"></p>
+
+            <form id="billingForm" class="billing-form">
+                <label>Inicio de clases <input type="date" id="billingStart" required></label>
+                <label>Mensualidad S/ <input type="number" id="billingAmount" min="0" step="0.01" required></label>
+                <label>Cuotas <input type="number" id="billingInstallments" min="1" max="24" step="1" required></label>
+                <button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-save"></i> Guardar plan</button>
+            </form>
+
+            <div id="paymentsSchedule" class="pay-schedule"></div>
+
+            <form id="registerPaymentForm" class="billing-form register-payment" style="display:none;">
+                <strong id="registerPaymentLabel"></strong>
+                <label>Fecha de pago <input type="date" id="registerPaymentDate" required></label>
+                <label>Monto S/ <input type="number" id="registerPaymentAmount" min="0" step="0.01" required></label>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-check"></i> Registrar pago</button>
+            </form>
+            <div id="paymentsFormMessage" class="form-message" style="display:none;"></div>
         </div>
     </div>
 

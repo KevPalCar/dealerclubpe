@@ -745,3 +745,34 @@ button.att-cell:hover { border-color: #ffc107; }
 .image-view-content { max-width: 720px; text-align: center; }
 .image-view-content img { max-width: 100%; max-height: 78vh; border-radius: 8px; }
 .student-comments { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 10px; color: #ccc; font-size: 0.9em; margin: 0; }
+
+/* ── PAGOS: activación, plan y cuotas ───────────────────────── */
+.activate-summary { color: #ddd; margin: 0 0 12px; }
+.activate-warning {
+    background: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; color: #ffe08a;
+    border-radius: 8px; padding: 10px 12px; font-size: 0.88em; margin: 0 0 14px;
+}
+.activate-note { color: #999; font-size: 0.85em; margin: 0 0 14px; }
+.billing-form {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+    background: #1a1a1a; border: 1px solid #333; border-radius: 10px; padding: 12px; margin-bottom: 14px;
+}
+.billing-form label { display: flex; flex-direction: column; gap: 4px; color: #999; font-size: 0.78em; flex: 1 1 120px; }
+.billing-form input {
+    background: #121212; border: 1px solid #444; color: #eee; border-radius: 6px; padding: 7px 8px; font-size: 1.1em;
+}
+.billing-form strong { flex: 1 1 100%; color: #ffc107; font-size: 0.92em; }
+.register-payment { border-color: #ffc107; }
+.pay-schedule { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; max-height: 42vh; overflow-y: auto; }
+.pay-row {
+    display: grid; grid-template-columns: 76px 1fr auto; gap: 10px; align-items: center;
+    background: #1a1a1a; border: 1px solid #2c2c2c; border-left: 4px solid #444; border-radius: 8px; padding: 9px 12px;
+}
+.pay-row.paid    { border-left-color: #28a745; }
+.pay-row.soon    { border-left-color: #ffc107; }
+.pay-row.overdue { border-left-color: #dc3545; }
+.pay-row.next    { border-left-color: #17a2b8; }
+.pay-row b { color: #fff; }
+.pay-row small { display: block; color: #999; }
+.pay-row .pay-row-actions { display: flex; gap: 6px; }
+.pay-row a { color: #64b5f6; font-size: 0.82em; }

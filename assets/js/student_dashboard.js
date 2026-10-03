@@ -6,6 +6,7 @@
 
 import { auth, db, dbPath } from './firebase.js';
 import { compressImage } from './image.js';
+import { fmtDate, billingSchedule, billingSummary, daysLabel } from './billing.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
     doc, getDoc, setDoc, addDoc, deleteDoc, collection, query, where, onSnapshot
@@ -107,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Inicia los listeners de cada tab
             listenCourses(user.email);
             listenProgress(user.uid);
-            if (isApproved) startCampus(roleData);
+            if (isApproved) startCampus(roleData, user);
             else            lockCampusPanels();
 
             switchTab('courses');
@@ -119,11 +120,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── CONTENIDO DEL CAMPUS (solo con acceso activo) ────────
-    const startCampus = (roleData) => {
+    const startCampus = (roleData, user = auth.currentUser) => {
         if (campusStarted) return;
         campusStarted = true;
         listenTasks(roleData.studentCode, roleData.fullName);
         listenMaterials();
+        initPayReport(user, roleData);
         // Promoción de referidos: solo alumnos aprobados con código.
         if (roleData.studentCode) renderReferral(roleData.studentCode, roleData.fullName);
     };
@@ -133,6 +135,8 @@ document.addEventListener('DOMContentLoaded', () => {
             emptyState('Tus tareas aparecerán aquí al activar tu acceso.', 'fa-lock');
         document.getElementById('materials-panel-content').innerHTML =
             emptyState('El material se desbloquea al activar tu acceso.', 'fa-lock');
+        document.getElementById('payments-panel-content').innerHTML =
+            emptyState('Tus pagos mes a mes aparecerán aquí al activar tu acceso.', 'fa-lock');
     };
 
     // ── SISTEMA DE TABS ──────────────────────────────────────
@@ -609,6 +613,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // Mis Pagos: solo con acceso activo (el pendiente ve el candado)
+            if (isAdminUser || d.status === 'active') renderPayments(d.billing);
+
             // Nivel
             const levelEl = document.getElementById('prog-level-val');
             if (levelEl) {
@@ -658,6 +665,114 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             renderStuAttendance();
             renderStuGrades(d.weeklyGrades);
+        });
+    };
+
+    // ════════════════════════════════════════════════════════
+    // TAB — MIS PAGOS (resumen, línea de tiempo y reporte de pago)
+    // ════════════════════════════════════════════════════════
+    const PAY_ICON = { paid: 'fa-check', overdue: 'fa-exclamation', soon: 'fa-clock', next: 'fa-clock', future: 'fa-circle' };
+
+    const renderPayments = (billing) => {
+        const box      = document.getElementById('payments-panel-content');
+        const badge    = document.getElementById('payments-badge');
+        const sum      = billingSummary(billing);
+        const schedule = billingSchedule(billing);
+        box.classList.remove('panel-loading');
+
+        if (sum.state === 'unset') {
+            badge.style.display = 'none';
+            box.innerHTML = emptyState('Aún no registramos tu plan de pagos. Aparecerá aquí en cuanto lo configuremos.', 'fa-wallet');
+            return;
+        }
+        badge.style.display = ['soon', 'overdue'].includes(sum.state) ? 'inline-flex' : 'none';
+
+        // Tarjeta resumen
+        const pct = Math.round(sum.paidCount / sum.total * 100);
+        let big, title, sub;
+        if (sum.state === 'complete') {
+            big = '<i class="fas fa-trophy"></i>';
+            title = '¡Completaste todos tus pagos!';
+            sub = `${sum.total} de ${sum.total} cuotas pagadas`;
+        } else {
+            big = `<strong>${Math.abs(sum.days)}</strong><span>día${Math.abs(sum.days) === 1 ? '' : 's'}</span>`;
+            title = sum.state === 'overdue'
+                ? `Tu cuota ${sum.n} venció el ${fmtDate(sum.due)}`
+                : `Tu próximo pago vence el ${fmtDate(sum.due)}`;
+            sub = `Cuota ${sum.n} de ${sum.total}${billing.amount != null ? ` · S/ ${billing.amount}` : ''} · ${daysLabel(sum.days)}`;
+        }
+        box.innerHTML = `
+            <div class="pay-summary pay-${sum.state}">
+                <div class="pay-days">${big}</div>
+                <div class="pay-summary-body">
+                    <h3>${title}</h3>
+                    <p>${sub}</p>
+                    <div class="pay-bar"><div style="width:${pct}%"></div></div>
+                    <small>Llevas ${sum.paidCount} de ${sum.total} cuotas pagadas</small>
+                </div>
+            </div>
+            <ol class="pay-timeline">
+                ${schedule.map(c => `
+                    <li class="pay-item ${c.state}">
+                        <span class="pay-dot"><i class="fas ${PAY_ICON[c.state]}"></i></span>
+                        <div>
+                            <strong>Cuota ${c.n}</strong>
+                            <span>${c.state === 'paid'
+                                ? `Pagado el ${fmtDate(c.payment.paidAt)} · S/ ${c.payment.amount}`
+                                : `Vence el ${fmtDate(c.due)}${c.days != null ? ` · ${daysLabel(c.days)}` : ''}`}</span>
+                        </div>
+                    </li>`).join('')}
+            </ol>`;
+        document.getElementById('pay-report').style.display = sum.state === 'complete' ? 'none' : 'block';
+    };
+
+    // El alumno activo reporta el pago de su siguiente cuota subiendo la
+    // constancia; el admin la confirma y la cuota se marca pagada aquí.
+    const initPayReport = (user, roleData) => {
+        if (!user || isAdminUser) return;
+        const form      = document.getElementById('pay-report-form');
+        const review    = document.getElementById('pay-report-review');
+        const fileInput = document.getElementById('pay-report-file');
+        const nameEl    = document.getElementById('pay-report-name');
+        const btn       = document.getElementById('pay-report-btn');
+        const msg       = document.getElementById('pay-report-msg');
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files[0]) nameEl.textContent = fileInput.files[0].name;
+        });
+        btn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) { msg.textContent = 'Primero elige la foto de tu constancia.'; return; }
+            if (file.size > 8 * 1024 * 1024) { msg.textContent = 'Imagen muy grande (máx 8MB).'; return; }
+            btn.disabled = true;
+            msg.textContent = 'Subiendo…';
+            try {
+                await addDoc(collection(db, dbPath('payments')), {
+                    uid:         user.uid,
+                    email:       user.email || '',
+                    studentName: roleData.fullName || '',
+                    type:        'mensualidad',
+                    imageUrl:    await compressImage(file),
+                    note:        '',
+                    status:      'reported',
+                    createdAt:   new Date()
+                });
+                fileInput.value = '';
+                nameEl.textContent = 'Elegir foto de mi constancia';
+                msg.textContent = '';
+            } catch { msg.textContent = 'No se pudo subir. Inténtalo de nuevo.'; }
+            btn.disabled = false;
+        });
+
+        onSnapshot(query(collection(db, dbPath('payments')), where('uid', '==', user.uid)), (snap) => {
+            const last = snap.docs.map(d => d.data())
+                .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0))[0];
+            const inReview = last?.status === 'reported';
+            form.style.display   = inReview ? 'none' : 'block';
+            review.style.display = inReview ? 'flex' : 'none';
+            if (last?.status === 'rejected') {
+                msg.textContent = `Tu constancia anterior no fue aceptada${last.rejectReason ? `: ${last.rejectReason}` : ''}. Sube una nueva.`;
+            }
         });
     };
 
