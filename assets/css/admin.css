@@ -877,6 +877,38 @@ button.att-cell:hover { border-color: #ffc107; }
 .quote-modal .qe-notes { height: auto; }
 .qe-notes { resize: vertical; line-height: 1.4; }
 .qe-rows { display: flex; flex-direction: column; gap: 4px; }
+/* Lista fija del editor: cantidad · nombre · juego · precio unitario · importe */
+.qe-line { display: grid; grid-template-columns: 52px 1.4fr 1.3fr 96px 96px; gap: 6px; align-items: center; }
+.qe-line.qe-line-extra { grid-template-columns: 52px 1fr 96px 96px; }
+.qe-line-head { color: #777; font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+.qe-line-head span:nth-last-child(-n+2) { text-align: right; }
+.qe-line .qe-name { color: #eee; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qe-line.on .qe-name { color: #ffc107; font-weight: 700; }
+.qe-line input, .qe-line select, .qe-adj input {
+    background: #121212; border: 1px solid #444; color: #eee; border-radius: 6px;
+    padding: 5px 8px; font-size: 13px; font-family: inherit; height: 30px; width: 100%; box-sizing: border-box; margin: 0; min-width: 0;
+}
+.qe-num { text-align: right; }
+.qe-line .qe-qty { text-align: center; font-weight: 700; }
+.qe-line.on .qe-qty { border-color: #ffc107; }
+.qe-amount { text-align: right; color: #fff; font-weight: 700; font-size: 13px; white-space: nowrap; }
+.qe-amount.muted { color: #666; font-weight: 400; }
+.qe-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.qe-chip {
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+    background: #121212; border: 1px solid #444; color: #999; border-radius: 16px; padding: 5px 11px; font-size: 12px;
+}
+.qe-chip input { margin: 0; accent-color: #ffc107; }
+.qe-chip.on { border-color: #28a745; color: #cfe9d5; }
+.qe-adj-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 14px; }
+.qe-adj { display: grid; grid-template-columns: 1fr 96px; gap: 6px; align-items: center; color: #ccc; font-size: 12.5px; }
+.qe-adj.minus span::before { content: '− '; color: #28a745; font-weight: 700; }
+.qe-adj.plus span::before  { content: '+ '; color: #ffc107; font-weight: 700; }
+.qe-adj .qe-auto { display: inline-flex; align-items: center; gap: 4px; color: #888; font-size: 11px; margin-left: 6px; }
+.qe-adj .qe-auto input { width: auto; height: auto; accent-color: #ffc107; }
+.qe-check { display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 12px; margin-top: 12px; cursor: pointer; }
+.qe-check input { accent-color: #ffc107; }
+
 .qe-row { display: grid; gap: 5px; align-items: center; }
 .qe-row.cols-item   { grid-template-columns: 1.3fr 2fr 96px 30px; }
 .qe-row.cols-adj    { grid-template-columns: 3fr 110px 30px; }
@@ -906,5 +938,6 @@ button.att-cell:hover { border-color: #ffc107; }
     .qe-col + .qe-col { border-left: 0; border-top: 1px solid #333; }
     .qe-4, .qe-3 { grid-template-columns: 1fr 1fr; }
     .qe-row.cols-item, .qe-row.cols-tariff { grid-template-columns: 1fr 1fr; }
+    .qe-adj-grid { grid-template-columns: 1fr; }
     .qe-foot { position: sticky; bottom: 0; }
 }

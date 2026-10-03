@@ -67,14 +67,15 @@ const render = (q) => {
     (q.items || []).forEach(line => {
         const tr = document.createElement('tr');
         if (line.included) tr.className = 'cz-incl';
-        tr.append(cell(line.name, 'cz-name'), cell(line.detail, 'cz-detail'), cell(priceLabel(line), 'cz-price'));
+        tr.append(cell(line.name, 'cz-name'), cell(line.detail, 'cz-detail'),
+                  cell(line.qty || '', 'cz-qty'), cell(priceLabel(line), 'cz-price'));
         body.appendChild(tr);
     });
     (q.adjustments || []).filter(a => a.amount).forEach(a => {
         const tr = document.createElement('tr');
         tr.className = a.amount < 0 ? 'cz-adj cz-discount' : 'cz-adj';
         const name = cell(a.name, 'cz-name');
-        name.colSpan = 2;
+        name.colSpan = 3;
         tr.append(name, cell(`${a.amount < 0 ? '− ' : '+ '}${money(Math.abs(a.amount))}`, 'cz-price'));
         body.appendChild(tr);
     });

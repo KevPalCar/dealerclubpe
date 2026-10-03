@@ -1046,27 +1046,24 @@
                         <textarea id="quoteNotes" rows="4" class="qe-notes"></textarea>
                     </div>
 
-                    <!-- Columna derecha: lo que se cobra, ajustes y lo que puede agregar -->
+                    <!-- Columna derecha: lista fija del tarifario. Solo se escriben cantidades
+                         y montos; lo que queda en cero pasa solo a "Puedes agregar". -->
                     <div class="qe-col">
-                        <h3 class="qe-title qe-first">Tu evento <small>precio vacío = "Incluido" o "A cotizar"</small></h3>
-                        <div id="quoteItems" class="qe-rows"></div>
-                        <div class="qe-add">
-                            <select id="quoteAddItem"></select>
-                            <button type="button" class="btn btn-secondary btn-sm" id="quoteAddFree"><i class="fas fa-plus"></i> Línea libre</button>
-                        </div>
+                        <h3 class="qe-title qe-first">Mesas <small>escribe la cantidad; en 0 no se cotiza</small></h3>
+                        <div class="qe-line qe-line-head"><span>Cant.</span><span>Mesa</span><span>Juego</span><span>Precio c/u</span><span>Importe</span></div>
+                        <div id="quoteMesas" class="qe-rows"></div>
 
-                        <h3 class="qe-title">Ajustes <small>recargo en positivo, descuento en negativo</small></h3>
-                        <div id="quoteAdjustments" class="qe-rows"></div>
-                        <div class="qe-add">
-                            <select id="quoteAddAdjustment"></select>
-                        </div>
+                        <h3 class="qe-title">Incluye <small>sin costo; los dealers se cuentan según las mesas</small></h3>
+                        <div id="quoteIncludes" class="qe-chips"></div>
 
-                        <h3 class="qe-title">Puedes agregar <small>informativo: no suma al total</small></h3>
-                        <div id="quoteAddons" class="qe-rows"></div>
-                        <div class="qe-add">
-                            <button type="button" class="btn btn-secondary btn-sm" id="quoteSuggestAddons"><i class="fas fa-magic"></i> Sugerir según el tarifario</button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="quoteAddAddon"><i class="fas fa-plus"></i> Línea libre</button>
-                        </div>
+                        <h3 class="qe-title">Extras <small>precio vacío = "A cotizar"</small></h3>
+                        <div class="qe-line qe-line-extra qe-line-head"><span>Cant.</span><span>Extra</span><span>Precio c/u</span><span>Importe</span></div>
+                        <div id="quoteExtras" class="qe-rows"></div>
+
+                        <h3 class="qe-title">Recargos y descuentos <small>escribe el monto solo en los que apliquen</small></h3>
+                        <div id="quoteAdj" class="qe-adj-grid"></div>
+
+                        <label class="qe-check"><input type="checkbox" id="quoteShowAddons"> Mostrar en la hoja "Puedes agregar" con las mesas y extras que no llevó</label>
                     </div>
                 </div>
 

@@ -82,6 +82,7 @@ body {
 .cz-table th:last-child, .cz-price { text-align: right; white-space: nowrap; }
 .cz-table td { padding: 7px 10px; border-bottom: 1px solid var(--cz-line); vertical-align: top; }
 .cz-name { font-weight: 700; }
+.cz-table .cz-qty { text-align: center; width: 52px; font-weight: 700; }
 .cz-detail { color: var(--cz-muted); font-size: 12px; }
 .cz-price { font-weight: 700; }
 .cz-incl td { background: #fbfaf6; }
