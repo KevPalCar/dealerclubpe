@@ -786,3 +786,46 @@ button.att-cell:hover { border-color: #ffc107; }
 .student-tab:hover { border-color: #ffc107; color: #fff; }
 .student-tab.active { background: #ffc107; border-color: #ffc107; color: #1a1405; }
 .student-tab span { opacity: 0.75; margin-left: 4px; }
+
+/* ── TRABAJO DEL DÍA: lista de asistencia y pendientes ───────── */
+.daily-date { display: flex; align-items: center; gap: 8px; }
+.daily-date input { background: #1a1a1a; border: 1px solid #333; color: #eee; border-radius: 6px; padding: 6px 8px; }
+.daily-date strong { color: #ffc107; text-transform: capitalize; margin-left: 4px; }
+.daily-alerts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.daily-alert {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    background: #1a1a1a; border: 1px solid #444; color: #ddd; border-radius: 10px; padding: 9px 14px; font-size: 0.88em;
+}
+.daily-alert b { font-size: 1.15em; }
+.daily-alert.warn   { border-color: #ffc107; } .daily-alert.warn b   { color: #ffc107; }
+.daily-alert.danger { border-color: #dc3545; } .daily-alert.danger b { color: #dc3545; }
+.daily-alert.ok     { border-color: #28a745; color: #8fd19e; cursor: default; }
+.daily-show-all { color: #aaa; font-size: 0.85em; display: flex; align-items: center; gap: 6px; }
+.daily-list { display: flex; flex-direction: column; gap: 16px; }
+.daily-group h3 { color: #ffc107; font-size: 0.95em; margin: 0 0 8px; }
+.daily-group h3 span { color: #888; font-weight: 400; }
+.daily-row {
+    display: grid; grid-template-columns: 1fr auto auto auto; gap: 12px; align-items: center;
+    background: #1a1a1a; border: 1px solid #2c2c2c; border-radius: 10px; padding: 10px 14px; margin-bottom: 6px;
+}
+.daily-row.dirty { border-color: #ffc107; }
+.daily-name strong { color: #fff; }
+.daily-name small { display: block; color: #888; }
+.daily-warn { display: inline-block; margin-top: 3px; color: #f1a7ae; font-size: 0.78em; font-weight: 700; }
+.daily-att { display: flex; gap: 6px; }
+.att-btn {
+    border: 1px solid #444; background: #121212; color: #aaa; border-radius: 8px;
+    padding: 8px 14px; font-weight: 700; font-size: 0.85em; cursor: pointer;
+}
+.att-btn.present.on { background: #28a745; border-color: #28a745; color: #fff; }
+.att-btn.absent.on  { background: #dc3545; border-color: #dc3545; color: #fff; }
+.daily-level { background: #121212; border: 1px solid #444; color: #eee; border-radius: 6px; padding: 7px 8px; }
+.daily-footer {
+    position: sticky; bottom: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: #121212; border-top: 1px solid #333; padding: 12px 0; margin-top: 16px;
+}
+#daily-status { color: #ffc107; font-size: 0.88em; }
+.daily-empty { color: #888; text-align: center; padding: 30px 10px; }
+@media (max-width: 700px) {
+    .daily-row { grid-template-columns: 1fr; }
+}

@@ -7,11 +7,11 @@
 
 import { auth, db, dbPath, generateStudentCode } from './firebase.js';
 import { compressImage } from './image.js';
-import { toYmd, fmtDate, nextMonday, billingSchedule, billingSummary, daysLabel } from './billing.js';
+import { toYmd, fromYmd, fmtDate, nextMonday, billingSchedule, billingSummary, daysLabel } from './billing.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
     collection, addDoc, setDoc, doc, updateDoc, deleteDoc,
-    onSnapshot, getDoc, query, where, getDocs
+    onSnapshot, getDoc, query, where, getDocs, writeBatch, getCountFromServer
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // ── EMAILJS — notificaciones automáticas al aprobar inscripciones ──
@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('admin-user-info').innerHTML =
                         `<span>Bienvenido, Admin</span><i class="fas fa-user-circle"></i>`;
                     initSearches();
-                    loadSection('students');
+                    loadSection('daily');
                     reconcileApprovedStudents();
                     watchVoucherQueue();
                 } else {
@@ -196,7 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
             referrals: 'Referidos & Marketing',
             requests: 'Cotizaciones de eventos',   announcements: 'Config & Anuncios',
             materials: 'Material Didáctico',        tasks: 'Asignar Tareas',
-            progress: 'Progreso de Alumnos',      students: 'Alumnos'
+            progress: 'Progreso de Alumnos',      students: 'Alumnos',
+            daily: 'Trabajo del día'
         };
         document.getElementById('admin-main-title').textContent = titles[sectionName] || sectionName;
 
@@ -207,7 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
             referrals: loadReferrals,
             requests: loadRequests,    announcements: loadAnnouncements,
             materials: loadMaterials,  tasks: loadTasks,
-            progress: loadProgress,    students: loadStudents
+            progress: loadProgress,    students: loadStudents,
+            daily: loadDaily
         };
         if (loaders[sectionName]) loaders[sectionName]();
     };
@@ -280,6 +282,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('courseDuration').value    = c.duration;
             document.getElementById('courseGames').value       = (c.gamesIncluded || []).join(', ');
             document.getElementById('courseStatus').value      = c.status;
+            _courseDays = new Set(c.classDays ?? guessClassDays(c.schedule));
+            renderCourseDays();
             document.getElementById('modal-title-action').textContent = 'Editar';
             openModal(document.getElementById('courseModal'));
         });
@@ -299,8 +303,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // Días de clase del curso (0 = domingo … 6 = sábado). Si el curso aún
+    // no los tiene guardados, se deducen del texto del horario.
+    const guessClassDays = (schedule) => {
+        const t = (schedule || '').toLowerCase();
+        if (/lunes a s[áa]bado/.test(t))  return [1, 2, 3, 4, 5, 6];
+        if (/lunes a viernes/.test(t))    return [1, 2, 3, 4, 5];
+        const days = [];
+        if (/s[áa]bado/.test(t)) days.push(6);
+        if (/domingo/.test(t))   days.push(0);
+        return days;   // vacío = sin días fijos (p. ej. "Consultar")
+    };
+    let _courseDays = new Set();
+    const renderCourseDays = () => {
+        const box = document.getElementById('courseDays');
+        box.innerHTML = DAY_LABELS.map(([v, l]) =>
+            `<button type="button" class="day-pick ${_courseDays.has(v) ? 'on' : ''}" data-day="${v}">${l}</button>`).join('');
+        box.querySelectorAll('.day-pick').forEach(b => b.addEventListener('click', () => {
+            const v = +b.dataset.day;
+            if (_courseDays.has(v)) _courseDays.delete(v); else _courseDays.add(v);
+            renderCourseDays();
+        }));
+    };
+
     document.getElementById('add-course-btn').addEventListener('click', () => {
         document.getElementById('courseForm').reset();
+        _courseDays = new Set([1, 2, 3, 4, 5]);
+        renderCourseDays();
         document.getElementById('courseId').value = '';
         document.getElementById('modal-title-action').textContent = 'Añadir';
         openModal(document.getElementById('courseModal'));
@@ -320,6 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
             duration: document.getElementById('courseDuration').value,
             gamesIncluded: document.getElementById('courseGames').value.split(',').map(g => g.trim()).filter(Boolean),
             status: document.getElementById('courseStatus').value,
+            classDays: [..._courseDays].sort(),
             lastUpdated: new Date()
         };
         try {
@@ -1550,25 +1580,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             </td>
         `;
-        tr.querySelector('.btn-edit').addEventListener('click', () => {
-            document.getElementById('progressStudentUid').value = s.uid;
-            document.getElementById('progressStudentName').textContent = s.fullName || s.email || 'Alumno';
-            document.getElementById('progressLevel').value     = s.level || 'Rookie';
-            document.getElementById('progressStartDate').value = s.courseStartDate || '';
+        tr.querySelector('.btn-edit').addEventListener('click', () => openProgressModal(s));
+    };
 
-            // Asistencia: carga el registro y posiciona el calendario
-            attEdit.log = { ...(s.attendanceLog || {}) };
-            const base = s.courseStartDate ? new Date(`${s.courseStartDate}T00:00:00`) : new Date();
-            attEdit.year  = base.getFullYear();
-            attEdit.month = base.getMonth();
-            renderAttCalendar();
+    // Ficha de progreso de un alumno (nivel, calendario de asistencia y notas).
+    // Se abre desde Progreso, Alumnos o la lista del día.
+    const openProgressModal = (s) => {
+        document.getElementById('progressStudentUid').value = s.uid;
+        document.getElementById('progressStudentName').textContent = s.fullName || s.email || 'Alumno';
+        document.getElementById('progressLevel').value     = s.level || 'Rookie';
+        document.getElementById('progressStartDate').value = s.courseStartDate || '';
 
-            // Notas semanales
-            document.getElementById('progressGradesList').innerHTML = '';
-            (s.weeklyGrades || []).forEach(addGradeRow);
+        // Asistencia: carga el registro y posiciona el calendario en el mes actual
+        attEdit.log = { ...(s.attendanceLog || {}) };
+        const base = new Date();
+        attEdit.year  = base.getFullYear();
+        attEdit.month = base.getMonth();
+        renderAttCalendar();
 
-            openModal(document.getElementById('progressModal'));
-        });
+        // Notas semanales
+        document.getElementById('progressGradesList').innerHTML = '';
+        (s.weeklyGrades || []).forEach(addGradeRow);
+
+        openModal(document.getElementById('progressModal'));
     };
 
     const loadProgress = () => {
@@ -2018,6 +2052,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const btns = [];
         if (st === 'pending')   btns.push(`<button class="btn btn-sm btn-approve btn-stu-approve"><i class="fas fa-check"></i> Activar</button>`);
         if (st === 'suspended') btns.push(`<button class="btn btn-sm btn-approve btn-stu-reactivate"><i class="fas fa-undo"></i> Reactivar</button>`);
+        if (st === 'active')    btns.push(`<button class="btn btn-secondary btn-sm btn-stu-progress" title="Asistencia, nivel y notas"><i class="fas fa-chart-line"></i> Progreso</button>`);
         if (st !== 'pending')   btns.push(`<button class="btn btn-secondary btn-sm btn-stu-pay" title="Pagos"><i class="fas fa-coins"></i> Pagos</button>`);
         btns.push(`<button class="btn btn-secondary btn-sm btn-stu-edit" title="Ficha"><i class="fas fa-id-card"></i></button>`);
         if (st === 'active')    btns.push(`<button class="btn btn-secondary btn-sm btn-stu-suspend" title="Suspender"><i class="fas fa-pause"></i> Suspender</button>`);
@@ -2042,6 +2077,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td class="action-buttons">${btns.join('')}</td>
         `;
 
+        tr.querySelector('.btn-stu-progress')?.addEventListener('click', () => openProgressModal(s));
         tr.querySelector('.btn-stu-pay')?.addEventListener('click', () => openPaymentsModal(s));
         tr.querySelector('.btn-stu-approve')?.addEventListener('click', () =>
             approveStudent(s, _reported.find(p => p.uid === s.uid) || null));
@@ -2174,6 +2210,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderVoucherQueue();
                     applyStudentFilters();
                 }
+                renderDaily();
             }
         );
     };
@@ -2198,6 +2235,238 @@ document.addEventListener('DOMContentLoaded', () => {
             _stuEnrollments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             applyStudentFilters();
         });
+    };
+
+    // ══════════════════════════════════════════════════════════
+    // TRABAJO DEL DÍA — lista de asistencia de todos en una vista
+    // Se marca a cada alumno con un toque, se ajusta su nivel y se
+    // guarda todo junto. Solo aparecen los matriculados con clase
+    // ese día (según su curso o sus días personalizados).
+    // ══════════════════════════════════════════════════════════
+    const WEEKDAYS_ES = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const LEVELS = ['Rookie', 'Pro Dealer', 'Élite VIP'];
+    let _dailyDate   = toYmd(new Date());
+    let _dailyMarks  = {};   // uid → 'present' | 'absent' | '' (cambios sin guardar)
+    let _dailyLevels = {};   // uid → nivel (cambios sin guardar)
+    let _toGrade     = 0;    // entregas de tareas por calificar
+
+    // Días de clase del alumno; null = sin días fijos (aparece siempre).
+    const classDaysOf = (s) => {
+        if (s.modality === 'personalizado' && (s.customDays || []).length) return s.customDays;
+        const course = _courses.find(c => c.name === coursesOf(s)[0]);
+        if (!course) return null;
+        const days = course.classDays ?? guessClassDays(course.schedule);
+        return days.length ? days : null;
+    };
+
+    // Faltas seguidas hasta la fecha indicada (se corta en la última asistencia).
+    const absenceStreak = (log, upTo) => {
+        let n = 0;
+        for (const d of Object.keys(log || {}).filter(d => d <= upTo).sort().reverse()) {
+            if (log[d] === 'absent') n++; else break;
+        }
+        return n;
+    };
+
+    const dailyMarkOf  = (s) => _dailyMarks[s.uid]  ?? s.attendanceLog?.[_dailyDate] ?? '';
+    const dailyLevelOf = (s) => _dailyLevels[s.uid] ?? s.level ?? 'Rookie';
+    const dailyDirty   = () => new Set([...Object.keys(_dailyMarks), ...Object.keys(_dailyLevels)]);
+
+    const renderDailyAlerts = () => {
+        const box     = document.getElementById('daily-alerts');
+        const actives = _students.filter(s => statusOf(s) === 'active');
+        const pays    = actives.map(s => billingSummary(s.billing).state);
+        const count   = (state) => pays.filter(p => p === state).length;
+        const alerts  = [
+            [_reported.length,   'warn',   'constancias de pago por revisar', 'students'],
+            [count('overdue'),   'danger', 'pagos vencidos',                  'students'],
+            [count('soon'),      'warn',   'pagos vencen en 7 días o menos',  'students'],
+            [actives.filter(s => absenceStreak(s.attendanceLog, toYmd(new Date())) >= 3).length,
+                                 'danger', 'alumnos con 3 o más faltas seguidas', null],
+            [_toGrade,           'warn',   'entregas de tareas por calificar', 'tasks'],
+            [_students.filter(s => inStudentTab(s, 'pending')).length,
+                                 '',       'inscritos que aún no pagan',       'students']
+        ].filter(([n]) => n > 0);
+
+        box.innerHTML = alerts.length ? '' : '<span class="daily-alert ok"><i class="fas fa-check-circle"></i> Sin pendientes por ahora</span>';
+        alerts.forEach(([n, cls, text, section]) => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = `daily-alert ${cls}`;
+            chip.innerHTML = `<b>${n}</b> ${text}`;
+            if (section) chip.addEventListener('click', () => loadSection(section));
+            else chip.style.cursor = 'default';
+            box.appendChild(chip);
+        });
+    };
+
+    const renderDaily = () => {
+        if (document.getElementById('daily-management').style.display === 'none') return;
+        renderDailyAlerts();
+
+        const dow     = fromYmd(_dailyDate).getDay();
+        const showAll = document.getElementById('daily-show-all').checked;
+        document.getElementById('daily-date').value = _dailyDate;
+        document.getElementById('daily-weekday').textContent = WEEKDAYS_ES[dow];
+
+        const actives = _students.filter(s => statusOf(s) === 'active');
+        const list = actives.filter(s => {
+            if (showAll || s.attendanceLog?.[_dailyDate]) return true;
+            const days = classDaysOf(s);
+            return !days || days.includes(dow);
+        });
+
+        const box = document.getElementById('daily-list');
+        box.innerHTML = '';
+        if (!list.length) {
+            box.innerHTML = `<p class="daily-empty">${actives.length
+                ? 'Ningún alumno matriculado tiene clase este día. Marca "Mostrar a todos los matriculados" si hubo una clase fuera de horario.'
+                : 'Aún no hay alumnos matriculados. Aparecerán aquí cuando actives al primero desde Alumnos.'}</p>`;
+        }
+
+        // Agrupa por curso
+        const groups = new Map();
+        list.forEach(s => {
+            const key = coursesOf(s)[0] || 'Sin curso asignado';
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(s);
+        });
+        [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([course, students]) => {
+            const group = document.createElement('div');
+            group.className = 'daily-group';
+            group.innerHTML = `<h3>${esc(course)} <span>(${students.length})</span></h3>`;
+            students.forEach(s => {
+                const mark   = dailyMarkOf(s);
+                const streak = absenceStreak({ ...(s.attendanceLog || {}), ...(mark ? { [_dailyDate]: mark } : {}) }, _dailyDate);
+                const row    = document.createElement('div');
+                row.className = `daily-row ${dailyDirty().has(s.uid) ? 'dirty' : ''}`;
+                row.innerHTML = `
+                    <div class="daily-name">
+                        <strong>${esc(s.fullName) || esc(s.email)}</strong>
+                        <small>${esc(s.studentCode) || ''}${s.modality === 'personalizado' ? ' · Personalizado' : ''}</small>
+                        ${streak >= 2 ? `<span class="daily-warn"><i class="fas fa-exclamation-triangle"></i> ${streak} faltas seguidas</span>` : ''}
+                    </div>
+                    <div class="daily-att">
+                        <button type="button" class="att-btn present ${mark === 'present' ? 'on' : ''}" data-mark="present"><i class="fas fa-check"></i> Presente</button>
+                        <button type="button" class="att-btn absent ${mark === 'absent' ? 'on' : ''}" data-mark="absent"><i class="fas fa-times"></i> Faltó</button>
+                    </div>
+                    <select class="daily-level" title="Nivel del alumno">
+                        ${LEVELS.map(l => `<option ${dailyLevelOf(s) === l ? 'selected' : ''}>${l}</option>`).join('')}
+                    </select>
+                    <button type="button" class="btn btn-secondary btn-sm daily-progress" title="Notas y calendario completo"><i class="fas fa-chart-line"></i></button>`;
+                row.querySelectorAll('.att-btn').forEach(b => b.addEventListener('click', () => {
+                    // Un segundo toque en el mismo botón deja al alumno sin marcar.
+                    const next = dailyMarkOf(s) === b.dataset.mark ? '' : b.dataset.mark;
+                    if (next === (s.attendanceLog?.[_dailyDate] ?? '')) delete _dailyMarks[s.uid];
+                    else _dailyMarks[s.uid] = next;
+                    renderDaily();
+                }));
+                row.querySelector('.daily-level').addEventListener('change', (e) => {
+                    if (e.target.value === (s.level || 'Rookie')) delete _dailyLevels[s.uid];
+                    else _dailyLevels[s.uid] = e.target.value;
+                    renderDaily();
+                });
+                row.querySelector('.daily-progress').addEventListener('click', () => openProgressModal(s));
+                group.appendChild(row);
+            });
+            box.appendChild(group);
+        });
+
+        const marked = list.filter(s => dailyMarkOf(s)).length;
+        const dirty  = dailyDirty().size;
+        document.getElementById('daily-count').textContent  = `${marked} de ${list.length} marcados`;
+        document.getElementById('daily-status').textContent = dirty ? `${dirty} cambio${dirty === 1 ? '' : 's'} sin guardar` : '';
+        document.getElementById('daily-save').disabled = !dirty;
+        document.getElementById('daily-all-present').dataset.uids = list.map(s => s.uid).join(',');
+    };
+
+    const setDailyDate = (ymd) => {
+        if (!ymd || ymd === _dailyDate) return;
+        if (dailyDirty().size && !confirm('Tienes cambios sin guardar en esta fecha. ¿Descartarlos?')) {
+            document.getElementById('daily-date').value = _dailyDate;
+            return;
+        }
+        _dailyDate = ymd;
+        _dailyMarks = {};
+        _dailyLevels = {};
+        renderDaily();
+    };
+    const shiftDailyDate = (delta) => {
+        const d = fromYmd(_dailyDate);
+        d.setDate(d.getDate() + delta);
+        setDailyDate(toYmd(d));
+    };
+    document.getElementById('daily-date').addEventListener('change', (e) => setDailyDate(e.target.value));
+    document.getElementById('daily-prev').addEventListener('click', () => shiftDailyDate(-1));
+    document.getElementById('daily-next').addEventListener('click', () => shiftDailyDate(1));
+    document.getElementById('daily-show-all').addEventListener('change', renderDaily);
+
+    document.getElementById('daily-all-present').addEventListener('click', (e) => {
+        // Marca presente solo a quien aún no tiene marca; no pisa una falta ya puesta.
+        (e.currentTarget.dataset.uids || '').split(',').filter(Boolean).forEach(uid => {
+            const s = _students.find(x => x.uid === uid);
+            if (s && !dailyMarkOf(s)) _dailyMarks[uid] = 'present';
+        });
+        renderDaily();
+    });
+    document.getElementById('daily-new-task').addEventListener('click', () => {
+        loadSection('tasks');
+        document.getElementById('add-task-btn').click();
+    });
+
+    document.getElementById('daily-save').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        try {
+            const batch = writeBatch(db);
+            let present = 0, absent = 0;
+            dailyDirty().forEach(uid => {
+                const s = _students.find(x => x.uid === uid);
+                if (!s) return;
+                const patch = {};
+                if (uid in _dailyMarks) {
+                    const log = { ...(s.attendanceLog || {}) };
+                    if (_dailyMarks[uid]) log[_dailyDate] = _dailyMarks[uid]; else delete log[_dailyDate];
+                    patch.attendanceLog = log;
+                    patch.attendance    = attPct(log);   // derivado (compatibilidad)
+                }
+                if (uid in _dailyLevels) patch.level = _dailyLevels[uid];
+                batch.update(doc(db, dbPath(`user_roles/${uid}`)), patch);
+            });
+            // Registro de que ese día se pasó lista (lo usará la suspensión automática).
+            _students.forEach(s => {
+                const m = dailyMarkOf(s);
+                if (m === 'present') present++; else if (m === 'absent') absent++;
+            });
+            batch.set(doc(db, dbPath(`class_log/${_dailyDate}`)), { date: _dailyDate, present, absent, takenAt: new Date() });
+            await batch.commit();
+            _dailyMarks = {};
+            _dailyLevels = {};
+            showToast(`Lista del ${fmtDate(_dailyDate)} guardada: ${present} presentes, ${absent} faltas.`, 'success');
+        } catch (err) { showToast(`Error al guardar la lista: ${esc(err.message)}`, 'error'); }
+        renderDaily();
+    });
+
+    const loadDaily = () => {
+        unsubscribeListeners.dailyStudents = onSnapshot(
+            query(collection(db, dbPath('user_roles')), where('role', '==', 'student')),
+            (snap) => {
+                _students = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+                    .sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
+                renderDaily();
+            }
+        );
+        unsubscribeListeners.dailyEnrollments = onSnapshot(collection(db, dbPath('course_enrollments')), (snap) => {
+            _stuEnrollments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderDaily();
+        });
+        unsubscribeListeners.dailyCourses = onSnapshot(collection(db, dbPath('courses')), (snap) => {
+            _courses = snap.docs.map(d => d.data());
+            renderDaily();
+        });
+        getCountFromServer(query(collection(db, dbPath('task_submissions')), where('status', '==', 'submitted')))
+            .then(res => { _toGrade = res.data().count; renderDaily(); })
+            .catch(() => { /* sin el conteo, el resto de la pantalla funciona igual */ });
     };
 
 }); // fin DOMContentLoaded

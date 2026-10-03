@@ -27,7 +27,8 @@
                 <ul>
                     <!-- GRUPO: Escuela -->
                     <li class="nav-group-label"><span><i class="fas fa-graduation-cap"></i> Escuela</span></li>
-                    <li><a href="#" id="nav-students" class="active"><i class="fas fa-users"></i> Alumnos <span id="nav-students-badge" class="nav-badge" style="display:none;"></span></a></li>
+                    <li><a href="#" id="nav-daily" class="active"><i class="fas fa-clipboard-check"></i> Trabajo del día</a></li>
+                    <li><a href="#" id="nav-students"><i class="fas fa-users"></i> Alumnos <span id="nav-students-badge" class="nav-badge" style="display:none;"></span></a></li>
                     <li><a href="#" id="nav-materials"><i class="fas fa-photo-video"></i> Material Didáctico</a></li>
                     <li><a href="#" id="nav-tasks"><i class="fas fa-tasks"></i> Asignar Tareas</a></li>
                     <li><a href="#" id="nav-progress"><i class="fas fa-chart-line"></i> Progreso Alumnos</a></li>
@@ -57,7 +58,7 @@
         <!-- ── CONTENIDO PRINCIPAL ───────────────────────────── -->
         <main class="admin-content">
             <header class="admin-header">
-                <h1 id="admin-main-title">Alumnos</h1>
+                <h1 id="admin-main-title">Trabajo del día</h1>
                 <div class="user-info" id="admin-user-info">
                     <span>Cargando...</span>
                     <i class="fas fa-user-circle"></i>
@@ -494,8 +495,40 @@
                 </div>
             </section>
 
+            <!-- ═══════════════ TRABAJO DEL DÍA ═══════════════ -->
+            <section id="daily-management" class="content-section active">
+                <div class="section-header">
+                    <h2>Lista del día</h2>
+                    <div class="daily-date">
+                        <button type="button" class="btn-page" id="daily-prev" title="Día anterior"><i class="fas fa-chevron-left"></i></button>
+                        <input type="date" id="daily-date">
+                        <button type="button" class="btn-page" id="daily-next" title="Día siguiente"><i class="fas fa-chevron-right"></i></button>
+                        <strong id="daily-weekday"></strong>
+                    </div>
+                </div>
+
+                <!-- Pendientes que requieren tu atención (solo aparecen si hay) -->
+                <div id="daily-alerts" class="daily-alerts"></div>
+
+                <div class="table-toolbar requests-toolbar">
+                    <button type="button" class="btn btn-secondary btn-sm" id="daily-all-present"><i class="fas fa-check-double"></i> Todos presentes</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="daily-new-task"><i class="fas fa-tasks"></i> Nueva tarea</button>
+                    <label class="daily-show-all"><input type="checkbox" id="daily-show-all"> Mostrar a todos los matriculados</label>
+                    <span class="results-count" id="daily-count"></span>
+                </div>
+
+                <div id="daily-list" class="daily-list">
+                    <div class="spinner"></div>
+                </div>
+
+                <div class="daily-footer">
+                    <span id="daily-status"></span>
+                    <button type="button" class="btn btn-primary" id="daily-save" disabled><i class="fas fa-save"></i> Guardar lista del día</button>
+                </div>
+            </section>
+
             <!-- ═══════════════ ALUMNOS ═══════════════ -->
-            <section id="students-management" class="content-section active">
+            <section id="students-management" class="content-section">
                 <div class="section-header">
                     <h2>Alumnos</h2>
                 </div>
@@ -592,6 +625,10 @@
                 </div>
                 <div class="form-group"><label>Horario:</label><input type="text" id="courseSchedule" required></div>
                 <div class="form-group"><label>Duración:</label><input type="text" id="courseDuration" required></div>
+                <div class="form-group">
+                    <label>Días de clase (para la lista de asistencia):</label>
+                    <div class="day-picks" id="courseDays"></div>
+                </div>
                 <div class="form-group"><label>Juegos Incluidos (separados por coma):</label><input type="text" id="courseGames"></div>
                 <div class="form-group">
                     <label>Estado:</label>

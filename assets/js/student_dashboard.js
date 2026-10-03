@@ -30,6 +30,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let isAdminUser   = false;
     let onboardingCfg = {};     // {videoUrl, title, text, whatsapp}
 
+    // Video de bienvenida propio: si existe /assets/video/bienvenida.mp4 en el
+    // sitio, se usa ese; si no, el video de presentación. Se comprueba una vez.
+    const WELCOME_FILE = '/assets/video/bienvenida.mp4';
+    let welcomeFile = null;     // null = aún comprobando; true/false = resultado
+    fetch(WELCOME_FILE, { method: 'HEAD' })
+        .then(r => r.ok && (r.headers.get('content-type') || '').startsWith('video/'))
+        .catch(() => false)
+        .then(found => { welcomeFile = found; renderPendingHero(); });
+
     // ── ANNOUNCE BAR + CONFIG DE BIENVENIDA ──────────────────
     const announceBar   = document.getElementById('announce-bar');
     const announceText  = document.getElementById('announce-text');
@@ -251,13 +260,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Video: el enlace configurado en el admin; si no hay, el video
             // de presentación del sitio (nunca se reproduce solo).
+            // Orden: enlace del admin → archivo bienvenida.mp4 → video de presentación.
             const box   = document.getElementById('pending-video');
-            const video = resolveVideo(onboardingCfg.videoUrl) || {
-                kind: 'video',
-                src: '/assets/video/presentacion-dealerclub.mp4',
-                poster: '/assets/video/presentacion-dealerclub-poster.webp'
-            };
-            if (box.dataset.src !== video.src) {        // evita recargar el reproductor
+            const video = resolveVideo(onboardingCfg.videoUrl)
+                || (welcomeFile ? { kind: 'video', src: WELCOME_FILE } : {
+                    kind: 'video',
+                    src: '/assets/video/presentacion-dealerclub.mp4',
+                    poster: '/assets/video/presentacion-dealerclub-poster.webp'
+                });
+            // Espera a saber si hay archivo propio para no cargar dos videos.
+            if (welcomeFile !== null && box.dataset.src !== video.src) {   // evita recargar el reproductor
                 box.dataset.src = video.src;
                 box.className = `pending-video${video.vertical ? ' is-vertical' : ''}${video.kind === 'link' ? ' is-link' : ''}`;
                 const el = buildVideoEl(video);
