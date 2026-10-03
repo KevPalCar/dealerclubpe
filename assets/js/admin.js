@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('admin-user-info').innerHTML =
                         `<span>Bienvenido, Admin</span><i class="fas fa-user-circle"></i>`;
                     initSearches();
-                    loadSection('courses');
+                    loadSection('students');
                     reconcileApprovedStudents();
                     watchVoucherQueue();
                 } else {
@@ -192,8 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
             courses: 'Gestión de Cursos',         professors: 'Gestión de Profesores',
             alumni: 'Gestión de Egresados',        dealers: 'Gestión de Dealers',
             tables: 'Juegos del Casino',           services: 'Gestión de Servicios',
-            enrollments: 'Inscripciones',          referrals: 'Referidos & Marketing',
-            requests: 'Solicitudes de Contacto',   announcements: 'Config & Anuncios',
+            referrals: 'Referidos & Marketing',
+            requests: 'Cotizaciones de eventos',   announcements: 'Config & Anuncios',
             materials: 'Material Didáctico',        tasks: 'Asignar Tareas',
             progress: 'Progreso de Alumnos',      students: 'Alumnos'
         };
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
             courses: loadCourses,      professors: loadProfessors,
             alumni: loadAlumni,        dealers: loadDealers,
             tables: loadTables,        services: loadServices,
-            enrollments: loadEnrollments,  referrals: loadReferrals,
+            referrals: loadReferrals,
             requests: loadRequests,    announcements: loadAnnouncements,
             materials: loadMaterials,  tasks: loadTasks,
             progress: loadProgress,    students: loadStudents
@@ -231,7 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initSearch('dealers',     renderDealerRow,     'No hay dealers registrados.');
         initSearch('tables',      renderTableRow,      'No hay juegos registrados.');
         initSearch('services',    renderServiceRow,    'No hay servicios registrados.');
-        initSearch('enrollments', renderEnrollmentRow, 'No hay inscripciones.');
         initSearch('requests',    renderRequestRow,    'No hay solicitudes.');
         initSearch('materials',   renderMaterialRow,   'No hay materiales subidos aún.');
         initSearch('tasks',       renderTaskRow,       'No hay tareas asignadas.');
@@ -795,98 +794,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ══════════════════════════════════════════════════════════
-    // INSCRIPCIONES
+    // ALTA DE ALUMNOS — helpers de código y activación
+    // (la aprobación vive en la sección Alumnos, más abajo)
     // ══════════════════════════════════════════════════════════
-    const renderEnrollmentRow = (e) => {
-        const tbody = document.getElementById('enrollments-table-body');
-        const tr = tbody.insertRow();
-
-        const statusBadge = e.status === 'Aprobado'
-            ? `<span class="badge badge-success">Aprobado</span><br>
-               <small style="color:#ffc107; font-weight:bold;">Cód: ${esc(e.studentCode || e.referralCode) || 'N/A'}</small>`
-            : `<span class="badge badge-warning">Pendiente</span>`;
-
-        // Constancia: la foto subida al campus, el enlace antiguo o nada.
-        const voucher = _reported.find(p => lower(p.email) === lower(e.email));
-        const voucherLink = voucher
-            ? `<a href="#" class="btn-view-voucher" style="color:#ffc107;">Ver constancia</a>`
-            : /^https?:\/\//i.test(e.voucherUrl || '')
-                ? `<a href="${esc(e.voucherUrl)}" target="_blank" rel="noopener" style="color:#007bff;">Ver Comprobante</a>`
-                : `<span style="color:#888;">${e.status === 'Aprobado' ? 'Validada' : 'Sin constancia'}</span>`;
-
-        const approveBtn = e.status !== 'Aprobado'
-            ? `<button class="btn btn-sm btn-approve"
-                   data-id="${e.id}"
-                   data-name="${esc(e.fullName)}"
-                   data-email="${esc(e.email)}"
-                   data-course="${esc(e.courseName)}"
-                   data-code="${esc(e.studentCode)}">
-                   <i class="fas fa-check"></i> Aprobar
-               </button>`
-            : '';
-
-        tr.innerHTML = `
-            <td>${e.timestamp ? new Date(e.timestamp.seconds * 1000).toLocaleDateString('es-PE') : '-'}</td>
-            <td><strong>${esc(e.courseName) || '-'}</strong></td>
-            <td>${esc(e.fullName) || '-'}<br><small>${esc(e.email) || '-'}${e.dni ? ` · DNI ${esc(e.dni)}` : ''}</small></td>
-            <td>${esc(e.phone) || '-'}</td>
-            <td>${voucherLink}</td>
-            <td>${statusBadge}</td>
-            <td class="action-buttons">
-                ${approveBtn}
-                <button class="btn btn-danger btn-sm btn-delete" data-id="${e.id}"><i class="fas fa-trash"></i></button>
-            </td>
-        `;
-
-        // Aprobar: el código de alumno nace aquí, al confirmar el pago, y sirve
-        // también como código de referido. Si el alumno ya tenía uno, se reutiliza.
-        tr.querySelector('.btn-approve')?.addEventListener('click', async (evt) => {
-            const btn          = evt.currentTarget;
-            const id           = btn.dataset.id;
-            const name         = btn.dataset.name   || 'Estudiante';
-            const email        = btn.dataset.email  || '';
-            const course       = btn.dataset.course || 'Curso DealerClub';
-            const existingCode = btn.dataset.code;
-
-            let referralCode;
-            try { referralCode = await resolveStudentCode({ existingCode, email }); }
-            catch (err) { showToast(`Error al aprobar: ${err.message}`, 'error'); return; }
-
-            const noVoucher = voucher ? '' :
-                '\n\nNo hay constancia de pago subida. Confirma solo si verificaste el pago por otro medio.';
-            if (!confirm(`¿Confirmas el pago de ${name}?\nSe activará con código: ${referralCode}${noVoucher}`)) return;
-
-            try {
-                // 1. Actualizar inscripción en Firestore
-                await updateDoc(doc(db, dbPath(`course_enrollments/${id}`)), {
-                    status: 'Aprobado', studentCode: referralCode, referralCode, approvedAt: new Date()
-                });
-
-                // 2. Activar el campus del alumno si ya tiene cuenta
-                const { found } = await activateStudent({ code: referralCode, email });
-                if (voucher) {
-                    await updateDoc(doc(db, dbPath(`payments/${voucher.id}`)), { status: 'confirmed', reviewedAt: new Date() });
-                }
-
-                showToast(`Inscripción de ${esc(name)} aprobada. Código: ${referralCode}`, 'success');
-                if (!found) showToast(`${esc(name)} aún no tiene cuenta en el campus con ese correo. Se activará cuando la tenga y vuelvas a abrir el admin.`, 'warning');
-
-                // 3. Enviar email de confirmación al alumno vía EmailJS
-                sendApprovalEmail({ name, email, course, code: referralCode });
-
-            } catch (err) { showToast(`Error al aprobar: ${err.message}`, 'error'); }
-        });
-
-        tr.querySelector('.btn-view-voucher')?.addEventListener('click', (evt) => {
-            evt.preventDefault();
-            viewImage(voucher.imageUrl);
-        });
-
-        tr.querySelector('.btn-delete').addEventListener('click', () =>
-            confirmDelete(`¿Eliminar la inscripción de "${e.fullName}"?`, () => deleteItem('course_enrollments', e.id))
-        );
-    };
-
     // Cuentas (user_roles) de un alumno, buscadas por correo y/o código.
     const findStudentAccounts = async ({ code, email }) => {
         const col     = collection(db, dbPath('user_roles'));
@@ -946,17 +856,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (activated) showToast(`${activated} alumno(s) aprobados quedaron con el campus activado.`, 'info');
         } catch (err) { console.warn('No se pudo sincronizar alumnos aprobados:', err); }
-    };
-
-    const loadEnrollments = () => {
-        document.getElementById('enrollments-table-body').innerHTML =
-            `<tr><td colspan="7" class="spinner-cell"><div class="spinner"></div></td></tr>`;
-        unsubscribeListeners.enrollments = onSnapshot(collection(db, dbPath('course_enrollments')), (snap) => {
-            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-                .sort((a, b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0));
-            pState.enrollments.data = data;
-            renderPaged('enrollments', renderEnrollmentRow, 'No hay inscripciones todavía.');
-        });
     };
 
 
@@ -1744,9 +1643,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let _stuEnrollments = [];   // course_enrollments (para curso y aprobación)
     let _reported       = [];   // constancias de pago por revisar
 
-    const coursesOf = (s) => [...new Set(_stuEnrollments
-        .filter(e => lower(e.email) === lower(s.email) && e.type !== 'Lista de Espera')
+    const enrollmentsOf = (s) => _stuEnrollments.filter(e => lower(e.email) === lower(s.email));
+    const coursesOf = (s) => [...new Set(enrollmentsOf(s)
+        .filter(e => e.type !== 'Lista de Espera')
         .map(e => e.courseName).filter(Boolean))];
+    // Solo espera cupo: tiene inscripciones y todas son de lista de espera.
+    const isWaitlisted = (s) => {
+        const list = enrollmentsOf(s);
+        return list.length > 0 && list.every(e => e.type === 'Lista de Espera');
+    };
 
     const sendApprovalEmail = async ({ name, email, course, code }) => {
         if (!email) return;
@@ -1858,6 +1763,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('studentDni').value      = s.dni || '';
         document.getElementById('studentPhone').value    = s.phone || '';
         document.getElementById('studentModality').value = s.modality === 'personalizado' ? 'personalizado' : 'regular';
+        const comments = enrollmentsOf(s).map(e => (e.comments || '').trim()).filter(Boolean);
+        document.getElementById('studentComments').textContent = comments.join(' · ');
+        document.getElementById('studentCommentsGroup').style.display = comments.length ? 'block' : 'none';
         _studentDays = new Set(s.customDays || []);
         renderStudentDays();
         toggleStudentDays();
@@ -1911,8 +1819,12 @@ document.addEventListener('DOMContentLoaded', () => {
         tr.innerHTML = `
             <td><code style="color:#ffc107;">${esc(s.studentCode) || '—'}</code></td>
             <td>${esc(s.fullName) || '-'}
-                <span class="student-sub">${esc(s.email) || ''}${s.dni ? ` · DNI ${esc(s.dni)}` : ''}</span></td>
-            <td>${s.courses.length ? s.courses.map(esc).join('<br>') : '<span style="color:#888;">Sin inscripción</span>'}</td>
+                <span class="student-sub">${esc(s.email) || ''}${s.dni ? ` · DNI ${esc(s.dni)}` : ''}</span>
+                ${s.phone ? `<span class="student-sub"><i class="fab fa-whatsapp"></i> ${esc(s.phone)}</span>` : ''}</td>
+            <td>${s.courses.length ? s.courses.map(esc).join('<br>')
+                : s.waitlist.length ? `${s.waitlist.map(esc).join('<br>')}<span class="student-sub" style="color:#17a2b8;">Lista de espera</span>`
+                : '<span style="color:#888;">Sin inscripción</span>'}
+                ${s.enrolledAt ? `<span class="student-sub">Inscrito el ${s.enrolledAt}</span>` : ''}</td>
             <td>${custom
                 ? `<span class="badge badge-info">Personalizado</span>${days ? `<span class="student-sub">${days}</span>` : ''}`
                 : 'Regular'}</td>
@@ -1940,9 +1852,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const st  = document.getElementById('filter-student-status').value;
         const mod = document.getElementById('filter-student-modality').value;
         pState.students.data = _students
-            .filter(s => !st  || statusOf(s) === st)
+            .filter(s => !st  || (st === 'waitlist' ? isWaitlisted(s) : statusOf(s) === st))
             .filter(s => !mod || (s.modality === 'personalizado' ? 'personalizado' : 'regular') === mod)
-            .map(s => ({ ...s, courses: coursesOf(s) }));
+            .map(s => {
+                const list  = enrollmentsOf(s);
+                const first = list.map(e => e.timestamp?.seconds ?? 0).filter(Boolean).sort()[0];
+                return {
+                    ...s,
+                    courses:    coursesOf(s),
+                    waitlist:   [...new Set(list.filter(e => e.type === 'Lista de Espera').map(e => e.courseName).filter(Boolean))],
+                    phone:      s.phone || list.find(e => e.phone)?.phone || '',
+                    enrolledAt: first ? new Date(first * 1000).toLocaleDateString('es-PE') : ''
+                };
+            });
         renderPaged('students', renderStudentRow, 'No hay alumnos con esos filtros.');
     };
     ['filter-student-status', 'filter-student-modality'].forEach(id =>

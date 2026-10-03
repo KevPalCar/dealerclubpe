@@ -172,35 +172,37 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('pending-hero').style.display = 'block';
 
         if (pendingInfo.suspended) {
+            document.getElementById('pending-tag').innerHTML = '<i class="fas fa-pause-circle"></i> Acceso suspendido';
             document.getElementById('pending-title').textContent = 'Tu acceso al campus está suspendido';
             document.getElementById('pending-text').textContent =
                 (pendingInfo.reason ? `Motivo: ${pendingInfo.reason}. ` : '') +
                 'Tu progreso sigue guardado. Escríbenos para reactivar tu acceso y retomar donde te quedaste.';
-            // Los pasos de alta y la subida de constancia no aplican a un suspendido.
+            // La bienvenida, los pasos de alta y la activación no aplican a un suspendido.
+            ['pending-video-wrap', 'pending-course', 'pending-activate'].forEach(id =>
+                document.getElementById(id).style.display = 'none');
             document.querySelector('.pending-steps').style.display = 'none';
-            document.getElementById('pending-upload').style.display = 'none';
             document.getElementById('pending-wa-text').textContent = 'Reactivar mi acceso por WhatsApp';
         } else {
-            if (onboardingCfg.title?.trim())
-                document.getElementById('pending-title').textContent = onboardingCfg.title;
+            document.getElementById('pending-title').textContent =
+                onboardingCfg.title?.trim() || `¡Bienvenido a DealerClub, ${pendingInfo.fullName}!`;
             if (onboardingCfg.text?.trim())
                 document.getElementById('pending-text').textContent = onboardingCfg.text;
-        }
 
-        // Video de bienvenida (opcional)
-        const wrap  = document.getElementById('pending-video-wrap');
-        const box   = document.getElementById('pending-video');
-        const embed = toYouTubeEmbed(onboardingCfg.videoUrl);
-        if (embed) {
-            if (box.dataset.src !== embed) {            // evita recargar el iframe
-                box.dataset.src = embed;
-                box.innerHTML = `<iframe src="${embed}" title="Bienvenida DealerClub" frameborder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen></iframe>`;
+            // Video: el de YouTube configurado en el admin; si no hay,
+            // el video de presentación del sitio (no se reproduce solo).
+            const box   = document.getElementById('pending-video');
+            const embed = toYouTubeEmbed(onboardingCfg.videoUrl);
+            const src   = embed || 'local';
+            if (box.dataset.src !== src) {              // evita recargar el reproductor
+                box.dataset.src = src;
+                box.innerHTML = embed
+                    ? `<iframe src="${embed}" title="Bienvenida DealerClub" frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen></iframe>`
+                    : `<video controls playsinline preload="none"
+                        poster="/assets/video/presentacion-dealerclub-poster.webp"
+                        src="/assets/video/presentacion-dealerclub.mp4"></video>`;
             }
-            wrap.style.display = 'block';
-        } else {
-            wrap.style.display = 'none';
         }
 
         // CTA: enviar voucher por WhatsApp con datos prellenados
@@ -208,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const codePart = pendingInfo.studentCode ? ` (código ${pendingInfo.studentCode})` : '';
         const msg      = pendingInfo.suspended
             ? `Hola DealerClub, soy ${pendingInfo.fullName}${codePart}. Mi acceso al campus está suspendido y quiero reactivarlo.`
-            : `Hola DealerClub, soy ${pendingInfo.fullName}${codePart}. Acabo de hacer mi depósito y quiero enviar mi voucher de pago para activar mi acceso al campus virtual.`;
+            : `Hola DealerClub, soy ${pendingInfo.fullName}. Me registré en el campus y tengo una consulta para activar mi acceso.`;
         const btn      = document.getElementById('pending-voucher-btn');
         btn.href   = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
         btn.target = '_blank';
@@ -219,7 +221,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // El alumno sube la foto de su depósito; el admin la valida en
     // Alumnos y el campus se abre solo. Si la rechaza, puede subir otra.
     const initVoucherUpload = (user, roleData) => {
-        const box       = document.getElementById('pending-upload');
+        const box       = document.getElementById('pending-activate');
+        const payBox    = document.getElementById('pending-pay');
+        const openBtn   = document.getElementById('pending-activate-btn');
         const review    = document.getElementById('pending-review');
         const rejected  = document.getElementById('pending-rejected');
         const fileInput = document.getElementById('pending-file');
@@ -227,6 +231,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn       = document.getElementById('pending-upload-btn');
         const msg       = document.getElementById('pending-upload-msg');
         const stepLabel = document.querySelector('.pending-steps .step.current .step-label');
+
+        const openPay = () => { payBox.style.display = 'block'; openBtn.style.display = 'none'; };
+        openBtn.addEventListener('click', openPay);
 
         fileInput.addEventListener('change', () => {
             if (fileInput.files[0]) nameEl.textContent = fileInput.files[0].name;
@@ -261,14 +268,42 @@ document.addEventListener('DOMContentLoaded', () => {
             const inReview = last?.status === 'reported';
             box.style.display    = inReview ? 'none' : 'block';
             review.style.display = inReview ? 'flex' : 'none';
-            if (stepLabel) stepLabel.textContent = inReview ? 'Constancia en revisión' : 'Envía tu voucher de pago';
+            if (stepLabel) stepLabel.textContent = inReview ? 'Constancia en revisión' : 'Activa tu acceso';
             if (last?.status === 'rejected') {
                 rejected.textContent = `Tu constancia anterior no fue aceptada${last.rejectReason ? `: ${last.rejectReason}` : ''}. Sube una nueva.`;
                 rejected.style.display = 'block';
+                openPay();
             } else {
                 rejected.style.display = 'none';
             }
         });
+    };
+
+    // ── LO QUE LE ESPERA EN SU CURSO (alumno pendiente) ──────
+    // Juegos y horario reales del curso al que se inscribió.
+    let pendingCourseId = null;
+    const renderPendingCourse = async (enrollment) => {
+        if (!enrollment?.courseId || enrollment.courseId === pendingCourseId) return;
+        pendingCourseId = enrollment.courseId;
+        try {
+            const cs = await getDoc(doc(db, dbPath(`courses/${enrollment.courseId}`)));
+            if (!cs.exists()) return;
+            const c     = cs.data();
+            const games = (Array.isArray(c.gamesIncluded) ? c.gamesIncluded : [c.gamesIncluded]).filter(Boolean);
+            if (!games.length) return;
+
+            document.getElementById('pending-course-name').textContent = c.name || enrollment.courseName || 'tu curso';
+            const list = document.getElementById('pending-games');
+            list.innerHTML = '';
+            games.forEach(g => { const li = document.createElement('li'); li.textContent = g; list.appendChild(li); });
+            const sched = document.getElementById('pending-schedule');
+            sched.textContent = '';
+            if (c.schedule) {
+                sched.innerHTML = '<i class="fas fa-clock"></i> ';
+                sched.append(c.schedule);
+            }
+            document.getElementById('pending-course').style.display = 'block';
+        } catch { /* sin el bloque del curso, el resto de la bienvenida sigue igual */ }
     };
 
     // Quita el modo vitrina y oculta el hero (se llama al detectar aprobación,
@@ -277,6 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pendingInfo = null;
         document.getElementById('dash-body').classList.remove('dash-pending');
         document.getElementById('pending-hero').style.display = 'none';
+        document.getElementById('pending-video').innerHTML = '';   // detiene el video de bienvenida
         document.getElementById('preview-notice').style.display = 'none';
     };
 
@@ -375,6 +411,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const q = query(collection(db, dbPath('course_enrollments')), where('email', '==', email));
 
         onSnapshot(q, (snap) => {
+            if (pendingInfo && !pendingInfo.suspended) {
+                renderPendingCourse(snap.docs.map(d => d.data())
+                    .filter(e => e.type !== 'Lista de Espera')
+                    .sort((a, b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0))[0]);
+            }
+
             container.innerHTML = '';
             if (snap.empty) {
                 container.innerHTML = emptyState('No tienes cursos inscritos aún.', 'fa-graduation-cap');

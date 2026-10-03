@@ -718,6 +718,30 @@ body {
 .pending-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37, 211, 102, 0.5); }
 .pending-cta-hint { color: #999; font-size: 0.85em; margin-top: 10px; }
 
+/* Bienvenida: video propio y lo que le espera en su curso */
+.pending-video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; }
+.pending-course {
+    max-width: 720px; margin: 0 auto 24px; text-align: center;
+    background: #161616; border: 1px solid #2c2c2c; border-radius: 12px; padding: 18px;
+}
+.pending-course h3 { color: #fff; font-size: 1.05em; margin: 0 0 12px; }
+.pending-course h3 span { color: #ffc107; }
+.pending-games { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 0; margin: 0 0 12px; }
+.pending-games li {
+    background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.45); color: #ffe08a;
+    border-radius: 20px; padding: 5px 13px; font-size: 0.86em; font-weight: 600;
+}
+.pending-course-meta { display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: center; color: #aaa; font-size: 0.85em; margin: 0; }
+.pending-course-meta i { color: #ffc107; margin-right: 4px; }
+.pending-pay { max-width: 460px; margin: 0 auto; }
+.pending-accounts {
+    text-align: left; background: #161616; border: 1px solid #333; border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 14px;
+}
+.pending-accounts h4 { color: #ffc107; font-size: 0.95em; margin: 0 0 8px; }
+.pending-accounts p { color: #ccc; font-size: 0.88em; margin: 4px 0; }
+.pending-accounts .pending-holder { color: #ffc107; font-weight: 700; margin-top: 8px; }
+
 /* Subida de la constancia de pago */
 .pending-upload { display: block; }
 .pending-file {

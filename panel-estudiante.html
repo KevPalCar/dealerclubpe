@@ -78,9 +78,25 @@
         <!-- ── HERO DE ALUMNO PENDIENTE (solo si no está aprobado) ── -->
         <section id="pending-hero" class="pending-hero" style="display:none;">
             <div class="pending-hero-head">
-                <span class="pending-tag"><i class="fas fa-hourglass-half"></i> Acceso pendiente</span>
-                <h2 id="pending-title">¡Estás a un paso de tu acceso completo!</h2>
-                <p id="pending-text">Pendiente el voucher de pago para tener el acceso completo al campus virtual.</p>
+                <span class="pending-tag" id="pending-tag"><i class="fas fa-star"></i> Tu lugar está reservado</span>
+                <h2 id="pending-title">¡Bienvenido a DealerClub!</h2>
+                <p id="pending-text">Ya eres parte del campus. Conoce dónde vas a entrenar y activa tu acceso completo cuando estés listo.</p>
+            </div>
+
+            <!-- Video de bienvenida: el de YouTube configurado en el admin o,
+                 si aún no hay, el video de presentación del sitio. -->
+            <div id="pending-video-wrap" class="pending-video-wrap">
+                <div class="pending-video" id="pending-video"></div>
+            </div>
+
+            <!-- Lo que le espera en su curso (se llena con su inscripción) -->
+            <div id="pending-course" class="pending-course" style="display:none;">
+                <h3>En <span id="pending-course-name"></span> vas a dominar</h3>
+                <ul id="pending-games" class="pending-games"></ul>
+                <p class="pending-course-meta">
+                    <span id="pending-schedule"></span>
+                    <span><i class="fas fa-flag-checkered"></i> Empiezas en la siguiente clase tras activar tu acceso</span>
+                </p>
             </div>
 
             <!-- Pasos del onboarding -->
@@ -90,33 +106,40 @@
                     <span class="step-label">Registro creado</span>
                 </li>
                 <li class="step current">
-                    <span class="step-ico"><i class="fas fa-file-invoice-dollar"></i></span>
-                    <span class="step-label">Envía tu voucher de pago</span>
+                    <span class="step-ico"><i class="fas fa-unlock-alt"></i></span>
+                    <span class="step-label">Activa tu acceso</span>
                 </li>
                 <li class="step locked">
                     <span class="step-ico"><i class="fas fa-lock"></i></span>
-                    <span class="step-label">Acceso total al campus</span>
+                    <span class="step-label">Campus completo</span>
                 </li>
             </ol>
 
-            <!-- Video de bienvenida (se inyecta desde Firestore si está configurado) -->
-            <div id="pending-video-wrap" class="pending-video-wrap" style="display:none;">
-                <div class="pending-video" id="pending-video"></div>
-            </div>
-
             <!-- Llamado a la acción -->
             <div class="pending-cta-box">
-                <!-- Subida de la constancia (se oculta mientras hay una en revisión) -->
-                <div id="pending-upload" class="pending-upload">
+                <!-- Activación: el botón despliega las cuentas y la subida de la constancia -->
+                <div id="pending-activate">
                     <p id="pending-rejected" class="pending-rejected" style="display:none;"></p>
-                    <label class="pending-file">
-                        <i class="fas fa-camera"></i> <span id="pending-file-name">Elegir foto de mi constancia</span>
-                        <input type="file" id="pending-file" accept="image/*" hidden>
-                    </label>
-                    <button type="button" id="pending-upload-btn" class="pending-cta pending-cta-gold">
-                        <i class="fas fa-upload"></i> Subir constancia de pago
+                    <button type="button" id="pending-activate-btn" class="pending-cta pending-cta-gold">
+                        <i class="fas fa-unlock-alt"></i> Activar mi acceso completo
                     </button>
-                    <p id="pending-upload-msg" class="pending-cta-hint">Activaremos tu acceso apenas validemos el pago.</p>
+                    <div id="pending-pay" class="pending-pay" style="display:none;">
+                        <div class="pending-accounts">
+                            <h4>Deposita tu mensualidad en:</h4>
+                            <p><strong>Interbank Soles:</strong> 003-200-003008147025-31</p>
+                            <p><strong>CCI:</strong> 200-3008147025</p>
+                            <p><strong>Interbank (Plin):</strong> 929 610 747</p>
+                            <p class="pending-holder">Titular: DealerClub E.I.R.L.</p>
+                        </div>
+                        <label class="pending-file">
+                            <i class="fas fa-camera"></i> <span id="pending-file-name">Elegir foto de mi constancia</span>
+                            <input type="file" id="pending-file" accept="image/*" hidden>
+                        </label>
+                        <button type="button" id="pending-upload-btn" class="pending-cta pending-cta-gold">
+                            <i class="fas fa-upload"></i> Enviar constancia
+                        </button>
+                        <p id="pending-upload-msg" class="pending-cta-hint">Tu campus se abre completo apenas la validemos.</p>
+                    </div>
                 </div>
                 <div id="pending-review" class="pending-review" style="display:none;">
                     <i class="fas fa-hourglass-half"></i>
@@ -126,22 +149,14 @@
                     </div>
                 </div>
                 <a href="#" id="pending-voucher-btn" class="pending-wa-link">
-                    <i class="fab fa-whatsapp"></i> <span id="pending-wa-text">¿Dudas con tu pago? Escríbenos</span>
+                    <i class="fab fa-whatsapp"></i> <span id="pending-wa-text">¿Dudas? Escríbenos</span>
                 </a>
             </div>
-
-            <!-- Ganchos / prueba social -->
-            <ul class="pending-perks">
-                <li><i class="fas fa-graduation-cap"></i> Clases con dealers profesionales en activo</li>
-                <li><i class="fas fa-video"></i> Material y grabaciones disponibles 24/7</li>
-                <li><i class="fas fa-briefcase"></i> Bolsa de empleo y eventos reales</li>
-                <li><i class="fas fa-fire"></i> Cupos limitados por promoción</li>
-            </ul>
         </section>
 
         <!-- Aviso de modo vitrina -->
         <div id="preview-notice" class="preview-notice" style="display:none;">
-            <i class="fas fa-eye"></i> Estás explorando en <strong>modo vista previa</strong>. Desbloquea todo al validar tu pago.
+            <i class="fas fa-eye"></i> Estás explorando en <strong>modo vista previa</strong>. Todo se desbloquea al activar tu acceso.
         </div>
 
         <!-- TAB: MIS CURSOS -->

@@ -25,28 +25,27 @@
             </div>
             <nav class="sidebar-nav">
                 <ul>
-                    <!-- GRUPO: Contenido -->
-                    <li class="nav-group-label"><span><i class="fas fa-layer-group"></i> Contenido</span></li>
-                    <li><a href="#" id="nav-courses" class="active"><i class="fas fa-book"></i> Cursos</a></li>
-                    <li><a href="#" id="nav-professors"><i class="fas fa-chalkboard-teacher"></i> Profesores</a></li>
-                    <li><a href="#" id="nav-alumni"><i class="fas fa-user-graduate"></i> Egresados</a></li>
-                    <li><a href="#" id="nav-dealers"><i class="fas fa-star"></i> Dealers Destacados</a></li>
-                    <li><a href="#" id="nav-tables"><i class="fas fa-dice"></i> Juegos del Casino</a></li>
-                    <li><a href="#" id="nav-services"><i class="fas fa-cogs"></i> Servicios</a></li>
-
-                    <!-- GRUPO: Negocio -->
-                    <li class="nav-group-label"><span><i class="fas fa-briefcase"></i> Negocio</span></li>
-                    <li><a href="#" id="nav-enrollments"><i class="fas fa-file-signature"></i> Inscripciones</a></li>
-                    <li><a href="#" id="nav-referrals"><i class="fas fa-gift"></i> Referidos</a></li>
-                    <li><a href="#" id="nav-requests"><i class="fas fa-clipboard-list"></i> Solicitudes</a></li>
-                    <li><a href="#" id="nav-announcements"><i class="fas fa-sliders-h"></i> Config & Anuncios</a></li>
-
-                    <!-- GRUPO: Campus Virtual -->
-                    <li class="nav-group-label"><span><i class="fas fa-graduation-cap"></i> Campus Virtual</span></li>
-                    <li><a href="#" id="nav-students"><i class="fas fa-users"></i> Alumnos <span id="nav-students-badge" class="nav-badge" style="display:none;"></span></a></li>
+                    <!-- GRUPO: Escuela -->
+                    <li class="nav-group-label"><span><i class="fas fa-graduation-cap"></i> Escuela</span></li>
+                    <li><a href="#" id="nav-students" class="active"><i class="fas fa-users"></i> Alumnos <span id="nav-students-badge" class="nav-badge" style="display:none;"></span></a></li>
                     <li><a href="#" id="nav-materials"><i class="fas fa-photo-video"></i> Material Didáctico</a></li>
                     <li><a href="#" id="nav-tasks"><i class="fas fa-tasks"></i> Asignar Tareas</a></li>
                     <li><a href="#" id="nav-progress"><i class="fas fa-chart-line"></i> Progreso Alumnos</a></li>
+                    <li><a href="#" id="nav-referrals"><i class="fas fa-gift"></i> Referidos</a></li>
+
+                    <!-- GRUPO: Eventos -->
+                    <li class="nav-group-label"><span><i class="fas fa-glass-cheers"></i> Eventos</span></li>
+                    <li><a href="#" id="nav-requests"><i class="fas fa-clipboard-list"></i> Cotizaciones</a></li>
+                    <li><a href="#" id="nav-tables"><i class="fas fa-dice"></i> Juegos del Casino</a></li>
+                    <li><a href="#" id="nav-dealers"><i class="fas fa-star"></i> Dealers Destacados</a></li>
+                    <li><a href="#" id="nav-services"><i class="fas fa-cogs"></i> Servicios</a></li>
+
+                    <!-- GRUPO: Sitio web -->
+                    <li class="nav-group-label"><span><i class="fas fa-globe"></i> Sitio web</span></li>
+                    <li><a href="#" id="nav-courses"><i class="fas fa-book"></i> Cursos</a></li>
+                    <li><a href="#" id="nav-professors"><i class="fas fa-chalkboard-teacher"></i> Profesores</a></li>
+                    <li><a href="#" id="nav-alumni"><i class="fas fa-user-graduate"></i> Egresados</a></li>
+                    <li><a href="#" id="nav-announcements"><i class="fas fa-sliders-h"></i> Config & Anuncios</a></li>
 
                     <!-- Separador + Logout -->
                     <li class="nav-separator"></li>
@@ -58,7 +57,7 @@
         <!-- ── CONTENIDO PRINCIPAL ───────────────────────────── -->
         <main class="admin-content">
             <header class="admin-header">
-                <h1 id="admin-main-title">Gestión de Cursos</h1>
+                <h1 id="admin-main-title">Alumnos</h1>
                 <div class="user-info" id="admin-user-info">
                     <span>Cargando...</span>
                     <i class="fas fa-user-circle"></i>
@@ -66,7 +65,7 @@
             </header>
 
             <!-- ═══════════════ CURSOS ═══════════════ -->
-            <section id="courses-management" class="content-section active">
+            <section id="courses-management" class="content-section">
                 <div class="section-header">
                     <h2>Listado de Cursos</h2>
                     <button class="btn btn-primary" id="add-course-btn"><i class="fas fa-plus"></i> Añadir Curso</button>
@@ -242,38 +241,10 @@
             </section>
 
             <!-- ═══════════════ INSCRIPCIONES ═══════════════ -->
-            <section id="enrollments-management" class="content-section">
-                <div class="section-header">
-                    <h2>Listado de Inscripciones</h2>
-                </div>
-                <div class="table-toolbar">
-                    <input type="text" class="table-search" id="search-enrollments" placeholder="Buscar por alumno, curso o estado...">
-                    <span class="results-count" id="count-enrollments"></span>
-                </div>
-                <div class="admin-table-container">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th><th>Curso</th><th>Estudiante</th><th>Contacto</th>
-                                <th>Voucher</th><th>Estado</th><th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="enrollments-table-body">
-                            <tr><td colspan="7" class="spinner-cell"><div class="spinner"></div></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="pagination-bar" id="pagination-enrollments" style="display:none">
-                    <button class="btn-page btn-prev-page" id="prev-enrollments"><i class="fas fa-chevron-left"></i></button>
-                    <span class="page-info" id="page-info-enrollments">1 / 1</span>
-                    <button class="btn-page btn-next-page" id="next-enrollments"><i class="fas fa-chevron-right"></i></button>
-                </div>
-            </section>
-
             <!-- ═══════════════ SOLICITUDES ═══════════════ -->
             <section id="requests-management" class="content-section">
                 <div class="section-header">
-                    <h2>Solicitudes de Contacto</h2>
+                    <h2>Cotizaciones de eventos</h2>
                 </div>
                 <div class="table-toolbar requests-toolbar">
                     <input type="text" class="table-search" id="search-requests" placeholder="Buscar por nombre, email o asunto...">
@@ -523,7 +494,7 @@
             </section>
 
             <!-- ═══════════════ ALUMNOS ═══════════════ -->
-            <section id="students-management" class="content-section">
+            <section id="students-management" class="content-section active">
                 <div class="section-header">
                     <h2>Alumnos</h2>
                 </div>
@@ -538,6 +509,7 @@
                         <option value="pending">Pendientes</option>
                         <option value="active">Activos</option>
                         <option value="suspended">Suspendidos</option>
+                        <option value="waitlist">En lista de espera</option>
                     </select>
                     <select id="filter-student-modality" class="filter-select">
                         <option value="">Todas las modalidades</option>
@@ -876,6 +848,10 @@
                 <div class="form-group" id="studentDaysGroup" style="display:none;">
                     <label>Días de clase de este alumno:</label>
                     <div class="day-picks" id="studentDays"></div>
+                </div>
+                <div class="form-group" id="studentCommentsGroup" style="display:none;">
+                    <label>Comentario al inscribirse:</label>
+                    <p id="studentComments" class="student-comments"></p>
                 </div>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar ficha</button>
                 <div id="studentFormMessage" class="form-message" style="display:none;"></div>

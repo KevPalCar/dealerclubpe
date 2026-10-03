@@ -744,3 +744,4 @@ button.att-cell:hover { border-color: #ffc107; }
 .day-pick.on { background: #ffc107; border-color: #ffc107; color: #1a1405; }
 .image-view-content { max-width: 720px; text-align: center; }
 .image-view-content img { max-width: 100%; max-height: 78vh; border-radius: 8px; }
+.student-comments { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 10px; color: #ccc; font-size: 0.9em; margin: 0; }
