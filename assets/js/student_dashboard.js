@@ -186,6 +186,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return { kind: 'link', src: url };
     };
 
+    // Los navegadores solo permiten la reproducción automática SIN sonido.
+    // El video arranca en silencio y el alumno activa el audio con un toque.
+    // YouTube, Vimeo y Facebook aceptan la orden por parámetro; Instagram
+    // y TikTok no la admiten y requieren que el alumno pulse reproducir.
+    const withAutoplay = (src) => {
+        const add = (params) => src + (src.includes('?') ? '&' : '?') + params;
+        if (src.includes('youtube.com/embed/'))  return add('autoplay=1&mute=1&playsinline=1&rel=0');
+        if (src.includes('player.vimeo.com/'))   return add('autoplay=1&muted=1');
+        if (src.includes('facebook.com/plugins')) return add('autoplay=1&mute=1');
+        return src;
+    };
+
     const buildVideoEl = (v) => {
         let el;
         if (v.kind === 'iframe') {
@@ -194,12 +206,15 @@ document.addEventListener('DOMContentLoaded', () => {
             el.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
             el.allowFullscreen = true;
             el.setAttribute('frameborder', '0');
-            el.src = v.src;
+            el.src = withAutoplay(v.src);
         } else if (v.kind === 'video') {
             el = document.createElement('video');
             el.controls = true;
             el.playsInline = true;
-            el.preload = 'none';
+            el.muted = true;
+            el.autoplay = true;
+            el.loop = true;
+            el.preload = 'auto';
             if (v.poster) el.poster = v.poster;
             el.src = v.src;
         } else {
@@ -245,7 +260,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (box.dataset.src !== video.src) {        // evita recargar el reproductor
                 box.dataset.src = video.src;
                 box.className = `pending-video${video.vertical ? ' is-vertical' : ''}${video.kind === 'link' ? ' is-link' : ''}`;
-                box.replaceChildren(buildVideoEl(video));
+                const el = buildVideoEl(video);
+                box.replaceChildren(el);
+
+                // Sonido: botón propio para un archivo de video; aviso para los incrustados.
+                const soundBtn  = document.getElementById('pending-sound-btn');
+                const soundHint = document.getElementById('pending-sound-hint');
+                soundBtn.style.display  = video.kind === 'video'  ? 'inline-flex' : 'none';
+                soundHint.style.display = video.kind === 'iframe' ? 'block' : 'none';
+                if (video.kind === 'video') {
+                    soundBtn.onclick = () => { el.muted = false; el.play(); soundBtn.style.display = 'none'; };
+                    el.addEventListener('volumechange', () => { if (!el.muted) soundBtn.style.display = 'none'; });
+                }
             }
         }
 
@@ -356,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pendingInfo = null;
         document.getElementById('dash-body').classList.remove('dash-pending');
         document.getElementById('pending-hero').style.display = 'none';
-        document.getElementById('pending-video').innerHTML = '';   // detiene el video de bienvenida
+        document.getElementById('pending-video').replaceChildren();   // detiene el video de bienvenida
         document.getElementById('preview-notice').style.display = 'none';
     };
 

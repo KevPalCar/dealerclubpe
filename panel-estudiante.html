@@ -92,33 +92,9 @@
                  si aún no hay, el video de presentación del sitio. -->
             <div id="pending-video-wrap" class="pending-video-wrap">
                 <div class="pending-video" id="pending-video"></div>
+                <button type="button" id="pending-sound-btn" class="pending-sound" style="display:none;"><i class="fas fa-volume-up"></i> Activar sonido</button>
+                <p id="pending-sound-hint" class="pending-sound-hint" style="display:none;">Toca el video para activar el sonido.</p>
             </div>
-
-            <!-- Lo que le espera en su curso (se llena con su inscripción) -->
-            <div id="pending-course" class="pending-course" style="display:none;">
-                <h3>En <span id="pending-course-name"></span> vas a dominar</h3>
-                <ul id="pending-games" class="pending-games"></ul>
-                <p class="pending-course-meta">
-                    <span id="pending-schedule"></span>
-                    <span><i class="fas fa-flag-checkered"></i> Empiezas en la siguiente clase tras activar tu acceso</span>
-                </p>
-            </div>
-
-            <!-- Pasos del onboarding -->
-            <ol class="pending-steps">
-                <li class="step done">
-                    <span class="step-ico"><i class="fas fa-check"></i></span>
-                    <span class="step-label">Registro creado</span>
-                </li>
-                <li class="step current">
-                    <span class="step-ico"><i class="fas fa-unlock-alt"></i></span>
-                    <span class="step-label">Activa tu acceso</span>
-                </li>
-                <li class="step locked">
-                    <span class="step-ico"><i class="fas fa-lock"></i></span>
-                    <span class="step-label">Campus completo</span>
-                </li>
-            </ol>
 
             <!-- Llamado a la acción -->
             <div class="pending-cta-box">
@@ -157,6 +133,38 @@
                     <i class="fab fa-whatsapp"></i> <span id="pending-wa-text">¿Dudas? Escríbenos</span>
                 </a>
             </div>
+            <!-- Lo que le espera en su curso (se llena con su inscripción) -->
+            <div id="pending-course" class="pending-course" style="display:none;">
+                <h3>En <span id="pending-course-name"></span> vas a dominar</h3>
+                <ul id="pending-games" class="pending-games"></ul>
+                <p class="pending-course-meta">
+                    <span id="pending-schedule"></span>
+                    <span><i class="fas fa-flag-checkered"></i> Empiezas en la siguiente clase tras activar tu acceso</span>
+                </p>
+            </div>
+
+            <!-- Pasos del onboarding -->
+            <ol class="pending-steps">
+                <li class="step done">
+                    <span class="step-ico"><i class="fas fa-check"></i></span>
+                    <span class="step-label">Registro creado</span>
+                </li>
+                <li class="step current">
+                    <span class="step-ico"><i class="fas fa-unlock-alt"></i></span>
+                    <span class="step-label">Activa tu acceso</span>
+                </li>
+                <li class="step locked">
+                    <span class="step-ico"><i class="fas fa-lock"></i></span>
+                    <span class="step-label">Campus completo</span>
+                </li>
+            </ol>
+
+            <!-- Ventajas (confirmadas por la escuela) -->
+            <ul class="pending-perks">
+                <li><i class="fas fa-briefcase"></i> Bolsa de empleo y eventos reales</li>
+                <li><i class="fas fa-photo-video"></i> Material didáctico y audiovisual</li>
+                <li><i class="fas fa-user-friends"></i> Cupos limitados</li>
+            </ul>
         </section>
 
         <!-- Aviso de modo vitrina -->
