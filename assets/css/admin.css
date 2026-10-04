@@ -941,3 +941,22 @@ button.att-cell:hover { border-color: #ffc107; }
     .qe-adj-grid { grid-template-columns: 1fr; }
     .qe-foot { position: sticky; bottom: 0; }
 }
+
+/* ── BOT DE WHATSAPP: seguimiento, notas e informes ──────────── */
+.bot-grid { display: grid; grid-template-columns: 5fr 7fr; gap: 18px; align-items: start; }
+.bot-card { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 18px; }
+.bot-card h3 { color: #ffc107; font-size: 1em; margin: 0 0 8px; }
+.insight { border: 1px solid #333; border-radius: 10px; padding: 14px; margin-bottom: 12px; background: #141414; }
+.insight-head { display: flex; justify-content: space-between; gap: 10px; color: #999; font-size: 0.8em; margin-bottom: 8px; }
+.insight-head b { color: #fff; }
+.insight-funnel { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.insight-funnel span { background: #1f1f1f; border: 1px solid #333; border-radius: 8px; padding: 5px 9px; font-size: 0.78em; color: #bbb; }
+.insight-funnel b { color: #ffc107; font-size: 1.15em; margin-right: 4px; }
+.insight p { color: #ddd; font-size: 0.9em; margin: 0 0 10px; }
+.insight h4 { color: #ffc107; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.5px; margin: 10px 0 4px; }
+.insight ul { margin: 0; padding-left: 18px; color: #ccc; font-size: 0.86em; }
+.insight-suggestion { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; border-top: 1px solid #2a2a2a; padding: 8px 0; }
+.insight-suggestion strong { display: block; color: #fff; font-size: 0.88em; }
+.insight-suggestion span { color: #bbb; font-size: 0.84em; }
+.insight-suggestion button { flex: 0 0 auto; }
+@media (max-width: 980px) { .bot-grid { grid-template-columns: 1fr; } }

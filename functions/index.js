@@ -9,6 +9,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { onRequest } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const logger = require("firebase-functions/logger");
 
@@ -457,6 +458,32 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
 // Helpers expuestos solo para pruebas locales (no afecta a producción).
 exports._test = { parseIncoming, isValidSignature, inferirBrochure, anunciaEntrega };
 
+// ---- Tareas programadas ------------------------------------
+// Seguimiento a leads en silencio: revisa cada 30 min, solo escribe dentro
+// del horario y de la ventana gratuita de 24 h (ver lib/followup.js).
+exports.followUps = onSchedule(
+  { schedule: "every 30 minutes", timeZone: "America/Lima", secrets: cfg.ALL_SECRETS },
+  async () => {
+    const r = await require("./lib/followup").run();
+    logger.info("Seguimientos", r);
+  }
+);
+
+// Informe semanal de chats (lunes 8:00, hora de Lima) + aviso a Kevin.
+exports.weeklyInsights = onSchedule(
+  { schedule: "every monday 08:00", timeZone: "America/Lima", secrets: cfg.ALL_SECRETS },
+  async () => {
+    const informe = await require("./lib/insights").run({ days: 7 });
+    await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
+      title: "Informe semanal del bot listo",
+      message: `${informe.embudo.conversaciones} conversaciones esta semana. ${informe.resumen}`,
+      click: "https://dealerclubpe.com/admin",
+      priority: "default",
+      tags: "bar_chart",
+    });
+  }
+);
+
 // Funciones del panel admin (callable).
 const adminFns = require("./lib/admin");
 exports.adminListConversations = adminFns.adminListConversations;
@@ -466,3 +493,4 @@ exports.adminSetTakeover = adminFns.adminSetTakeover;
 exports.adminGetMedia = adminFns.adminGetMedia;
 exports.adminSendMedia = adminFns.adminSendMedia;
 exports.adminStartChat = adminFns.adminStartChat;
+exports.adminAnalyzeChats = adminFns.adminAnalyzeChats;

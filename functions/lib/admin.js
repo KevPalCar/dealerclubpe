@@ -149,7 +149,16 @@ const adminSetTakeover = onCall(async (request) => {
   return { ok: true, value };
 });
 
+// Informe de chats a pedido (el semanal corre solo los lunes).
+const adminAnalyzeChats = onCall({ secrets: cfg.ALL_SECRETS, timeoutSeconds: 120 }, async (request) => {
+  assertAdmin(request);
+  const days = Math.min(30, Math.max(1, Number(request.data && request.data.days) || 7));
+  const informe = await require("./insights").run({ days });
+  return { id: informe.id, conversaciones: informe.embudo.conversaciones };
+});
+
 module.exports = {
+  adminAnalyzeChats,
   adminListConversations,
   adminGetConversation,
   adminSendReply,

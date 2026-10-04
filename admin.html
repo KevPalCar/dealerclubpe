@@ -41,6 +41,10 @@
                     <li><a href="#" id="nav-dealers"><i class="fas fa-star"></i> Dealers Destacados</a></li>
                     <li><a href="#" id="nav-services"><i class="fas fa-cogs"></i> Servicios</a></li>
 
+                    <!-- GRUPO: WhatsApp -->
+                    <li class="nav-group-label"><span><i class="fab fa-whatsapp"></i> WhatsApp</span></li>
+                    <li><a href="#" id="nav-bot"><i class="fas fa-robot"></i> Bot y seguimiento</a></li>
+
                     <!-- GRUPO: Sitio web -->
                     <li class="nav-group-label"><span><i class="fas fa-globe"></i> Sitio web</span></li>
                     <li><a href="#" id="nav-courses"><i class="fas fa-book"></i> Cursos</a></li>
@@ -617,6 +621,41 @@
                     <button class="btn-page btn-prev-page" id="prev-students"><i class="fas fa-chevron-left"></i></button>
                     <span class="page-info" id="page-info-students">1 / 1</span>
                     <button class="btn-page btn-next-page" id="next-students"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </section>
+
+            <!-- ═══════════════ BOT DE WHATSAPP ═══════════════ -->
+            <section id="bot-management" class="content-section">
+                <div class="section-header">
+                    <h2>Bot de WhatsApp</h2>
+                    <button class="btn btn-primary" id="bot-analyze-btn"><i class="fas fa-chart-bar"></i> Analizar chats ahora</button>
+                </div>
+                <div class="bot-grid">
+                    <form id="botSettingsForm" class="bot-card">
+                        <h3>Seguimiento automático</h3>
+                        <p class="activate-note">Si un cliente deja de responder, el bot le escribe una sola vez para retomar la conversación, con un dato útil y una pregunta fácil. Solo dentro de las 24 horas desde su último mensaje, que es cuando WhatsApp no cobra.</p>
+                        <label class="qe-check" style="margin-top:0;"><input type="checkbox" id="botFollowEnabled"> Seguimiento activado</label>
+                        <div class="qe-grid qe-3" style="margin-top:10px;">
+                            <label>Horas de silencio antes de escribir <input type="number" id="botFollowHours" min="1" max="20" step="1"></label>
+                            <label>Enviar desde las (hora) <input type="number" id="botFollowFrom" min="0" max="23" step="1"></label>
+                            <label>Enviar hasta las (hora) <input type="number" id="botFollowTo" min="1" max="24" step="1"></label>
+                        </div>
+
+                        <h3 style="margin-top:22px;">Notas del bot</h3>
+                        <p class="activate-note">Reglas que el bot aplica además de sus instrucciones, una por línea. Puedes escribirlas tú o agregarlas desde las sugerencias de un informe. El bot las toma en un minuto.</p>
+                        <textarea id="botNotes" rows="9" class="qe-notes" placeholder="Ej.: Si preguntan por estacionamiento, di que hay cochera pública a media cuadra."></textarea>
+
+                        <div class="qe-actions" style="margin-left:0;">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
+                            <div id="botSettingsMessage" class="form-message" style="display:none;"></div>
+                        </div>
+                    </form>
+
+                    <div class="bot-card">
+                        <h3>Informes de chats</h3>
+                        <p class="activate-note">Cada lunes el bot revisa las conversaciones de la semana: cuántos llegaron, dónde se quedaron y qué mejorar. Tú decides qué sugerencia pasa a sus notas.</p>
+                        <div id="bot-insights"><div class="spinner"></div></div>
+                    </div>
                 </div>
             </section>
 

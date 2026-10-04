@@ -11,6 +11,7 @@ const path = require("path");
 const logger = require("firebase-functions/logger");
 const { LLM_API_KEY, LLM_PROVIDER, LLM_MODEL } = require("./config");
 const { getCatalogoTexto } = require("./catalog");
+const { getBotSettings } = require("./botsettings");
 
 let SYSTEM_PROMPT = null;
 function getSystemPrompt() {
@@ -22,7 +23,8 @@ function getSystemPrompt() {
 }
 
 // System prompt + catálogo en vivo + contexto temporal (Lima).
-async function buildSystem() {
+// `extra`: instrucciones puntuales para un mensaje (p. ej. el modo seguimiento).
+async function buildSystem(extra = "") {
   const fecha = new Date().toLocaleDateString("es-PE", {
     timeZone: "America/Lima",
     weekday: "long",
@@ -32,9 +34,15 @@ async function buildSystem() {
   });
   // Precios/horarios reales, leídos del mismo sitio que edita el admin.
   const catalogo = await getCatalogoTexto();
+  // Aprendizajes que Kevin aprobó desde el admin tras revisar chats reales.
+  const { notes } = await getBotSettings();
   return (
     getSystemPrompt() +
     (catalogo ? `\n\n${catalogo}` : "") +
+    (notes
+      ? `\n\n## Aprendizajes aprobados (ajustes que mandan sobre el estilo general)\n${notes}`
+      : "") +
+    (extra ? `\n\n${extra.trim()}` : "") +
     `\n\n## Contexto temporal\nHoy es ${fecha} (hora de Lima). Es solo referencia; NO propongas días ni fechas concretas al cliente.`
   );
 }
@@ -42,13 +50,13 @@ async function buildSystem() {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // history: array de { role: "user"|"assistant", text }
-async function generateReply(history) {
+async function generateReply(history, { extra = "" } = {}) {
   const provider = (LLM_PROVIDER.value() || "gemini").toLowerCase();
   const apiKey = LLM_API_KEY.value();
   if (!apiKey) throw new Error("Falta LLM_API_KEY");
 
   if (provider === "claude") {
-    return withRetries(() => callClaude(history, apiKey));
+    return withRetries(() => callClaude(history, apiKey, extra));
   }
 
   // Gemini: cadena de modelos. Si el primero se satura (503) o topa cuota
@@ -58,7 +66,7 @@ async function generateReply(history) {
   let lastErr;
   for (const model of modelos) {
     try {
-      return await withRetries(() => callGemini(history, apiKey, model));
+      return await withRetries(() => callGemini(history, apiKey, model, extra));
     } catch (err) {
       lastErr = err;
       const transitorio = /\b(429|503)\b/.test(err.message || "");
@@ -85,7 +93,7 @@ async function withRetries(fn) {
 }
 
 // --- Gemini (Google AI Studio) ------------------------------
-async function callGemini(history, apiKey, model) {
+async function callGemini(history, apiKey, model, extra) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const contents = history.map((m) => ({
@@ -94,7 +102,7 @@ async function callGemini(history, apiKey, model) {
   }));
 
   const payload = {
-    systemInstruction: { parts: [{ text: await buildSystem() }] },
+    systemInstruction: { parts: [{ text: await buildSystem(extra) }] },
     contents,
     generationConfig: {
       temperature: 0.7,
@@ -120,7 +128,7 @@ async function callGemini(history, apiKey, model) {
 }
 
 // --- Claude (Anthropic) -------------------------------------
-async function callClaude(history, apiKey) {
+async function callClaude(history, apiKey, extra) {
   const model = LLM_MODEL.value() || "claude-haiku-4-5-20251001";
   const url = "https://api.anthropic.com/v1/messages";
 
@@ -133,7 +141,7 @@ async function callClaude(history, apiKey) {
     model,
     max_tokens: 600,
     temperature: 0.7,
-    system: await buildSystem(),
+    system: await buildSystem(extra),
     messages,
   };
 
@@ -155,4 +163,43 @@ async function callClaude(history, apiKey) {
   return (text || "").trim();
 }
 
-module.exports = { generateReply, getSystemPrompt };
+// --- Análisis (no es una respuesta al cliente) ----------------
+// Pide al modelo un JSON a partir de un encargo y un texto. Lo usa el
+// informe semanal de chats. Devuelve el objeto, o lanza si no es JSON.
+async function generateJson(encargo, texto) {
+  const apiKey = LLM_API_KEY.value();
+  if (!apiKey) throw new Error("Falta LLM_API_KEY");
+  let lastErr;
+  for (const model of ["gemini-2.5-flash", "gemini-2.5-flash-lite"]) {
+    try {
+      return await withRetries(async () => {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: encargo }] },
+            contents: [{ role: "user", parts: [{ text: texto }] }],
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 4000,
+              responseMimeType: "application/json",
+              thinkingConfig: { thinkingBudget: 0 },
+            },
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          logger.error("Error Gemini (análisis)", { status: res.status, data });
+          throw new Error(`Gemini failed: ${res.status}`);
+        }
+        return JSON.parse(data?.candidates?.[0]?.content?.parts?.[0]?.text || "");
+      });
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+}
+
+module.exports = { generateReply, generateJson, getSystemPrompt };
