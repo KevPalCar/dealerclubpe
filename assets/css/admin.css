@@ -960,3 +960,35 @@ button.att-cell:hover { border-color: #ffc107; }
 .insight-suggestion span { color: #bbb; font-size: 0.84em; }
 .insight-suggestion button { flex: 0 0 auto; }
 @media (max-width: 980px) { .bot-grid { grid-template-columns: 1fr; } }
+
+/* ── BROCHURES: editor por páginas y bloques ─────────────────── */
+.bro-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.bro-actions a.btn { text-decoration: none; }
+.bro-layout { display: grid; grid-template-columns: 250px 1fr; gap: 18px; align-items: start; }
+.bro-pages { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.bro-page-btn {
+    text-align: left; background: #1a1a1a; border: 1px solid #333; color: #ccc; border-radius: 8px;
+    padding: 9px 12px; cursor: pointer; font-size: 0.88em;
+}
+.bro-page-btn b { color: #777; margin-right: 6px; }
+.bro-page-btn.active { border-color: #ffc107; color: #ffc107; }
+.bro-pdf ol { color: #aaa; font-size: 0.8em; padding-left: 18px; margin: 0 0 12px; }
+.bro-pdf label { cursor: pointer; }
+.bro-editor label { display: flex; flex-direction: column; gap: 3px; color: #999; font-size: 0.76em; margin-bottom: 8px; }
+.bro-editor input[type="text"], .bro-editor textarea {
+    background: #121212; border: 1px solid #444; color: #eee; border-radius: 6px; padding: 7px 9px;
+    font-size: 13.5px; font-family: inherit; width: 100%; box-sizing: border-box; margin: 0;
+}
+.bro-editor textarea { resize: vertical; line-height: 1.4; }
+.bro-block { border: 1px solid #333; border-radius: 10px; padding: 12px 14px; margin-top: 14px; background: #141414; }
+.bro-block.is-hidden { opacity: 0.5; }
+.bro-block-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.bro-block-head strong { color: #ffc107; font-size: 0.82em; text-transform: uppercase; letter-spacing: 0.5px; }
+.bro-block-head label { flex-direction: row; align-items: center; gap: 6px; margin: 0; cursor: pointer; }
+.bro-item { display: grid; grid-template-columns: 1fr 30px; gap: 8px; border-top: 1px solid #2a2a2a; padding-top: 10px; margin-top: 4px; }
+.bro-item-fields { display: grid; grid-template-columns: 1fr 2fr; gap: 0 10px; }
+.bro-item-fields.one { grid-template-columns: 1fr; }
+.bro-img { display: flex; align-items: center; gap: 14px; }
+.bro-img img { width: 180px; border-radius: 8px; border: 1px solid #333; background: #000; }
+.bro-hint { color: #777; font-size: 0.76em; margin: -4px 0 8px; }
+@media (max-width: 980px) { .bro-layout { grid-template-columns: 1fr; } .bro-item-fields { grid-template-columns: 1fr; } }

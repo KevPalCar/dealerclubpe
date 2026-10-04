@@ -5,6 +5,9 @@
 // Así ningún PDF reenviado meses más tarde se lee como definitivo.
 // ============================================================
 const path = require("path");
+const fs = require("fs");
+const logger = require("firebase-functions/logger");
+const { db, BASE } = require("./botsettings");
 
 function fechaLima() {
   return new Date().toLocaleDateString("es-PE", {
@@ -40,4 +43,30 @@ const BROCHURES = {
   },
 };
 
-module.exports = { BROCHURES };
+// PDF vigente de un brochure. Si Kevin subió uno desde el admin (queda en
+// Firestore troceado en brochure_files/{tipo}_{n}), se usa ese; si no, o si
+// la lectura falla, el archivo original que viaja con el bot.
+const cachePdf = {}; // tipo -> { stamp, buffer }
+async function getBrochureBuffer(tipo) {
+  const local = () => fs.readFileSync(BROCHURES[tipo].file);
+  try {
+    const meta = await db.doc(`${BASE}/brochure_files/${tipo}`).get();
+    if (!meta.exists || !meta.data().chunks) return local();
+    const { chunks, updatedAt } = meta.data();
+    const stamp = updatedAt && updatedAt.toMillis ? updatedAt.toMillis() : 0;
+    if (cachePdf[tipo] && cachePdf[tipo].stamp === stamp) return cachePdf[tipo].buffer;
+
+    const refs = Array.from({ length: chunks }, (_, i) => db.doc(`${BASE}/brochure_files/${tipo}_${i}`));
+    const partes = await db.getAll(...refs);
+    if (partes.some((p) => !p.exists)) throw new Error("faltan partes del PDF");
+    const buffer = Buffer.from(partes.map((p) => p.data().data).join(""), "base64");
+    if (buffer.slice(0, 4).toString() !== "%PDF") throw new Error("el archivo subido no es un PDF");
+    cachePdf[tipo] = { stamp, buffer };
+    return buffer;
+  } catch (err) {
+    logger.error("No se pudo leer el PDF del admin; se usa el original", { tipo, error: err.message });
+    return local();
+  }
+}
+
+module.exports = { BROCHURES, getBrochureBuffer };

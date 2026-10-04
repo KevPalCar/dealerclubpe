@@ -1,0 +1,152 @@
+/* ============================================================
+   BROCHURE — página pública y PDF
+   Fondo negro, acentos dorados y tarjetas oscuras, como los
+   brochures de DealerClub. En pantalla las páginas van una bajo
+   otra; al imprimir, cada una ocupa una hoja A4 completa.
+   ============================================================ */
+:root {
+    --bp-bg: #0b0b0b;
+    --bp-panel: #15140f;
+    --bp-line: #2b281d;
+    --bp-text: #f3efe6;
+    --bp-muted: #a9a59a;
+    --bp-gold: #fcc419;
+}
+
+* { box-sizing: border-box; }
+body {
+    margin: 0; background: #1c1c1c; color: var(--bp-text);
+    font-family: 'Montserrat', Arial, sans-serif; font-size: 15px; line-height: 1.55;
+}
+
+/* Barra de acciones */
+.bp-bar {
+    position: sticky; top: 0; z-index: 5; background: rgba(11, 11, 11, .94); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    padding: 10px 16px; border-bottom: 1px solid var(--bp-line);
+}
+.bp-bar > div { display: flex; gap: 8px; flex-wrap: wrap; }
+.bp-back { color: var(--bp-muted); text-decoration: none; font-size: 13px; }
+.bp-btn {
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer; text-decoration: none;
+    background: #fff; color: #161616; border: 0; border-radius: 8px; padding: 9px 14px;
+    font: inherit; font-size: 13px; font-weight: 700;
+}
+.bp-btn-gold { background: var(--bp-gold); }
+.bp-status { text-align: center; color: #ddd; margin: 90px 16px; }
+
+/* Páginas */
+.bp-root { max-width: 900px; margin: 18px auto 40px; padding: 0 10px; }
+.bp-page {
+    background: var(--bp-bg); padding: 44px 46px 26px; margin-bottom: 18px;
+    display: flex; flex-direction: column; min-height: 640px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
+}
+.bp-body { flex: 1 1 auto; }
+.bp-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 34px; }
+.bp-brand img { height: 34px; }
+.bp-brand strong { font-size: 22px; font-weight: 800; letter-spacing: 1px; color: #fff; }
+.bp-brand em { font-style: normal; color: var(--bp-gold); }
+.bp-brand span { margin-left: auto; color: var(--bp-muted); font-size: 11px; letter-spacing: 4px; }
+
+.bp-kicker { color: var(--bp-gold); font-size: 12px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; margin: 0 0 10px; }
+.bp-title { font-size: 40px; line-height: 1.12; font-weight: 800; margin: 0 0 18px; color: #fff; max-width: 620px; }
+.bp-title::after { content: ''; display: block; width: 54px; height: 4px; background: var(--bp-gold); margin-top: 16px; }
+.bp-cover .bp-title { font-size: 52px; }
+.bp-cover .bp-title::after { display: none; }
+.bp-hl { color: var(--bp-gold); }
+.bp-lead { color: var(--bp-muted); font-size: 16px; max-width: 700px; margin: 0 0 22px; }
+.bp-tagline { margin: 0 0 20px; letter-spacing: 2px; font-size: 14px; }
+.bp-tagline b { color: var(--bp-gold); }
+.bp-tagline i { color: #ddd; }
+.bp-subtitle { color: var(--bp-gold); font-size: 12px; letter-spacing: 4px; text-transform: uppercase; margin: 22px 0 12px; }
+
+.bp-image { margin: 0 0 20px; }
+.bp-image img { display: block; width: 100%; border-radius: 12px; }
+
+.bp-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.bp-card { background: var(--bp-panel); border: 1px solid var(--bp-line); border-radius: 12px; padding: 16px 18px; }
+.bp-card strong, .bp-check strong, .bp-steps strong { display: block; color: #fff; font-size: 15px; margin-bottom: 3px; }
+.bp-card p, .bp-check p, .bp-steps p, .bp-game p { margin: 0; color: var(--bp-muted); font-size: 13.5px; }
+
+.bp-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 26px; margin-bottom: 22px; }
+.bp-check { display: flex; gap: 12px; }
+.bp-check > span {
+    flex: 0 0 24px; height: 24px; border-radius: 50%; background: #2a2412; color: var(--bp-gold);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; margin-top: 2px;
+}
+
+.bp-steps { list-style: none; padding: 0; margin: 0 0 22px; display: flex; flex-direction: column; gap: 10px; }
+.bp-steps li { display: flex; gap: 16px; align-items: center; background: var(--bp-panel); border: 1px solid var(--bp-line); border-radius: 12px; padding: 12px 18px; }
+.bp-steps li > span { color: var(--bp-gold); font-size: 24px; font-weight: 800; flex: 0 0 26px; text-align: center; }
+
+.bp-games { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+.bp-game { background: var(--bp-panel); border: 1px solid var(--bp-line); border-radius: 14px; padding: 20px 22px; }
+.bp-game h3 { margin: 0; font-size: 24px; color: #fff; }
+.bp-game em { display: block; color: var(--bp-gold); font-style: normal; font-weight: 700; font-size: 13.5px; margin: 2px 0 8px; }
+.bp-game p { margin-bottom: 12px; }
+
+.bp-chips { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0; }
+.bp-chips li { border: 1px solid #6b5712; background: #1d1a0d; color: var(--bp-gold); border-radius: 20px; padding: 5px 13px; font-size: 12.5px; font-weight: 600; }
+.bp-chips-box { border: 1px solid #4a3d10; border-radius: 14px; padding: 18px 20px; margin-bottom: 20px; }
+.bp-chips-box h3 { margin: 0 0 12px; font-size: 16px; color: #fff; }
+.bp-foot { color: var(--bp-muted); font-size: 12.5px; margin: 12px 0 0; }
+
+.bp-note { background: #17150d; border-left: 4px solid var(--bp-gold); padding: 13px 18px; margin: 0 0 20px; color: var(--bp-muted); font-size: 13.5px; }
+.bp-note strong { color: var(--bp-gold); }
+
+.bp-banner { display: flex; align-items: center; gap: 20px; background: var(--bp-gold); color: #161616; border-radius: 14px; padding: 18px 22px; margin-bottom: 20px; }
+.bp-banner > span { font-size: 26px; font-weight: 800; padding-right: 20px; border-right: 2px solid rgba(0, 0, 0, .2); white-space: nowrap; }
+.bp-banner strong { font-size: 17px; }
+.bp-banner p { margin: 3px 0 0; font-size: 13.5px; }
+
+.bp-pagefoot {
+    display: flex; justify-content: space-between; gap: 12px; flex: 0 0 auto;
+    border-top: 1px solid var(--bp-line); margin-top: 18px; padding-top: 12px; color: var(--bp-muted); font-size: 11.5px;
+}
+.bp-pagefoot b { color: #fff; }
+
+@media (max-width: 680px) {
+    .bp-page { padding: 26px 20px 18px; min-height: 0; }
+    .bp-title { font-size: 28px; }
+    .bp-cover .bp-title { font-size: 34px; }
+    .bp-cards, .bp-checks { grid-template-columns: 1fr; }
+    .bp-banner { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .bp-banner > span { border-right: 0; padding-right: 0; }
+}
+
+/* PDF: una hoja A4 por página del brochure, a sangre (sin márgenes) */
+@page { size: A4; margin: 0; }
+@media print {
+    body { background: var(--bp-bg); font-size: 11.5px; }
+    .bp-bar, .bp-status { display: none !important; }
+    .bp-root { max-width: none; margin: 0; padding: 0; }
+    .bp-page, .bp-card, .bp-game, .bp-steps li, .bp-note, .bp-banner, .bp-chips li, .bp-check > span, .bp-chips-box {
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .bp-page {
+        width: 210mm; height: 297mm; min-height: 0; margin: 0; padding: 14mm 15mm 9mm;
+        box-shadow: none; break-after: page; overflow: hidden;
+    }
+    .bp-page:last-child { break-after: auto; }
+    .bp-title { font-size: 30px; margin-bottom: 12px; }
+    .bp-title::after { margin-top: 10px; }
+    .bp-cover .bp-title { font-size: 42px; }
+    .bp-lead { font-size: 12.5px; margin-bottom: 14px; }
+    .bp-brand { margin-bottom: 22px; }
+    .bp-card, .bp-game { padding: 11px 14px; }
+    .bp-card strong, .bp-check strong, .bp-steps strong { font-size: 12px; }
+    .bp-card p, .bp-check p, .bp-steps p, .bp-game p, .bp-note, .bp-banner p { font-size: 10.5px; }
+    .bp-cards, .bp-games, .bp-steps, .bp-note, .bp-banner, .bp-image, .bp-chips-box { margin-bottom: 12px; }
+    .bp-cards { gap: 8px; }
+    .bp-checks { gap: 10px 20px; margin-bottom: 14px; }
+    .bp-steps { gap: 6px; }
+    .bp-steps li { padding: 8px 14px; }
+    .bp-game h3 { font-size: 18px; }
+    .bp-chips li { font-size: 9.5px; padding: 3px 10px; }
+    .bp-chips-box { padding: 12px 14px; }
+    .bp-banner { padding: 12px 16px; }
+    .bp-banner > span { font-size: 19px; }
+    .bp-image img { max-height: 92mm; object-fit: cover; }
+    .bp-cover .bp-image img { max-height: 150mm; }
+}

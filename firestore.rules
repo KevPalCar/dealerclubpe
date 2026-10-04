@@ -30,7 +30,8 @@ service cloud.firestore {
       // ── CONTENIDO PÚBLICO DEL SITIO (solo lectura) ────────────
       match /{col}/{id} {
         allow read: if col in ['courses', 'professors', 'alumni', 'dealers',
-                               'tables', 'services', 'config'];
+                               'tables', 'services', 'config',
+                               'brochures', 'brochure_images'];
       }
 
       // ── FORMULARIOS PÚBLICOS (solo crear, sin fijar el estado) ─

@@ -39,7 +39,7 @@
                     <li><a href="#" id="nav-requests"><i class="fas fa-clipboard-list"></i> Cotizaciones</a></li>
                     <li><a href="#" id="nav-tables"><i class="fas fa-dice"></i> Juegos del Casino</a></li>
                     <li><a href="#" id="nav-dealers"><i class="fas fa-star"></i> Dealers Destacados</a></li>
-                    <li><a href="#" id="nav-services"><i class="fas fa-cogs"></i> Servicios</a></li>
+                    <li><a href="#" id="nav-brochures"><i class="fas fa-book-open"></i> Brochures</a></li>
 
                     <!-- GRUPO: WhatsApp -->
                     <li class="nav-group-label"><span><i class="fab fa-whatsapp"></i> WhatsApp</span></li>
@@ -621,6 +621,39 @@
                     <button class="btn-page btn-prev-page" id="prev-students"><i class="fas fa-chevron-left"></i></button>
                     <span class="page-info" id="page-info-students">1 / 1</span>
                     <button class="btn-page btn-next-page" id="next-students"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </section>
+
+            <!-- ═══════════════ BROCHURES ═══════════════ -->
+            <section id="brochures-management" class="content-section">
+                <div class="section-header">
+                    <h2>Brochures</h2>
+                    <div class="bro-actions">
+                        <select id="brochure-type" class="filter-select">
+                            <option value="eventos">Casino de Fantasía (eventos)</option>
+                        </select>
+                        <a href="/brochure-eventos" id="brochure-view" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fas fa-eye"></i> Ver brochure</a>
+                        <button type="button" class="btn btn-secondary" id="brochure-reset"><i class="fas fa-undo"></i> Restaurar original</button>
+                        <button type="button" class="btn btn-primary" id="brochure-save"><i class="fas fa-save"></i> Guardar cambios</button>
+                    </div>
+                </div>
+                <div class="bro-layout">
+                    <aside>
+                        <div id="brochure-pages" class="bro-pages"></div>
+                        <div class="bot-card bro-pdf">
+                            <h3>PDF que envía el bot</h3>
+                            <p id="brochure-pdf-status" class="activate-note">Comprobando…</p>
+                            <ol>
+                                <li>Guarda tus cambios.</li>
+                                <li>Abre "Ver brochure" y pulsa "Descargar PDF" (destino: Guardar como PDF).</li>
+                                <li>Sube aquí ese archivo.</li>
+                            </ol>
+                            <label class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Subir PDF
+                                <input type="file" id="brochure-pdf-file" accept="application/pdf" hidden>
+                            </label>
+                        </div>
+                    </aside>
+                    <div id="brochure-editor" class="bot-card bro-editor"><div class="spinner"></div></div>
                 </div>
             </section>
 

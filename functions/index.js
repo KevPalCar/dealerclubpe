@@ -18,7 +18,7 @@ const store = require("./lib/store");
 const brain = require("./lib/brain");
 const wa = require("./lib/whatsapp");
 const notify = require("./lib/notify");
-const { BROCHURES } = require("./lib/brochures");
+const { BROCHURES, getBrochureBuffer } = require("./lib/brochures");
 
 // Región cercana a Perú y límites razonables para v1.
 setGlobalOptions({ region: "us-central1", maxInstances: 10 });
@@ -358,10 +358,11 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       const caption = b.caption();
       try {
         // Dos intentos: un fallo puntual de WhatsApp no debe dejar al lead sin su PDF.
-        let r, fallo = null;
+        let r, pdf = null, fallo = null;
         for (let intento = 1; intento <= 2; intento++) {
           try {
-            r = await wa.sendDocument(msg.from, b.file, b.filename, caption);
+            pdf = pdf || (await getBrochureBuffer(t));
+            r = await wa.sendDocument(msg.from, pdf, b.filename, caption);
             fallo = r && r.error ? r.error : null;
           } catch (e) {
             fallo = e.message;
@@ -393,8 +394,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
           ts: Date.now(),
         };
         try {
-          const buf = fs.readFileSync(b.file);
-          entry.storagePath = await store.saveMedia(msg.from, "brochure_" + t + "_" + Date.now(), buf, "application/pdf");
+          entry.storagePath = await store.saveMedia(msg.from, "brochure_" + t + "_" + Date.now(), pdf, "application/pdf");
         } catch (e) {
           logger.warn("No se pudo guardar copia del brochure en Storage", { error: e.message });
         }

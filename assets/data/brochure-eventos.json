@@ -1,0 +1,111 @@
+{
+  "name": "Casino de Fantasía",
+  "footer": {
+    "web": "www.dealerclubpe.com",
+    "whatsapp": "+51 929 610 747",
+    "legal": "DEALERCLUB E.I.R.L. · RUC 20615317315 · © 2026 DealerClub. Lima, Perú."
+  },
+  "pages": [
+    {
+      "name": "Portada",
+      "cover": true,
+      "kicker": "Casino de Fantasía",
+      "title": "Viva la experiencia de *Las Vegas* en su evento.",
+      "text": "Mesas profesionales, dealers de élite y la emoción auténtica del casino, montadas donde usted lo desee en Lima Metropolitana. Todo el glamour, sin apuestas reales.",
+      "blocks": [
+        { "type": "tagline", "strong": "EL JUEGO", "text": "a otro nivel" },
+        { "type": "image", "src": "/assets/images/brochure/eventos-1.jpg" }
+      ]
+    },
+    {
+      "name": "La experiencia",
+      "kicker": "La experiencia",
+      "title": "Un casino real, sin apuestas reales.",
+      "text": "Convertimos su evento en un casino auténtico. Sus invitados juegan con fichas de la casa —nunca con dinero— y viven toda la adrenalina del juego: la ruleta girando, las cartas sobre el paño y el carisma de un dealer profesional.",
+      "blocks": [
+        { "type": "cards", "title": "", "items": [
+          { "title": "Personal calificado", "text": "Dealers formados en nuestra propia escuela: profesionalismo y carisma en cada mesa." },
+          { "title": "Logística completa", "text": "Transporte, montaje y desmontaje de todo el equipo. Usted no mueve un dedo." },
+          { "title": "Asesoramiento personalizado", "text": "Le ayudamos a elegir las mesas y la dinámica ideales para su celebración." },
+          { "title": "Experiencia instagrameable", "text": "Un ambiente sofisticado y fotogénico que sus invitados querrán compartir." }
+        ] },
+        { "type": "note", "strong": "Cobertura en toda Lima Metropolitana.", "text": "El presupuesto final puede variar según la distancia y la ubicación del evento." },
+        { "type": "image", "src": "/assets/images/brochure/eventos-2.jpg" },
+        { "type": "chips", "title": "Ideal para toda celebración", "items": ["Eventos corporativos", "Cumpleaños", "Bodas", "Despedidas de soltero(a)", "Aniversarios", "Fiestas privadas", "Promociones y graduaciones", "Lanzamientos de marca", "Reuniones sociales"], "foot": "¿Tiene otra ocasión en mente? Consúltenos: nos adaptamos a su evento." }
+      ]
+    },
+    {
+      "name": "Catálogo de juegos",
+      "kicker": "Catálogo de juegos",
+      "title": "5 juegos. 3 mesas. Hasta 3 en simultáneo.",
+      "text": "Nuestras mesas cuentan con paños intercambiables: una misma mesa profesional puede transformarse de un juego a otro. Usted elige hasta tres mesas para tener funcionando a la vez.",
+      "blocks": [
+        { "type": "games", "items": [
+          { "title": "Ruleta", "sub": "Mesa de ruleta profesional", "text": "El clásico por excelencia. Disco profesional, paño de apuestas y la tensión de la bola girando.", "chips": "7 a 10 posturas, 2.80 × 1.50 m" },
+          { "title": "Mesa en \"D\"", "sub": "Paños intercambiables", "text": "Una mesa, dos juegos. Cambiamos el paño para ofrecer Blackjack o Ultimate Texas Hold'em según su preferencia.", "chips": "Blackjack · 7 posturas, UTH · 6 posturas, 2.20 × 1.30 m" },
+          { "title": "Mesa óvalo", "sub": "Paños intercambiables", "text": "La mesa social por excelencia. Con el cambio de paño pasa de una intensa partida de Póker a la elegancia del Baccarat.", "chips": "Póker · 10 posturas, Baccarat · 9 posturas, 2.50 × 1.30 m" }
+        ] }
+      ]
+    },
+    {
+      "name": "Su servicio incluye",
+      "kicker": "Su servicio incluye",
+      "title": "Todo listo para jugar.",
+      "text": "",
+      "blocks": [
+        { "type": "checks", "items": [
+          { "title": "Mesas y ruleta profesionales", "text": "Equipo de calidad para cada juego (no incluye sillas)." },
+          { "title": "Un dealer por juego + dirección de DealerClub", "text": "La dirección del propio DealerClub está presente en cada evento, en cualquier paquete —incluso desde una sola mesa. Garantía de la casa." },
+          { "title": "Montaje y desmontaje completos", "text": "Nosotros llevamos, armamos y retiramos todo el equipo." },
+          { "title": "Fichas y artefactos de casino", "text": "Fichas profesionales, sabot, rastrillo, dolly y botones de dealer." },
+          { "title": "3 h de evento · 2 h 30 de juego", "text": "El montaje y el desmontaje no descuentan tiempo de evento." },
+          { "title": "Enseñanza de los juegos", "text": "El dealer explica e induce cada juego a los invitados que no saben jugar." },
+          { "title": "Dealers profesionales uniformados", "text": "Presencia impecable: nuestro equipo atiende uniformado, con la elegancia de un casino real." },
+          { "title": "Ambiente 100% instagrameable", "text": "Todo entra por los ojos: un montaje tan vistoso que nadie se resiste a capturar y compartir el glamour." }
+        ] },
+        { "type": "banner", "label": "GRATIS", "title": "The Chip Leader", "text": "Reconocimiento / distintivo oficial por parte de la empresa DealerClub por la prestación de sus servicios." },
+        { "type": "image", "src": "/assets/images/brochure/eventos-3.jpg" }
+      ]
+    },
+    {
+      "name": "Requisitos y logística",
+      "kicker": "Requisitos y logística",
+      "title": "Lo que necesitamos de su espacio.",
+      "text": "",
+      "blocks": [
+        { "type": "checks", "items": [
+          { "title": "Espacio por mesa", "text": "Zona operativa (mueble + dealer + jugadores + circulación): Ruleta ≈ 4.6 × 3.3 m, mesa en \"D\" ≈ 4.0 × 3.0 m, óvalo ≈ 4.5 × 3.0 m." },
+          { "title": "Espacio total (3 mesas)", "text": "Mínimo operable ≈ 35 m². Espacio ideal y cómodo ≈ 55 a 60 m² de piso libre." },
+          { "title": "Acceso", "text": "Todas las mesas se transportan desarmadas. Pasillos de ≈ 1.00 m; en pisos altos, ascensor de carga o escalera amplia." },
+          { "title": "Electricidad", "text": "Mínima. Solo la mesa de Póker / Baccarat (luces LED) requiere un tomacorriente cercano." },
+          { "title": "Duración", "text": "3 h de evento (2 h 30 de juego efectivo). Montaje y desmontaje se coordinan aparte." },
+          { "title": "Posturas por juego", "text": "Ruleta 7–10 · Blackjack 7 · UTH 6 · Póker 10 · Baccarat 9 (posiciones de juego por mesa)." }
+        ] },
+        { "type": "note", "strong": "Aforo — dato predeterminado:", "text": "no fijamos un número de invitados, pues depende de su local, su evento y su dinámica. Lo predeterminado es el espacio mínimo por mesa y las posturas de cada juego; planifique su aforo sobre esa base." },
+        { "type": "chips", "title": "Personalice su experiencia · servicios extra", "items": ["Barman", "Fotos y grabación", "Decoración temática", "Mesas adicionales", "Fichas personalizadas", "Sillas / taburetes", "Horas extra de juego", "Cobertura fuera de Lima"], "foot": "Los servicios extra se cotizan aparte." }
+      ]
+    },
+    {
+      "name": "Cómo contratar",
+      "kicker": "Cómo contratar",
+      "title": "Reserve su casino en 4 pasos.",
+      "text": "",
+      "blocks": [
+        { "type": "steps", "items": [
+          { "title": "Solicite su presupuesto", "text": "Escríbanos por WhatsApp o desde nuestra web con la fecha y el tipo de evento." },
+          { "title": "Reciba una cotización personalizada", "text": "Le proponemos la configuración de mesas y servicios ideal para su celebración." },
+          { "title": "Confirme fecha y firme el contrato", "text": "Cerramos los detalles por escrito y aseguramos la disponibilidad de su evento." },
+          { "title": "Disfrute su evento", "text": "Nos encargamos del montaje, el juego y el desmontaje. Usted solo disfruta." }
+        ] },
+        { "type": "cards", "title": "Una empresa seria y formal", "items": [
+          { "title": "Empresa formal", "text": "DEALERCLUB E.I.R.L. · RUC 20615317315" },
+          { "title": "Contrato de servicio", "text": "Términos claros por escrito." },
+          { "title": "Tarifario de reposición", "text": "Transparencia ante daños." },
+          { "title": "Acta de conformidad", "text": "Verificación conjunta al cierre." }
+        ] },
+        { "type": "note", "strong": "Reserve y cotice hasta 48 h antes de su evento.", "text": "¿Es sobre la hora? Reserve hasta pocas horas antes con nuestra modalidad express, sujeta a disponibilidad y sobrecargo. Mínimo 1 mesa; montaje el mismo día o un día antes. Una vez confirmada la reserva y abonado el adelanto, no se realizan devoluciones." },
+        { "type": "banner", "label": "WhatsApp", "title": "Solicite su presupuesto", "text": "Sin compromiso. Le respondemos a la brevedad: +51 929 610 747 · Lima Metropolitana · 09:00–18:00 · IG dealerclubpe · TikTok @dealerclubpe · FB dealerclubperu" }
+      ]
+    }
+  ]
+}

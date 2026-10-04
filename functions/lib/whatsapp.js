@@ -47,7 +47,8 @@ async function sendText(to, body) {
 }
 
 // Envía un PDF (documento): lo sube a la media API y luego lo manda.
-async function sendDocument(to, filePath, filename, caption) {
+// `file` puede ser la ruta del PDF o su contenido ya leído (Buffer).
+async function sendDocument(to, file, filename, caption) {
   const phoneId = WHATSAPP_PHONE_NUMBER_ID.value();
   const version = GRAPH_API_VERSION.value();
   const token = WHATSAPP_TOKEN.value();
@@ -56,13 +57,13 @@ async function sendDocument(to, filePath, filename, caption) {
     logger.info("[DRY-RUN] Brochure no enviado (sin token)", { to, filename });
     return { dryRun: true };
   }
-  if (!fs.existsSync(filePath)) {
-    logger.error("Brochure no encontrado en el servidor", { filePath });
+  if (!Buffer.isBuffer(file) && !fs.existsSync(file)) {
+    logger.error("Brochure no encontrado en el servidor", { file });
     return { error: "missing_file" };
   }
 
   // 1) Subir el PDF a la media API → obtener media id
-  const buf = fs.readFileSync(filePath);
+  const buf = Buffer.isBuffer(file) ? file : fs.readFileSync(file);
   const form = new FormData();
   form.append("messaging_product", "whatsapp");
   form.append("type", "application/pdf");
