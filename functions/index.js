@@ -104,25 +104,39 @@ function normalizarWhatsapp(texto) {
   );
 }
 
-// Si el bot anunció el catálogo pero olvidó la etiqueta [[BROCHURE:…]],
-// deducimos cuál corresponde por lo que dijo él y por lo que pidió el lead.
-// Devuelve "escuela" | "eventos" | null.
-function inferirBrochure(respuestaBot, mensajeLead) {
-  const bot = (respuestaBot || "").toLowerCase();
-  const anuncia = /(catálogo|catalogo|brochure|folleto|dossier)/.test(bot);
-  if (!anuncia) return null;
+// ¿El mensaje del bot ENTREGA el catálogo en este momento?
+// "Te comparto el catálogo" es una entrega; "para enviarte el catálogo,
+// ¿me das tu nombre?" es una promesa a futuro y NO debe disparar el envío.
+function anunciaEntrega(texto) {
+  const t = (texto || "").toLowerCase();
+  if (!/(cat[aá]logo|brochure|folleto|dossier)/.test(t)) return false;
+  const entrega =
+    /\b(te|le|les)\s+(comparto|env[ií]o|adjunto|dejo|paso|mando|hago llegar|acabo de (enviar|compartir))\b/.test(t) ||
+    /aqu[ií]\s+(tienes|tiene|va|est[aá]|te dejo|le dejo)/.test(t) ||
+    /\badjunt[oa]\b/.test(t);
+  if (!entrega) return false;
+  const pideNombre =
+    /\?/.test(t) && /(tu|su) nombre|nombre y apellido|con qui[eé]n tengo|c[oó]mo (te llamas|se llama)/.test(t);
+  return !pideNombre;
+}
 
-  const lead = (mensajeLead || "").toLowerCase().trim();
-  const dice = (re, txt) => re.test(txt);
+// Red de seguridad: si el bot ENTREGA el catálogo en su mensaje pero olvidó la
+// etiqueta [[BROCHURE:…]], deducimos cuál corresponde por lo que dijo él y por
+// lo que pidió el lead en la conversación. Devuelve "escuela" | "eventos" | null.
+function inferirBrochure(respuestaBot, mensajesLead) {
+  if (!anunciaEntrega(respuestaBot)) return null;
+  const bot = (respuestaBot || "").toLowerCase();
 
   // Pistas explícitas en lo que dijo el bot.
-  if (dice(/casino de fantas|evento|alquiler de mesas/, bot)) return "eventos";
-  if (dice(/escuela|curso|programa|dealer/, bot)) return "escuela";
+  if (/casino de fantas|evento|alquiler de mesas/.test(bot)) return "eventos";
+  if (/escuela|curso|programa|dealer/.test(bot)) return "escuela";
 
-  // Si no, por la opción que eligió el lead en el menú.
-  if (/^2\b|2️⃣|casino de fantas|evento/.test(lead)) return "eventos";
-  if (/^1\b|1️⃣|escuela|curso/.test(lead)) return "escuela";
-
+  // Si no, por lo que eligió el lead (del mensaje más reciente al más antiguo).
+  const leads = [].concat(mensajesLead || []).map((m) => (m || "").toLowerCase().trim()).reverse();
+  for (const lead of leads) {
+    if (/^2\b|2️⃣|casino de fantas|evento/.test(lead)) return "eventos";
+    if (/^1\b|1️⃣|escuela|curso/.test(lead)) return "escuela";
+  }
   return null;
 }
 
@@ -318,22 +332,21 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       ]);
     }
 
-    // 8.5) Red de seguridad: a veces el modelo ANUNCIA el catálogo
-    //      ("te comparto el catálogo…") pero se olvida de poner la
-    //      etiqueta [[BROCHURE:…]], y el lead se queda sin el PDF.
-    //      Si detectamos el anuncio y no hubo etiqueta, lo enviamos igual.
-    if (!pedidos.length) {
-      const inferido = inferirBrochure(cleanReply, msg.text);
+    // 8.5) Promesa cumplida: el cerebro decide CUÁNDO enviar el catálogo con la
+    //      etiqueta, pero a veces lo ENTREGA de palabra ("te comparto el
+    //      catálogo") y olvida la etiqueta. En ese caso se envía igual. No aplica
+    //      a la bienvenida ni cuando solo lo promete a cambio del nombre.
+    const esBienvenida = !(conv?.history || []).some((h) => h.role === "assistant");
+    if (!pedidos.length && !esBienvenida) {
+      const delLead = (conv?.history || []).filter((h) => h.role === "user").map((h) => h.text);
+      const inferido = inferirBrochure(cleanReply, delLead);
       if (inferido) {
         pedidos.push(inferido);
-        logger.info("Brochure inferido (el cerebro no puso la etiqueta)", {
-          tipo: inferido,
-          from: msg.from,
-        });
+        logger.info("Brochure inferido (el cerebro lo entregó sin etiqueta)", { tipo: inferido, from: msg.from });
       }
     }
 
-    // 9) Enviar los brochures solicitados que aún no se hayan enviado.
+    // 9) Enviar los brochures pedidos que aún no se hayan enviado.
     const yaEnviados = conv?.brochuresSent || [];
     const nuevos = [...new Set(pedidos)].filter(
       (t) => BROCHURES[t] && !yaEnviados.includes(t)
@@ -343,28 +356,52 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       const b = BROCHURES[t];
       const caption = b.caption();
       try {
-        const r = await wa.sendDocument(msg.from, b.file, b.filename, caption);
-        logger.info("Brochure enviado", { tipo: t, dryRun: !!r?.dryRun, error: r?.error });
+        // Dos intentos: un fallo puntual de WhatsApp no debe dejar al lead sin su PDF.
+        let r, fallo = null;
+        for (let intento = 1; intento <= 2; intento++) {
+          try {
+            r = await wa.sendDocument(msg.from, b.file, b.filename, caption);
+            fallo = r && r.error ? r.error : null;
+          } catch (e) {
+            fallo = e.message;
+          }
+          if (!fallo) break;
+          logger.warn("Fallo enviando el brochure", { tipo: t, intento, error: fallo });
+        }
+        if (fallo) {
+          // El bot ya dijo que lo compartía: avisa a Kevin para que lo mande a mano.
+          logger.error("Brochure NO enviado tras reintento", { tipo: t, error: fallo });
+          await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
+            title: "El bot no pudo enviar el catalogo",
+            message: `A ${msg.profileName || "un lead"} (+${msg.from}) se le anunció el catálogo de ${t} pero el PDF no salió (${fallo}). Envíaselo desde el panel.`,
+            click: adminReplyLink(msg.from),
+          });
+          continue; // no lo marcamos como enviado ni lo ponemos en el chat
+        }
+        logger.info("Brochure enviado", { tipo: t });
         enviados.push(t);
-        // Queda en el historial para que en el panel se VEA que el PDF salió
-        // (antes solo se enviaba y el chat parecía no tener el archivo).
-        await store.appendMessages(msg.from, [
-          {
-            role: "assistant",
-            type: "document",
-            text: `[documento] ${b.filename}`,
-            filename: b.filename,
-            mime: "application/pdf",
-            caption,
-            ts: Date.now(),
-          },
-        ]);
+        // Guardar copia en Storage para que en el panel se VEA clickeable
+        // (así confirmas que el PDF realmente salió).
+        const entry = {
+          role: "assistant",
+          type: "document",
+          text: `[documento] ${b.filename}`,
+          filename: b.filename,
+          mime: "application/pdf",
+          caption,
+          ts: Date.now(),
+        };
+        try {
+          const buf = fs.readFileSync(b.file);
+          entry.storagePath = await store.saveMedia(msg.from, "brochure_" + t + "_" + Date.now(), buf, "application/pdf");
+        } catch (e) {
+          logger.warn("No se pudo guardar copia del brochure en Storage", { error: e.message });
+        }
+        await store.appendMessages(msg.from, [entry]);
       } catch (e) {
         logger.error("No se pudo enviar el brochure", { tipo: t, error: e.message });
       }
     }
-    // Solo marcamos como enviados los que de verdad salieron: si falló, que
-    // se pueda reintentar en el siguiente mensaje.
     if (enviados.length) await store.addBrochuresSent(msg.from, enviados);
 
     // 9.2) Casino de Fantasía: TODA cotización la arma un humano (depende del
@@ -418,7 +455,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
 });
 
 // Helpers expuestos solo para pruebas locales (no afecta a producción).
-exports._test = { parseIncoming, isValidSignature, inferirBrochure };
+exports._test = { parseIncoming, isValidSignature, inferirBrochure, anunciaEntrega };
 
 // Funciones del panel admin (callable).
 const adminFns = require("./lib/admin");

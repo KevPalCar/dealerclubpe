@@ -55,6 +55,20 @@ function check(name, cond) {
   check("rechaza firma manipulada", _test.isValidSignature(mkReq("sha256=deadbeef")) === false);
   check("rechaza sin firma", _test.isValidSignature(mkReq(undefined)) === false);
 
+  // --- 2.5) Catálogo: entregar de palabra vs. prometerlo ----
+  const entrega = _test.anunciaEntrega;
+  check("entrega: 'te comparto el catálogo'", entrega("Gracias, Carlos. Te comparto el catálogo de la Escuela.") === true);
+  check("entrega: 'aquí tiene el catálogo'", entrega("Perfecto, señor Díaz. Aquí tiene el catálogo de Casino de Fantasía.") === true);
+  check("entrega aunque pida el apellido", entrega("Te envío el catálogo, Carlos. ¿Me confirmas tu apellido?") === true);
+  check("promesa a cambio del nombre NO es entrega", entrega("Para enviarte el catálogo, ¿me das tu nombre y apellido?") === false);
+  check("'te envío el catálogo en cuanto me des tu nombre' NO es entrega", entrega("Te envío el catálogo apenas me digas tu nombre, ¿con quién tengo el gusto?") === false);
+  check("citar el catálogo ya enviado NO es entrega", entrega("Lo tienes en la página 3 del catálogo que te envié.") === false);
+  check("sin mencionar catálogo NO es entrega", entrega("Te comparto la dirección: Coyllur 167.") === false);
+  check("infiere escuela por el texto del bot", _test.inferirBrochure("Te comparto el catálogo de la Escuela de Dealers.", ["1"]) === "escuela");
+  check("infiere eventos por el texto del bot", _test.inferirBrochure("Le comparto el catálogo de Casino de Fantasía.", ["hola"]) === "eventos");
+  check("infiere por la elección anterior del lead", _test.inferirBrochure("Gracias, Ana. Te comparto el catálogo.", ["2", "Ana Pérez"]) === "eventos");
+  check("no infiere nada si solo lo promete", _test.inferirBrochure("Para enviarle el catálogo de eventos, ¿con quién tengo el gusto?", ["2"]) === null);
+
   // --- 3) Cerebro (solo si hay clave) -----------------------
   if (process.env.LLM_API_KEY) {
     const brain = require("../lib/brain.js");
