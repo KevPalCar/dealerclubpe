@@ -2493,7 +2493,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const DEFAULT_QUOTE_SETTINGS = {
         advisor: 'Kevin', validityDays: 4, depositPct: 30, igvRate: 18, extraHour: 150,
         notes: 'Beneficio por confirmación rápida: si confirma su reserva dentro de las 48 h siguientes a esta cotización, se incluye el trofeo "The Chip Leader" para el ganador.\n' +
-               'El montaje considera acceso a nivel de calle o por ascensor. Si el acceso es solo por escaleras, se coordina un ajuste en la línea "Traslado y acceso".',
+               'Si el acceso es solo por escaleras, se coordina un ajuste en "Traslado y acceso".',
+        // Textos de la hoja que ve el cliente (editables en el Tarifario).
+        tagline: 'Casino de Fantasía · EL JUEGO a otro nivel',
+        balanceLabel: 'Saldo, antes de iniciar el montaje',
+        payment: 'Transferencia bancaria a la cuenta de la empresa (se emite boleta o factura).\n' +
+                 'Interbank Soles: 200-3008147025 · CCI: 003-200-003008147025-31\n' +
+                 'Titular: DEALERCLUB E.I.R.L. · RUC 20615317315',
+        legal: 'El cliente es responsable por daños, pérdida o deterioro del equipo durante el evento. ' +
+               'Una vez abonado el adelanto no se realizan devoluciones.',
+        footer: 'WhatsApp +51 929 610 747 · www.dealerclubpe.com\n' +
+                'Lima Metropolitana · 09:00–18:00\n' +
+                'IG dealerclubpe · TikTok @dealerclubpe · FB dealerclubperu',
         items: [
             { kind: 'mesa', name: 'Mesa de Ruleta Profesional', detail: 'Disco profesional premium · 7 a 10 posturas, con accesorios.', price: 1300 },
             { kind: 'mesa', name: 'Mesa en "D" Profesional',    detail: "Blackjack (7 posturas) o Ultimate Texas Hold'em (6 posturas), con accesorios.", price: 800 },
@@ -2895,6 +2906,8 @@ document.addEventListener('DOMContentLoaded', () => {
                       floor: val('quoteEventFloor'), guests: val('quoteEventGuests') },
             form: qEdit.form,
             ...deriveQuote(qEdit.form),
+            // Copia de los textos de la plantilla: la hoja pública no lee el tarifario.
+            texts: { tagline: _qs.tagline, balanceLabel: _qs.balanceLabel, payment: _qs.payment, legal: _qs.legal, footer: _qs.footer },
             notes: val('quoteNotes'),
             updatedAt: new Date()
         };
@@ -3053,6 +3066,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('tariffIgv').value       = tEdit.igvRate;
         document.getElementById('tariffExtraHour').value = tEdit.extraHour;
         document.getElementById('tariffNotes').value     = tEdit.notes;
+        document.getElementById('tariffPayment').value   = tEdit.payment;
+        document.getElementById('tariffLegal').value     = tEdit.legal;
+        document.getElementById('tariffFooter').value    = tEdit.footer;
+        document.getElementById('tariffTagline').value   = tEdit.tagline;
+        document.getElementById('tariffBalance').value   = tEdit.balanceLabel;
         renderTariffRows();
         showMsg(document.getElementById('tariffFormMessage'), '', '');
         openModal(document.getElementById('tariffModal'));
@@ -3074,6 +3092,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 igvRate:      num('tariffIgv', 18),
                 extraHour:    num('tariffExtraHour', 150),
                 notes:        document.getElementById('tariffNotes').value.trim(),
+                payment:      document.getElementById('tariffPayment').value.trim(),
+                legal:        document.getElementById('tariffLegal').value.trim(),
+                footer:       document.getElementById('tariffFooter').value.trim(),
+                tagline:      document.getElementById('tariffTagline').value.trim(),
+                balanceLabel: document.getElementById('tariffBalance').value.trim(),
                 updatedAt:    new Date()
             });
             closeModal(document.getElementById('tariffModal'));

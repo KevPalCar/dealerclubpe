@@ -11,6 +11,31 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-
 
 const WHATSAPP = '51929610747';
 
+// Textos de la plantilla. Cada cotización guarda los suyos (editables en
+// Admin → Cotizaciones → Tarifario); estos solo cubren las anteriores.
+const DEFAULT_TEXTS = {
+    tagline: 'Casino de Fantasía · EL JUEGO a otro nivel',
+    balanceLabel: 'Saldo, antes de iniciar el montaje',
+    payment: 'Transferencia bancaria a la cuenta de la empresa (se emite boleta o factura).\n' +
+             'Interbank Soles: 200-3008147025 · CCI: 003-200-003008147025-31\n' +
+             'Titular: DEALERCLUB E.I.R.L. · RUC 20615317315',
+    legal: 'El cliente es responsable por daños, pérdida o deterioro del equipo durante el evento. ' +
+           'Una vez abonado el adelanto no se realizan devoluciones.',
+    footer: 'WhatsApp +51 929 610 747 · www.dealerclubpe.com\n' +
+            'Lima Metropolitana · 09:00–18:00\n' +
+            'IG dealerclubpe · TikTok @dealerclubpe · FB dealerclubperu'
+};
+
+// Un párrafo por línea de texto.
+const fillLines = (id, text) => {
+    const box = $(id);
+    (text || '').split('\n').map(l => l.trim()).filter(Boolean).forEach(l => {
+        const p = document.createElement('p');
+        p.textContent = l;
+        box.appendChild(p);
+    });
+};
+
 const $ = (id) => document.getElementById(id);
 const money = (n) => `S/ ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 const fmtDate = (ymd) => ymd
@@ -88,6 +113,14 @@ const render = (q) => {
     $('cz-deposit-label').textContent = `Adelanto para reservar (${q.depositPct ?? 30}%)`;
     $('cz-deposit').textContent  = money(t.deposit);
     $('cz-balance').textContent  = money(t.balance);
+
+    // Textos de la plantilla
+    const texts = { ...DEFAULT_TEXTS, ...(q.texts || {}) };
+    $('cz-tagline').textContent       = texts.tagline;
+    $('cz-balance-label').textContent = texts.balanceLabel;
+    $('cz-legal').textContent         = texts.legal;
+    fillLines('cz-pay', texts.payment);
+    fillLines('cz-foot-info', texts.footer);
 
     // Puedes agregar
     if ((q.addons || []).length) {

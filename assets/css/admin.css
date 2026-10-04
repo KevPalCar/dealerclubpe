@@ -854,7 +854,7 @@ button.att-cell:hover { border-color: #ffc107; }
 .qe-head .close-button { position: static; float: none; line-height: 1; }
 .qe-form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
 .qe-body { display: grid; grid-template-columns: 5fr 7fr; flex: 1 1 auto; min-height: 0; }
-.qe-body-tariff { grid-template-columns: 8fr 4fr; }
+.qe-body-tariff { grid-template-columns: 7fr 5fr; }
 .qe-col { padding: 12px 18px; overflow-y: auto; min-height: 0; }
 .qe-col + .qe-col { border-left: 1px solid #333; }
 .quote-modal .qe-title {

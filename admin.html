@@ -1107,8 +1107,15 @@
                             <label>IGV (%) <input type="number" id="tariffIgv" min="0" max="100"></label>
                             <label>Hora extra por mesa (S/) <input type="number" id="tariffExtraHour" min="0"></label>
                         </div>
-                        <h3 class="qe-title">Observaciones por defecto</h3>
-                        <textarea id="tariffNotes" rows="7" class="qe-notes"></textarea>
+                        <h3 class="qe-title">Textos de la hoja <small>lo que lee el cliente; una línea por renglón</small></h3>
+                        <div class="qe-grid">
+                            <label>Observaciones por defecto <textarea id="tariffNotes" rows="4" class="qe-notes"></textarea></label>
+                            <label>Medios de pago <textarea id="tariffPayment" rows="3" class="qe-notes"></textarea></label>
+                            <label>Letra pequeña (antes del enlace a las condiciones) <textarea id="tariffLegal" rows="3" class="qe-notes"></textarea></label>
+                            <label>Pie de página <textarea id="tariffFooter" rows="3" class="qe-notes"></textarea></label>
+                            <label>Frase de la cabecera <input type="text" id="tariffTagline"></label>
+                            <label>Etiqueta del saldo <input type="text" id="tariffBalance"></label>
+                        </div>
                     </div>
                 </div>
                 <div class="qe-foot">
