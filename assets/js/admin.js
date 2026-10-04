@@ -14,7 +14,6 @@ import {
     onSnapshot, getDoc, query, where, getDocs, writeBatch, getCountFromServer
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
-import { loadBrochure } from './brochure.js';
 
 // ── EMAILJS — notificaciones automáticas al aprobar inscripciones ──
 // Credenciales del proyecto DealerClub en emailjs.com (cuenta gratuita, 200/mes).
@@ -3222,181 +3221,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ══════════════════════════════════════════════════════════
-    // BROCHURES — contenido editable por páginas y bloques
-    // El brochure es una página del sitio (/brochure-eventos) hecha
-    // de datos: aquí se editan sus textos, listas y fotos. El bot
-    // sigue enviando un PDF: tras editar, se descarga desde la página
-    // y se sube aquí (se guarda troceado en la base, sin Storage).
+    // BROCHURES — una tarjeta por brochure
+    // El brochure se edita sobre su propia página (/brochure-…?editar=1),
+    // que conserva el diseño original. Aquí solo se ve su estado y se
+    // sube el PDF que envía el bot (se guarda troceado en la base de
+    // datos, sin Firebase Storage).
     // ══════════════════════════════════════════════════════════
-    const BLOCK_DEFS = {
-        tagline: { name: 'Frase de marca',      fields: [['strong', 'Texto destacado'], ['text', 'Texto']] },
-        image:   { name: 'Foto',                image: true },
-        note:    { name: 'Nota destacada',      fields: [['strong', 'Frase en dorado'], ['text', 'Texto', 'area']] },
-        banner:  { name: 'Franja amarilla',     fields: [['label', 'Etiqueta grande'], ['title', 'Título'], ['text', 'Texto', 'area']] },
-        chips:   { name: 'Lista de etiquetas',  fields: [['title', 'Título'], ['foot', 'Nota al pie']], list: true },
-        cards:   { name: 'Tarjetas',            fields: [['title', 'Título del grupo (opcional)']], items: [['title', 'Título'], ['text', 'Texto', 'area']] },
-        checks:  { name: 'Lista con vistos',    items: [['title', 'Título'], ['text', 'Texto', 'area']] },
-        steps:   { name: 'Pasos numerados',     items: [['title', 'Título'], ['text', 'Texto', 'area']] },
-        games:   { name: 'Mesas / juegos',      items: [['title', 'Nombre'], ['sub', 'Subtítulo'], ['text', 'Texto', 'area'], ['chips', 'Etiquetas (separadas por coma)']] }
-    };
     const PDF_CHUNK = 700000;   // caracteres Base64 por documento (límite de Firestore: 1 MB)
-    let bro = null, broType = 'eventos', broPage = 0;
+    const fmtWhen = (ts) => ts ? new Date(ts.seconds * 1000).toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short' }) : '';
 
-    // Campo de texto ligado a obj[key].
-    const broField = (obj, key, label, kind) => {
-        const wrap  = el('label', '', label);
-        const input = document.createElement(kind === 'area' ? 'textarea' : 'input');
-        if (kind === 'area') input.rows = 2; else input.type = 'text';
-        input.value = obj[key] ?? '';
-        input.addEventListener('input', () => { obj[key] = input.value; });
-        wrap.appendChild(input);
-        return wrap;
-    };
-
-    const renderBrochurePages = () => {
-        const box = document.getElementById('brochure-pages');
-        box.replaceChildren(...bro.pages.map((p, i) => {
-            const btn = el('button', `bro-page-btn${i === broPage ? ' active' : ''}`);
-            btn.type = 'button';
-            btn.innerHTML = `<b>${i + 1}</b>${esc(p.name || p.kicker || 'Página')}`;
-            btn.addEventListener('click', () => { broPage = i; renderBrochurePages(); renderBrochureEditor(); });
-            return btn;
-        }));
-    };
-
-    const renderBrochureEditor = () => {
-        const box  = document.getElementById('brochure-editor');
-        const page = bro.pages[broPage];
-        box.replaceChildren();
-        box.append(
-            broField(page, 'kicker', 'Antetítulo (letras doradas pequeñas)'),
-            broField(page, 'title', 'Título'),
-            el('p', 'bro-hint', 'Para pintar una palabra en dorado, escríbela entre asteriscos: *Las Vegas*.'),
-            broField(page, 'text', 'Párrafo de entrada', 'area'));
-
-        (page.blocks || []).forEach(b => {
-            const def = BLOCK_DEFS[b.type];
-            if (!def) return;
-            const block = el('div', `bro-block${b.hidden ? ' is-hidden' : ''}`);
-            const head  = el('div', 'bro-block-head');
-            const show  = el('label');
-            const check = document.createElement('input');
-            check.type = 'checkbox';
-            check.checked = !b.hidden;
-            check.addEventListener('change', () => { b.hidden = !check.checked; block.classList.toggle('is-hidden', b.hidden); });
-            show.append(check, 'Mostrar');
-            head.append(el('strong', '', def.name), show);
-            block.appendChild(head);
-
-            (def.fields || []).forEach(([key, label, kind]) => block.appendChild(broField(b, key, label, kind)));
-
-            if (def.image) {
-                const row  = el('div', 'bro-img');
-                const img  = document.createElement('img');
-                const pick = el('label', 'btn btn-secondary btn-sm');
-                const file = document.createElement('input');
-                file.type = 'file'; file.accept = 'image/*'; file.hidden = true;
-                pick.innerHTML = '<i class="fas fa-image"></i> Cambiar foto';
-                pick.appendChild(file);
-                const showImg = async () => {
-                    if ((b.src || '').startsWith('img:')) {
-                        const snap = await getDoc(doc(db, dbPath(`brochure_images/${b.src.slice(4)}`)));
-                        img.src = snap.exists() ? snap.data().data : '';
-                    } else img.src = b.src || '';
-                };
-                showImg();
-                file.addEventListener('change', async () => {
-                    if (!file.files[0]) return;
-                    try {
-                        const data = await compressImage(file.files[0], 1600, 0.82);
-                        if (data.length > 950000) { showToast('La foto pesa demasiado incluso comprimida. Prueba con otra.', 'error'); return; }
-                        const ref = await addDoc(collection(db, dbPath('brochure_images')), { data, createdAt: new Date() });
-                        b.src = `img:${ref.id}`;
-                        img.src = data;
-                        showToast('Foto cargada. Pulsa "Guardar cambios" para publicarla.', 'info');
-                    } catch (err) { showToast(`No se pudo cargar la foto: ${esc(err.message)}`, 'error'); }
-                });
-                row.append(img, pick);
-                block.appendChild(row);
-            }
-
-            if (def.list) {
-                const wrap = el('label', '', 'Etiquetas (una por línea)');
-                const area = document.createElement('textarea');
-                area.rows = Math.max(3, (b.items || []).length);
-                area.value = (b.items || []).join('\n');
-                area.addEventListener('input', () => { b.items = area.value.split('\n').map(x => x.trim()).filter(Boolean); });
-                wrap.appendChild(area);
-                block.appendChild(wrap);
-            }
-
-            if (def.items) {
-                const list = el('div');
-                const draw = () => {
-                    list.replaceChildren(...(b.items || []).map((it, idx) => {
-                        const row    = el('div', 'bro-item');
-                        const fields = el('div', `bro-item-fields${def.items.length > 2 ? ' one' : ''}`);
-                        def.items.forEach(([key, label, kind]) => fields.appendChild(broField(it, key, label, kind)));
-                        const del = el('button', 'qe-del');
-                        del.type = 'button'; del.title = 'Quitar';
-                        del.innerHTML = '<i class="fas fa-times"></i>';
-                        del.addEventListener('click', () => { b.items.splice(idx, 1); draw(); });
-                        row.append(fields, del);
-                        return row;
-                    }));
-                };
-                draw();
-                const add = el('button', 'btn btn-secondary btn-sm');
-                add.type = 'button';
-                add.style.marginTop = '10px';
-                add.innerHTML = '<i class="fas fa-plus"></i> Agregar';
-                add.addEventListener('click', () => {
-                    (b.items = b.items || []).push(Object.fromEntries(def.items.map(([k]) => [k, ''])));
-                    draw();
-                });
-                block.append(list, add);
-            }
-            box.appendChild(block);
-        });
-    };
-
-    const openBrochure = async () => {
-        document.getElementById('brochure-editor').innerHTML = '<div class="spinner"></div>';
-        document.getElementById('brochure-view').href = `/brochure-${broType}`;
-        try {
-            bro = await loadBrochure(broType);
-            broPage = 0;
-            renderBrochurePages();
-            renderBrochureEditor();
-        } catch (err) {
-            document.getElementById('brochure-editor').textContent = 'No se pudo cargar el brochure.';
-        }
-    };
-
-    document.getElementById('brochure-save').addEventListener('click', async () => {
-        if (!bro) return;
-        try {
-            await setDoc(doc(db, dbPath(`brochures/${broType}`)), {
-                name: bro.name || '', footer: bro.footer || {}, pages: bro.pages, updatedAt: new Date()
-            });
-            showToast('Brochure guardado. La página pública ya muestra los cambios; recuerda subir el PDF nuevo para el bot.', 'success');
-        } catch (err) { showToast(`Error al guardar: ${esc(err.message)}`, 'error'); }
-    });
-
-    document.getElementById('brochure-reset').addEventListener('click', async () => {
-        if (!confirm('¿Volver al brochure original? Se perderán los cambios que hayas guardado en el contenido.')) return;
-        try {
-            await deleteDoc(doc(db, dbPath(`brochures/${broType}`)));
-            await openBrochure();
-            showToast('Brochure restaurado a su versión original.', 'info');
-        } catch (err) { showToast(`Error: ${esc(err.message)}`, 'error'); }
-    });
-
-    // PDF para el bot: se guarda en trozos dentro de la base de datos.
-    document.getElementById('brochure-pdf-file').addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        e.target.value = '';
-        if (!file) return;
+    const uploadBrochurePdf = async (tipo, file) => {
         if (file.type !== 'application/pdf') { showToast('El archivo debe ser un PDF.', 'error'); return; }
         if (file.size > 9 * 1024 * 1024) { showToast('El PDF pesa más de 9 MB. Descárgalo de nuevo desde la página del brochure.', 'error'); return; }
         showToast('Subiendo el PDF…', 'info');
@@ -3408,28 +3242,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 reader.readAsDataURL(file);
             });
             const chunks = Math.ceil(base64.length / PDF_CHUNK);
-            const prev   = await getDoc(doc(db, dbPath(`brochure_files/${broType}`)));
+            const prev   = await getDoc(doc(db, dbPath(`brochure_files/${tipo}`)));
             for (let i = 0; i < chunks; i++) {
-                await setDoc(doc(db, dbPath(`brochure_files/${broType}_${i}`)), { data: base64.slice(i * PDF_CHUNK, (i + 1) * PDF_CHUNK) });
+                await setDoc(doc(db, dbPath(`brochure_files/${tipo}_${i}`)), { data: base64.slice(i * PDF_CHUNK, (i + 1) * PDF_CHUNK) });
             }
-            await setDoc(doc(db, dbPath(`brochure_files/${broType}`)), { chunks, size: file.size, name: file.name, updatedAt: new Date() });
+            await setDoc(doc(db, dbPath(`brochure_files/${tipo}`)), { chunks, size: file.size, name: file.name, updatedAt: new Date() });
             for (let i = chunks; i < (prev.exists() ? prev.data().chunks : 0); i++) {
-                await deleteDoc(doc(db, dbPath(`brochure_files/${broType}_${i}`)));
+                await deleteDoc(doc(db, dbPath(`brochure_files/${tipo}_${i}`)));
             }
             showToast('PDF subido. El bot enviará esta versión desde ahora.', 'success');
         } catch (err) { showToast(`No se pudo subir el PDF: ${esc(err.message)}`, 'error'); }
+    };
+
+    document.querySelectorAll('.bro-card').forEach(card => {
+        card.querySelector('.bro-pdf-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            e.target.value = '';
+            if (file) uploadBrochurePdf(card.dataset.brochure, file);
+        });
     });
 
     const loadBrochures = () => {
-        openBrochure();
-        unsubscribeListeners.brochurePdf = onSnapshot(doc(db, dbPath(`brochure_files/${broType}`)), (snap) => {
-            const status = document.getElementById('brochure-pdf-status');
-            if (!snap.exists()) { status.textContent = 'El bot envía el PDF original. Sube uno nuevo cuando cambies el contenido.'; return; }
-            const d = snap.data();
-            const when = d.updatedAt ? new Date(d.updatedAt.seconds * 1000).toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short' }) : '';
-            status.textContent = `El bot envía el PDF que subiste el ${when} (${(d.size / 1048576).toFixed(1)} MB).`;
+        document.querySelectorAll('.bro-card').forEach(card => {
+            const tipo = card.dataset.brochure;
+            unsubscribeListeners[`broContent_${tipo}`] = onSnapshot(doc(db, dbPath(`brochures/${tipo}`)), (snap) => {
+                card.querySelector('[data-role="content"]').textContent = snap.exists()
+                    ? `Contenido editado por última vez el ${fmtWhen(snap.data().updatedAt)}.`
+                    : 'Contenido original, sin cambios.';
+            });
+            unsubscribeListeners[`broPdf_${tipo}`] = onSnapshot(doc(db, dbPath(`brochure_files/${tipo}`)), (snap) => {
+                const pdf = card.querySelector('[data-role="pdf"]');
+                if (!snap.exists()) { pdf.textContent = 'El bot envía el PDF original.'; return; }
+                const d = snap.data();
+                pdf.textContent = `El bot envía el PDF que subiste el ${fmtWhen(d.updatedAt)} (${(d.size / 1048576).toFixed(1)} MB).`;
+            });
         });
     };
-    document.getElementById('brochure-type').addEventListener('change', (e) => { broType = e.target.value; loadSection('brochures'); });
 
 }); // fin DOMContentLoaded

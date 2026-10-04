@@ -82,15 +82,17 @@ async function getCatalogoTexto() {
   if (cache.texto && Date.now() - cache.ts < TTL_MS) return cache.texto;
 
   try {
-    const [cursos, servicios, brochureEventos] = await Promise.all([
+    const [cursos, servicios, brochureEventos, brochureEscuela] = await Promise.all([
       leerColeccion("courses"),
       leerColeccion("services"),
       leerBrochure("eventos"),
+      leerBrochure("escuela"),
     ]);
 
-    if (!cursos.length && !servicios.length && !brochureEventos) return cache.texto || null;
+    if (!cursos.length && !servicios.length && !brochureEventos && !brochureEscuela) return cache.texto || null;
 
-    const texto = [formatear(cursos, servicios), brochureEventos].filter(Boolean).join("\n\n");
+    // El catálogo en vivo (precios, horarios) va primero: manda sobre el brochure.
+    const texto = [formatear(cursos, servicios), brochureEscuela, brochureEventos].filter(Boolean).join("\n\n");
     cache = { texto, ts: Date.now() };
     return texto;
   } catch (err) {
@@ -103,25 +105,13 @@ async function getCatalogoTexto() {
 // editó). Así el bot dice lo mismo que el PDF vigente sin tocar el código.
 async function leerBrochure(tipo) {
   const snap = await db.doc(`${BASE}/brochures/${tipo}`).get();
-  if (!snap.exists) return null;
-  const lineas = [];
-  for (const p of snap.data().pages || []) {
-    lineas.push(`### ${[p.kicker, (p.title || "").replace(/\*/g, "")].filter(Boolean).join(" — ")}`);
-    if (p.text) lineas.push(p.text);
-    for (const b of (p.blocks || []).filter((x) => !x.hidden)) {
-      if (b.type === "image" || b.type === "tagline") continue;
-      if (b.title) lineas.push(`${b.title}:`);
-      if (b.strong || (b.text && !b.items)) lineas.push([b.strong, b.label, b.text].filter(Boolean).join(" "));
-      for (const it of b.items || []) {
-        lineas.push(typeof it === "string" ? `- ${it}` : `- ${[it.title, it.sub, it.text, it.chips].filter(Boolean).join(" — ")}`);
-      }
-      if (b.foot) lineas.push(b.foot);
-    }
-  }
+  const texto = snap.exists ? (snap.data().plain || "").trim() : "";
+  if (!texto) return null;
   return (
     `## CONTENIDO VIGENTE DEL CATÁLOGO DE ${tipo.toUpperCase()} (el que recibe el cliente)\n` +
-    "Si algo de tus instrucciones contradice este contenido, vale este. En eventos sigues SIN dar precios.\n\n" +
-    lineas.join("\n")
+    "Si algo de tus instrucciones contradice este contenido, vale este." +
+    (tipo === "eventos" ? " En eventos sigues SIN dar precios." : "") +
+    `\n\n${texto.slice(0, 6000)}`
   );
 }
 

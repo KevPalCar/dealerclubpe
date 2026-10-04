@@ -1,29 +1,450 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brochure Casino de Fantasía - DealerClub</title>
-    <meta name="description" content="Brochure de Casino de Fantasía de DealerClub: mesas profesionales, dealers y todo lo que incluye el servicio para su evento en Lima.">
-    <link rel="icon" href="/assets/images/favicon_pokerchips.png" type="image/png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap">
-    <link rel="stylesheet" href="/assets/css/brochure.css">
-</head>
-<body data-brochure="eventos">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DealerClub · Casino de Fantasía</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0A0A0B; --ink2:#15140F; --line:#262320;
+    --gold:#FBBF0D; --cream:#F3EFE9; --cream-mut:rgba(243,239,233,.62); --cream-faint:rgba(243,239,233,.30);
+    --pad:16mm;
+  }
+  *{ box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  html,body{ margin:0; padding:0; }
+  body{ background:#3a3a3a; font-family:"Montserrat",system-ui,sans-serif; }
+  .page{ position:relative; width:210mm; height:297mm; overflow:hidden; background:var(--ink); color:var(--cream); padding:var(--pad); display:flex; flex-direction:column; }
+  @media screen{ body{ padding:28px 0; } .page{ margin:0 auto 26px; box-shadow:0 18px 50px rgba(0,0,0,.55); } }
+  @page{ size:A4; margin:0; }
+  @media print{ body{ background:none; padding:0; } .page{ margin:0; box-shadow:none; break-after:page; } .page:last-child{ break-after:auto; } }
 
-    <!-- Barra de acciones (no se imprime) -->
-    <div class="bp-bar" id="bp-bar" style="display:none;">
-        <a href="/servicios" class="bp-back">← Volver a Servicios</a>
-        <div>
-            <button type="button" id="bp-print" class="bp-btn">⬇ Descargar PDF</button>
-            <a href="/servicios#cotizar" class="bp-btn bp-btn-gold">Cotizar mi evento</a>
+  .wm{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:0; pointer-events:none; }
+  .wm img{ width:122%; opacity:.045; }
+  .layer{ position:relative; z-index:1; display:flex; flex-direction:column; flex:1 1 auto; min-height:0; }
+
+  h1,h2,h3{ font-family:"Satoshi","Montserrat",sans-serif; font-weight:900; margin:0; line-height:1.02; letter-spacing:-.01em; }
+  .display{ font-size:54px; }
+  .display .gold{ color:var(--gold); }
+  h2.title{ font-size:34px; }
+  p{ margin:0; }
+  .eyebrow{ font-size:10.5px; font-weight:700; letter-spacing:.34em; text-transform:uppercase; color:var(--gold); }
+  .lead{ font-size:13.5px; line-height:1.65; color:var(--cream-mut); font-weight:400; }
+  .rule{ width:46px; height:3px; background:var(--gold); border:0; margin:14px 0 0; }
+  .slogan-remate{ font-family:"Satoshi","Montserrat",sans-serif; font-weight:900; font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); }
+  .slogan-remate em{ font-style:italic; font-weight:500; text-transform:none; letter-spacing:.02em; color:var(--cream-mut); }
+
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand img{ height:30px; width:auto; }
+  .brand .wordmark{ font-family:"Satoshi",sans-serif; font-weight:900; font-size:16px; letter-spacing:.06em; }
+  .brand .wordmark b{ color:var(--gold); }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; }
+  .topbar .tag{ font-size:9.5px; letter-spacing:.32em; text-transform:uppercase; color:var(--cream-faint); font-weight:600; }
+  .p1 .brand img{ height:54px; }
+  .p1 .brand .wordmark{ font-size:24px; }
+
+  .photoimg{ flex:1 1 auto; min-height:0; border-radius:8px; overflow:hidden; position:relative; background:#0e0d09; }
+  .photoimg img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+  .footer-strip{ display:flex; align-items:center; justify-content:space-between; font-size:10px; color:var(--cream-faint); letter-spacing:.04em; border-top:1px solid var(--line); padding-top:10px; }
+  .footer-strip b{ color:var(--cream-mut); font-weight:600; }
+
+  .p1 .hero-copy{ margin-top:24px; }
+  .p1 .hero-copy .lead{ margin-top:16px; max-width:88%; font-size:14.5px; }
+  .p1 .photoimg{ margin-top:20px; }
+
+  .pillars{ display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-top:18px; }
+  .pill{ background:var(--ink2); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .pill .ic{ width:25px; height:25px; stroke:var(--gold); fill:none; stroke-width:1.6; }
+  .pill h3{ font-size:13.5px; margin:9px 0 4px; color:var(--cream); font-weight:700; }
+  .pill p{ font-size:10.5px; line-height:1.45; color:var(--cream-mut); }
+  .coverage{ margin-top:14px; background:linear-gradient(90deg, rgba(251,191,13,.10), rgba(251,191,13,0)); border-left:3px solid var(--gold); padding:11px 14px; border-radius:0 8px 8px 0; }
+  .coverage span{ font-size:11px; color:var(--cream-mut); line-height:1.5; } .coverage b{ color:var(--gold); }
+
+  .photoimg.mini{ flex:1 1 auto; margin-top:14px; }
+  .occasions{ flex:0 0 auto; margin-top:14px; border:1px solid rgba(251,191,13,.3); border-radius:12px; padding:14px 16px; background:linear-gradient(180deg, rgba(251,191,13,.06), transparent); }
+  .occasions h3{ font-size:15px; color:var(--cream); font-weight:700; font-family:"Satoshi",sans-serif; }
+  .occhips{ display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+  .occhips span{ font-size:10.5px; padding:5px 11px; border-radius:30px; background:rgba(251,191,13,.12); color:var(--gold); border:1px solid rgba(251,191,13,.25); font-weight:500; }
+  .occ-ask{ font-size:10.5px; color:var(--cream-mut); margin-top:10px; } .occ-ask b{ color:var(--cream); }
+
+  .games{ display:flex; flex-direction:column; gap:12px; margin-top:18px; flex:1 1 auto; }
+  .game{ display:grid; grid-template-columns:188px 1fr; gap:16px; align-items:center; background:var(--ink2); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .game .art{ background:radial-gradient(circle at 50% 40%, #14130d, #0a0a0b); border-radius:9px; padding:6px; }
+  .game .art svg{ width:100%; height:auto; display:block; }
+  .game .gname{ font-family:"Satoshi",sans-serif; font-weight:900; font-size:21px; color:var(--cream); }
+  .game .gsub{ font-size:11px; color:var(--gold); font-weight:600; margin-top:2px; }
+  .game .gtext{ font-size:11px; color:var(--cream-mut); line-height:1.5; margin-top:8px; }
+  .specs{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .chip{ font-size:10px; font-weight:600; padding:4px 10px; border-radius:30px; border:1px solid rgba(251,191,13,.4); color:var(--gold); }
+  .chip.dim{ border-color:var(--line); color:var(--cream-mut); }
+
+  .inc-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 18px; margin-top:18px; }
+  .inc{ display:flex; gap:11px; align-items:flex-start; }
+  .inc .tick{ flex:0 0 auto; width:20px; height:20px; border-radius:50%; background:rgba(251,191,13,.14); display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .inc .tick svg{ width:11px; height:11px; stroke:var(--gold); fill:none; stroke-width:2.4; }
+  .inc h3{ font-size:12.5px; color:var(--cream); font-weight:600; }
+  .inc p{ font-size:10.5px; color:var(--cream-mut); line-height:1.45; margin-top:2px; }
+  .free{ margin-top:18px; background:var(--gold); color:#1a1300; border-radius:12px; padding:16px 18px; display:flex; gap:16px; align-items:center; }
+  .free .big{ font-family:"Satoshi",sans-serif; font-weight:900; font-size:30px; line-height:1; }
+  .free .ft{ font-family:"Satoshi",sans-serif; font-weight:900; font-size:14px; }
+  .free .fp{ font-size:11px; font-weight:500; line-height:1.45; margin-top:3px; color:#3a2c00; }
+  .free .div{ width:1px; align-self:stretch; background:rgba(26,19,0,.22); }
+
+  .speclist{ display:grid; grid-template-columns:1fr 1fr; gap:11px 18px; margin-top:14px; }
+  .spec{ display:flex; gap:11px; align-items:flex-start; }
+  .spec .si{ width:19px; height:19px; stroke:var(--gold); fill:none; stroke-width:1.6; flex:0 0 auto; margin-top:1px; }
+  .spec h4{ font-size:11.5px; color:var(--cream); font-weight:600; margin:0; }
+  .spec p{ font-size:10px; color:var(--cream-mut); line-height:1.45; margin-top:2px; } .spec p b{ color:var(--cream); font-weight:600; }
+  .aforo{ margin-top:14px; background:linear-gradient(90deg, rgba(251,191,13,.10), rgba(251,191,13,0)); border-left:3px solid var(--gold); padding:11px 14px; border-radius:0 8px 8px 0; }
+  .aforo b{ color:var(--gold); } .aforo span{ font-size:11px; color:var(--cream-mut); line-height:1.5; }
+
+  .extras-block{ margin-top:auto; padding-top:18px; }
+  .extras-h{ font-size:13px; color:var(--gold); font-weight:700; font-family:"Montserrat"; }
+  .exgrid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:11px; }
+  .extile{ border:1px solid var(--line); border-radius:9px; overflow:hidden; background:var(--ink2); }
+  .extile .im{ height:74px; display:flex; align-items:center; justify-content:center; background:#0e0d09; overflow:hidden; }
+  .extile .im img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .extile .im svg{ width:26px; height:26px; stroke:var(--gold); fill:none; stroke-width:1.5; }
+  .extile .nm{ font-size:9.5px; color:var(--cream); padding:7px; text-align:center; line-height:1.25; font-weight:500; }
+  .refnote{ font-size:9px; color:var(--cream-faint); margin-top:9px; letter-spacing:.04em; font-style:italic; }
+
+  .steps{ display:flex; flex-direction:column; gap:9px; margin-top:14px; }
+  .step{ display:flex; gap:14px; align-items:center; background:var(--ink2); border:1px solid var(--line); border-radius:10px; padding:11px 16px; }
+  .step .n{ font-family:"Satoshi",sans-serif; font-weight:900; font-size:22px; color:var(--gold); width:28px; flex:0 0 auto; text-align:center; }
+  .step h3{ font-size:13px; color:var(--cream); font-weight:600; }
+  .step p{ font-size:10.5px; color:var(--cream-mut); margin-top:2px; }
+
+  .trust{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px; }
+  .ti{ background:var(--ink2); border:1px solid var(--line); border-radius:9px; padding:11px 9px; text-align:center; }
+  .ti svg{ width:21px; height:21px; stroke:var(--gold); fill:none; stroke-width:1.6; }
+  .ti h4{ font-size:10px; color:var(--cream); margin:7px 0 3px; font-weight:600; }
+  .ti p{ font-size:8.5px; color:var(--cream-mut); line-height:1.35; }
+
+  .cond{ margin-top:13px; background:var(--ink2); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .cond .row{ display:flex; flex-wrap:wrap; gap:6px 16px; }
+  .cond .row span{ font-size:10.5px; color:var(--cream); } .cond .row b{ color:var(--gold); font-weight:600; }
+  .cond .fine{ font-size:9px; color:var(--cream-faint); line-height:1.45; margin-top:7px; }
+  .resv{ margin-top:13px; background:linear-gradient(120deg, rgba(251,191,13,.18), rgba(251,191,13,.05)); border:1px solid var(--gold); border-radius:12px; padding:14px 16px; box-shadow:0 8px 24px rgba(251,191,13,.08); }
+  .resv-k{ font-size:9px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); }
+  .resv h4{ font-family:"Satoshi",sans-serif; font-weight:900; font-size:18px; color:var(--cream); margin:5px 0 4px; line-height:1.12; }
+  .resv h4 b{ color:var(--gold); }
+  .resv > p{ font-size:11px; color:var(--cream-mut); line-height:1.5; } .resv > p b{ color:var(--cream); font-weight:600; }
+  .resv-tags{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .resv-tags span{ font-size:9.5px; font-weight:600; color:var(--cream); background:rgba(243,239,233,.06); border:1px solid var(--line); border-radius:30px; padding:4px 11px; }
+  .resv .fine{ font-size:9px; color:var(--cream-faint); line-height:1.45; margin-top:10px; }
+
+  .cta{ background:var(--gold); color:#1a1300; border-radius:12px; padding:16px 18px; display:flex; align-items:center; justify-content:space-between; gap:18px; margin-top:14px; }
+  .cta .ch{ font-family:"Satoshi",sans-serif; font-weight:900; font-size:22px; line-height:1.05; }
+  .cta .cs{ font-size:11px; font-weight:500; margin-top:4px; }
+  .cta .cwa{ margin-top:8px; font-family:"Satoshi",sans-serif; font-weight:900; font-size:18px; }
+  .cta .cwa small{ font-family:"Montserrat"; font-weight:700; font-size:8.5px; letter-spacing:.2em; text-transform:uppercase; color:#3a2c00; display:block; }
+  .qrbox{ background:#fff; border-radius:10px; padding:8px; text-align:center; flex:0 0 auto; }
+  .qrbox img{ width:88px; height:88px; display:block; }
+  .qrbox span{ font-size:8px; color:#1a1300; font-weight:600; display:block; margin-top:5px; letter-spacing:.02em; }
+
+  .footer-block{ margin-top:auto; }
+  .contact{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-top:16px; }
+  .contact .c h4{ font-size:9px; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); margin:0 0 6px; font-weight:700; }
+  .contact .c p{ font-size:10.5px; color:var(--cream-mut); line-height:1.6; }
+  .legal{ margin-top:14px; display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--line); padding-top:12px; }
+  .legal img{ height:26px; opacity:.9; }
+  .legal p{ font-size:9px; color:var(--cream-faint); letter-spacing:.04em; }
+</style>
+<meta name="description" content="Brochure de Casino de Fantasía de DealerClub: mesas profesionales, dealers y todo lo que incluye el servicio para su evento en Lima.">
+<link rel="icon" href="/assets/images/favicon_pokerchips.png" type="image/png">
+<link rel="stylesheet" href="/assets/css/brochure.css">
+</head>
+<body data-brochure="eventos" data-version="1">
+<!-- Barra de acciones del sitio (no se imprime) -->
+<div class="bx-bar" id="bx-bar">
+  <a href="/servicios" class="bx-back">← Volver a Servicios</a>
+  <div class="bx-actions">
+    <button type="button" id="bx-print" class="bx-btn">⬇ Descargar PDF</button>
+    <a href="/servicios" class="bx-btn bx-gold">Cotizar mi evento</a>
+  </div>
+</div>
+
+
+<!-- ===== PÁGINA 1 — PORTADA ===== -->
+<section class="page p1">
+  <div class="wm"><img src="/assets/images/isotipo_principal.png" alt=""></div>
+  <div class="layer">
+    <div class="topbar">
+      <div class="brand">
+        <img src="/assets/images/isotipo_principal.png" alt="DealerClub">
+        <span class="wordmark">DEALER<b>CLUB</b></span>
+      </div>
+      <span class="tag">Lima · Perú</span>
+    </div>
+    <div class="hero-copy">
+      <span class="eyebrow">Casino de Fantasía</span>
+      <h1 class="display" style="margin-top:14px;">Viva la experiencia<br>de <span class="gold">Las Vegas</span><br>en su evento.</h1>
+      <p class="lead">Mesas profesionales, dealers de élite y la emoción auténtica del casino, montadas donde usted lo desee en Lima Metropolitana. Todo el glamour, sin apuestas reales.</p>
+      <p class="slogan-remate" style="margin-top:16px;">El juego <em>a otro nivel</em></p>
+    </div>
+    <div class="photoimg">
+      <img src="/assets/images/brochure/eventos-1.jpg" alt="Dealer profesional de DealerClub en mesa de póker">
+    </div>
+    <div class="footer-strip" style="margin-top:18px;">
+      <span><b>www.dealerclubpe.com</b></span>
+      <span>WhatsApp <b>+51 929 610 747</b></span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PÁGINA 2 — LA EXPERIENCIA ===== -->
+<section class="page">
+  <div class="wm"><img src="/assets/images/isotipo_principal.png" alt=""></div>
+  <div class="layer">
+    <span class="eyebrow">La experiencia</span>
+    <h2 class="title" style="margin-top:12px;">Un casino real,<br>sin apuestas reales.</h2>
+    <hr class="rule">
+    <p class="lead" style="margin-top:14px;">Convertimos su evento en un casino auténtico. Sus invitados juegan con fichas de la casa —nunca con dinero— y viven toda la adrenalina del juego: la ruleta girando, las cartas sobre el paño y el carisma de un dealer profesional.</p>
+    <div class="pillars">
+      <div class="pill">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><path d="M16 6a3 3 0 010 6"/><path d="M21 20c0-2.5-1.5-4-3.5-4.5"/></svg>
+        <h3>Personal calificado</h3>
+        <p>Dealers formados en nuestra propia escuela: profesionalismo y carisma en cada mesa.</p>
+      </div>
+      <div class="pill">
+        <svg class="ic" viewBox="0 0 24 24"><rect x="2" y="7" width="13" height="10" rx="1"/><path d="M15 10h4l3 3v4h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+        <h3>Logística completa</h3>
+        <p>Transporte, montaje y desmontaje de todo el equipo. Usted no mueve un dedo.</p>
+      </div>
+      <div class="pill">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 11-3-6.2"/><path d="M8 12l3 3 5-6"/></svg>
+        <h3>Asesoramiento personalizado</h3>
+        <p>Le ayudamos a elegir las mesas y la dinámica ideales para su celebración.</p>
+      </div>
+      <div class="pill">
+        <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/><circle cx="17.5" cy="9.5" r="1"/></svg>
+        <h3>Experiencia instagrameable</h3>
+        <p>Un ambiente sofisticado y fotogénico que sus invitados querrán compartir.</p>
+      </div>
+    </div>
+    <div class="coverage">
+      <span><b>Cobertura en toda Lima Metropolitana.</b> El presupuesto final puede variar según la distancia y la ubicación del evento.</span>
+    </div>
+    <div class="photoimg mini">
+      <img src="/assets/images/brochure/eventos-2.jpg" alt="Dealer de DealerClub en mesa de ruleta">
+    </div>
+    <div class="occasions">
+      <h3>Ideal para toda celebración</h3>
+      <div class="occhips">
+        <span>Eventos corporativos</span><span>Cumpleaños</span><span>Bodas</span>
+        <span>Despedidas de soltero(a)</span><span>Aniversarios</span><span>Fiestas privadas</span>
+        <span>Promociones y graduaciones</span><span>Lanzamientos de marca</span><span>Reuniones sociales</span>
+      </div>
+      <p class="occ-ask">¿Tiene otra ocasión en mente? <b>Consúltenos: nos adaptamos a su evento.</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PÁGINA 3 — CATÁLOGO ===== -->
+<section class="page">
+  <div class="wm"><img src="/assets/images/isotipo_principal.png" alt=""></div>
+  <div class="layer">
+    <span class="eyebrow">Catálogo de juegos</span>
+    <h2 class="title" style="margin-top:12px;">5 juegos. 3 mesas.<br>Hasta 3 en simultáneo.</h2>
+    <p class="lead" style="margin-top:14px; max-width:92%;">Nuestras mesas cuentan con paños intercambiables: una misma mesa profesional puede transformarse de un juego a otro. Usted elige hasta tres mesas para tener funcionando a la vez.</p>
+    <div class="games" style="flex:0 0 auto;">
+
+      <div class="game">
+        <div class="art">
+          <svg viewBox="0 0 300 200">
+            <ellipse cx="150" cy="176" rx="118" ry="12" fill="#000" opacity=".35"/>
+            <rect x="42" y="58" width="216" height="104" rx="22" fill="#0A3F2A"/>
+            <rect x="42" y="46" width="216" height="104" rx="22" fill="#0E5A3C" stroke="#FBBF0D" stroke-width="4"/>
+            <rect x="52" y="56" width="196" height="84" rx="15" fill="none" stroke="rgba(243,239,233,.22)" stroke-width="1"/>
+            <circle cx="94" cy="98" r="29" fill="#0A3F2A" stroke="#FBBF0D" stroke-width="2.5"/>
+            <circle cx="94" cy="98" r="11" fill="#13734d" stroke="#FBBF0D" stroke-width="1.4"/>
+            <g stroke="rgba(251,191,13,.6)" stroke-width="1"><line x1="94" y1="69" x2="94" y2="127"/><line x1="65" y1="98" x2="123" y2="98"/><line x1="74" y1="78" x2="114" y2="118"/><line x1="114" y1="78" x2="74" y2="118"/></g>
+            <g stroke="rgba(243,239,233,.28)" stroke-width="1"><line x1="150" y1="58" x2="150" y2="138"/><line x1="178" y1="58" x2="178" y2="138"/><line x1="206" y1="58" x2="206" y2="138"/><line x1="234" y1="58" x2="234" y2="138"/><line x1="150" y1="84" x2="246" y2="84"/><line x1="150" y1="112" x2="246" y2="112"/></g>
+            <g fill="#FBBF0D"><circle cx="120" cy="168" r="3.5"/><circle cx="150" cy="168" r="3.5"/><circle cx="180" cy="168" r="3.5"/><circle cx="210" cy="168" r="3.5"/><circle cx="240" cy="168" r="3.5"/></g>
+          </svg>
         </div>
+        <div>
+          <div class="gname">Ruleta</div>
+          <div class="gsub">Mesa de ruleta profesional</div>
+          <p class="gtext">El clásico por excelencia. Disco profesional, paño de apuestas y la tensión de la bola girando.</p>
+          <div class="specs"><span class="chip">7 a 10 posturas</span><span class="chip dim">2.80 × 1.50 m</span></div>
+        </div>
+      </div>
+
+      <div class="game">
+        <div class="art">
+          <svg viewBox="0 0 300 200">
+            <ellipse cx="150" cy="176" rx="104" ry="11" fill="#000" opacity=".35"/>
+            <path d="M64 70 L236 70 L236 96 Q236 164 150 164 Q64 164 64 96 Z" fill="#0A3F2A" transform="translate(0,12)"/>
+            <path d="M64 70 L236 70 L236 96 Q236 164 150 164 Q64 164 64 96 Z" fill="#0E5A3C" stroke="#FBBF0D" stroke-width="4"/>
+            <path d="M150 80 a52 28 0 0 1 52 26" fill="none" stroke="rgba(243,239,233,.3)" stroke-width="1.2"/>
+            <rect x="120" y="74" width="60" height="14" rx="7" fill="#0A3F2A" stroke="#FBBF0D" stroke-width="1.4"/>
+            <g fill="none" stroke="rgba(251,191,13,.55)" stroke-width="1.4"><circle cx="92" cy="120" r="8"/><circle cx="115" cy="135" r="8"/><circle cx="138" cy="142" r="8"/><circle cx="162" cy="142" r="8"/><circle cx="185" cy="135" r="8"/><circle cx="208" cy="120" r="8"/></g>
+            <g fill="#FBBF0D"><circle cx="80" cy="150" r="3.2"/><circle cx="108" cy="166" r="3.2"/><circle cx="138" cy="172" r="3.2"/><circle cx="162" cy="172" r="3.2"/><circle cx="192" cy="166" r="3.2"/><circle cx="220" cy="150" r="3.2"/></g>
+          </svg>
+        </div>
+        <div>
+          <div class="gname">Mesa en "D"</div>
+          <div class="gsub">Paños intercambiables</div>
+          <p class="gtext">Una mesa, dos juegos. Cambiamos el paño para ofrecer Blackjack o Ultimate Texas Hold'em según su preferencia.</p>
+          <div class="specs"><span class="chip">Blackjack · 7 posturas</span><span class="chip">UTH · 6 posturas</span><span class="chip dim">2.20 × 1.30 m</span></div>
+        </div>
+      </div>
+
+      <div class="game">
+        <div class="art">
+          <svg viewBox="0 0 300 200">
+            <ellipse cx="150" cy="174" rx="116" ry="12" fill="#000" opacity=".35"/>
+            <rect x="40" y="64" width="220" height="96" rx="48" fill="#0A3F2A"/>
+            <rect x="40" y="52" width="220" height="96" rx="48" fill="#0E5A3C" stroke="#FBBF0D" stroke-width="4"/>
+            <rect x="52" y="64" width="196" height="72" rx="36" fill="none" stroke="rgba(243,239,233,.22)" stroke-width="1"/>
+            <rect x="118" y="92" width="64" height="16" rx="8" fill="#0A3F2A" stroke="#FBBF0D" stroke-width="1.3"/>
+            <g fill="none" stroke="rgba(251,191,13,.5)" stroke-width="1.3"><circle cx="78" cy="86" r="6"/><circle cx="108" cy="78" r="6"/><circle cx="150" cy="74" r="6"/><circle cx="192" cy="78" r="6"/><circle cx="222" cy="86" r="6"/><circle cx="78" cy="114" r="6"/><circle cx="108" cy="122" r="6"/><circle cx="150" cy="126" r="6"/><circle cx="192" cy="122" r="6"/><circle cx="222" cy="114" r="6"/></g>
+          </svg>
+        </div>
+        <div>
+          <div class="gname">Mesa óvalo</div>
+          <div class="gsub">Paños intercambiables</div>
+          <p class="gtext">La mesa social por excelencia. Con el cambio de paño pasa de una intensa partida de Póker a la elegancia del Baccarat.</p>
+          <div class="specs"><span class="chip">Póker · 10 posturas</span><span class="chip">Baccarat · 9 posturas</span><span class="chip dim">2.50 × 1.30 m</span></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="legal" style="margin-top:auto;">
+      <img src="/assets/images/isotipo_principal.png" alt="DealerClub">
+      <p>DEALERCLUB E.I.R.L. · RUC 20615317315 · © 2026 DealerClub. Lima, Perú.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PÁGINA 4 — QUÉ INCLUYE ===== -->
+<section class="page">
+  <div class="wm"><img src="/assets/images/isotipo_principal.png" alt=""></div>
+  <div class="layer">
+    <span class="eyebrow">Su servicio incluye</span>
+    <h2 class="title" style="margin-top:12px;">Todo listo para jugar.</h2>
+    <hr class="rule">
+    <div class="inc-grid">
+      <div class="inc"><span class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><div><h3>Mesas y ruleta profesionales</h3><p>Equipo de calidad para cada juego (no incluye sillas).</p></div></div>
+      <div class="inc"><span class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><div><h3>Un dealer por juego + dirección de DealerClub</h3><p>La dirección del propio DealerClub está presente en cada evento, en cualquier paquete —incluso desde una sola mesa. Garantía de la casa.</p></div></div>
+      <div class="inc"><span class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><div><h3>Montaje y desmontaje completos</h3><p>Nosotros llevamos, armamos y retiramos todo el equipo.</p></div></div>
+      <div class="inc"><span class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><div><h3>Fichas y artefactos de casino</h3><p>Fichas profesionales, sabot, rastrillo, dolly y botones de dealer.</p></div></div>
+      <div class="inc"><span class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><div><h3>3 h de evento · 2 h 30 de juego</h3><p>El montaje y el desmontaje no descuentan tiempo de evento.</p></div></div>
+      <div class="inc"><span class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><div><h3>Enseñanza de los juegos</h3><p>El dealer explica e induce cada juego a los invitados que no saben jugar.</p></div></div>
+      <div class="inc"><span class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><div><h3>Dealers profesionales uniformados</h3><p>Presencia impecable: nuestro equipo atiende uniformado, con la elegancia de un casino real.</p></div></div>
+      <div class="inc"><span class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></span><div><h3>Ambiente 100% instagrameable</h3><p>Todo entra por los ojos: un montaje tan vistoso que nadie se resiste a capturar y compartir el glamour.</p></div></div>
+    </div>
+    <div class="free">
+      <div class="big">GRATIS</div>
+      <div class="div"></div>
+      <div>
+        <div class="ft">The Chip Leader</div>
+        <p class="fp">Reconocimiento / distintivo oficial por parte de la empresa DealerClub por la prestación de sus servicios.</p>
+      </div>
+    </div>
+    <div class="photoimg" style="margin-top:18px;">
+      <img src="/assets/images/brochure/eventos-3.jpg" alt="Detalle de mesa de baccarat DealerClub">
+    </div>
+  </div>
+</section>
+
+<!-- ===== PÁGINA 5 — REQUISITOS Y EXTRAS ===== -->
+<section class="page">
+  <div class="wm"><img src="/assets/images/isotipo_principal.png" alt=""></div>
+  <div class="layer">
+    <span class="eyebrow">Requisitos y logística</span>
+    <h2 class="title" style="margin-top:12px;">Lo que necesitamos<br>de su espacio.</h2>
+    <hr class="rule">
+    <div class="speclist">
+      <div class="spec"><svg class="si" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><div><h4>Espacio por mesa</h4><p>Zona operativa (mueble + dealer + jugadores + circulación): Ruleta <b>≈ 4.6 × 3.3 m</b>, mesa en "D" <b>≈ 4.0 × 3.0 m</b>, óvalo <b>≈ 4.5 × 3.0 m</b>.</p></div></div>
+      <div class="spec"><svg class="si" viewBox="0 0 24 24"><path d="M3 21V10l9-7 9 7v11"/><path d="M9 21v-6h6v6"/></svg><div><h4>Espacio total (3 mesas)</h4><p>Mínimo operable <b>≈ 35 m²</b>. Espacio ideal y cómodo <b>≈ 55 a 60 m²</b> de piso libre.</p></div></div>
+      <div class="spec"><svg class="si" viewBox="0 0 24 24"><rect x="2" y="7" width="13" height="10" rx="1"/><path d="M15 10h4l3 3v4h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg><div><h4>Acceso</h4><p>Todas las mesas se transportan desarmadas. Pasillos de <b>≈ 1.00 m</b>; en pisos altos, ascensor de carga o escalera amplia.</p></div></div>
+      <div class="spec"><svg class="si" viewBox="0 0 24 24"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg><div><h4>Electricidad</h4><p>Mínima. Solo la mesa de Póker / Baccarat (luces LED) requiere <b>un tomacorriente cercano</b>.</p></div></div>
+      <div class="spec"><svg class="si" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><div><h4>Duración</h4><p><b>3 h de evento</b> (2 h 30 de juego efectivo). Montaje y desmontaje se coordinan aparte.</p></div></div>
+      <div class="spec"><svg class="si" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="18" cy="9" r="2"/></svg><div><h4>Posturas por juego</h4><p>Ruleta 7–10 · Blackjack 7 · UTH 6 · Póker 10 · Baccarat 9 (posiciones de juego por mesa).</p></div></div>
+    </div>
+    <div class="aforo">
+      <span><b>Aforo — dato predeterminado:</b> no fijamos un número de invitados, pues depende de su local, su evento y su dinámica. Lo predeterminado es el <b>espacio mínimo por mesa</b> y las <b>posturas de cada juego</b>; planifique su aforo sobre esa base.</span>
     </div>
 
-    <p id="bp-status" class="bp-status">Cargando el brochure…</p>
-    <main id="brochure-root" class="bp-root"></main>
+    <div class="extras-block">
+      <h3 class="extras-h">Personalice su experiencia · servicios extra</h3>
+      <div class="exgrid">
+        <div class="extile"><div class="im"><img src="/assets/images/extras/extra-barman.webp" alt=""></div><div class="nm">Barman</div></div>
+        <div class="extile"><div class="im"><img src="/assets/images/extras/extra-fotos.webp" alt=""></div><div class="nm">Fotos y grabación</div></div>
+        <div class="extile"><div class="im"><img src="/assets/images/extras/extra-decoracion.webp" alt=""></div><div class="nm">Decoración temática</div></div>
+        <div class="extile"><div class="im"><img src="/assets/images/extras/extra-mesas.webp" alt=""></div><div class="nm">Mesas adicionales</div></div>
+        <div class="extile"><div class="im"><img src="/assets/images/extras/extra-fichas.webp" alt=""></div><div class="nm">Fichas personalizadas</div></div>
+        <div class="extile"><div class="im"><img src="/assets/images/extras/extra-sillas.webp" alt=""></div><div class="nm">Sillas / taburetes</div></div>
+        <div class="extile"><div class="im"><img src="/assets/images/extras/extra-horas.webp" alt=""></div><div class="nm">Horas extra de juego</div></div>
+        <div class="extile"><div class="im"><img src="/assets/images/extras/extra-cobertura.webp" alt=""></div><div class="nm">Cobertura fuera de Lima</div></div>
+      </div>
+      <p class="refnote">Imágenes referenciales. Los servicios extra se cotizan aparte.</p>
+    </div>
+  </div>
+</section>
 
-    <script type="module" src="/assets/js/brochure.js"></script>
+<!-- ===== PÁGINA 6 — CONTRATAR / EMPRESA FORMAL ===== -->
+<section class="page">
+  <div class="wm"><img src="/assets/images/isotipo_principal.png" alt=""></div>
+  <div class="layer">
+    <span class="eyebrow">Cómo contratar</span>
+    <h2 class="title" style="margin-top:12px;">Reserve su casino<br>en 4 pasos.</h2>
+    <hr class="rule">
+    <div class="steps">
+      <div class="step"><span class="n">1</span><div><h3>Solicite su presupuesto</h3><p>Escríbanos por WhatsApp o desde nuestra web con la fecha y el tipo de evento.</p></div></div>
+      <div class="step"><span class="n">2</span><div><h3>Reciba una cotización personalizada</h3><p>Le proponemos la configuración de mesas y servicios ideal para su celebración.</p></div></div>
+      <div class="step"><span class="n">3</span><div><h3>Confirme fecha y firme el contrato</h3><p>Cerramos los detalles por escrito y aseguramos la disponibilidad de su evento.</p></div></div>
+      <div class="step"><span class="n">4</span><div><h3>Disfrute su evento</h3><p>Nos encargamos del montaje, el juego y el desmontaje. Usted solo disfruta.</p></div></div>
+    </div>
+
+    <span class="eyebrow" style="display:block; margin-top:16px;">Una empresa seria y formal</span>
+    <div class="trust">
+      <div class="ti"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><h4>Empresa formal</h4><p>DEALERCLUB E.I.R.L.<br>RUC 20615317315</p></div>
+      <div class="ti"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><h4>Contrato de servicio</h4><p>Términos claros por escrito.</p></div>
+      <div class="ti"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="19" cy="17" r="2"/></svg><h4>Tarifario de reposición</h4><p>Transparencia ante daños.</p></div>
+      <div class="ti"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><h4>Acta de conformidad</h4><p>Verificación conjunta al cierre.</p></div>
+    </div>
+
+    <div class="resv">
+      <div class="resv-k">✦ Reserva flexible</div>
+      <h4>Reserve y cotice hasta <b>48 h antes</b> de su evento.</h4>
+      <p>Olvídese de reservar con semanas de anticipación. ¿Es sobre la hora? Reserve hasta <b>pocas horas antes</b> con nuestra modalidad <b>express</b>, sujeta a disponibilidad y sobrecargo.</p>
+      <div class="resv-tags"><span>Mínimo 1 mesa</span><span>Montaje el mismo día o un día antes</span></div>
+      <p class="fine">Una vez confirmada la reserva y abonado el adelanto, no se realizan devoluciones. La disponibilidad de fechas y la modalidad express están sujetas a confirmación.</p>
+    </div>
+
+    <div class="cta">
+      <div>
+        <div class="ch">Solicite su presupuesto</div>
+        <div class="cs">Sin compromiso. Le respondemos a la brevedad.</div>
+        <div class="cwa"><small>WhatsApp</small>+51 929 610 747</div>
+      </div>
+      <div class="qrbox">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=0&data=https%3A%2F%2Fwa.me%2F51929610747" alt="QR para escribir por WhatsApp a DealerClub">
+        <span>Escanee y escríbanos</span>
+      </div>
+    </div>
+
+    <div class="footer-block">
+      <div class="contact">
+        <div class="c"><h4>Web</h4><p>www.dealerclubpe.com</p></div>
+        <div class="c"><h4>Cobertura</h4><p>Lima Metropolitana<br>Horario 09:00–18:00</p></div>
+        <div class="c"><h4>Síganos</h4><p>Facebook dealerclubperu<br>Instagram dealerclubpe<br>TikTok @dealerclubpe</p></div>
+      </div>
+      <div class="legal">
+        <img src="/assets/images/isotipo_principal.png" alt="DealerClub">
+        <p>DEALERCLUB E.I.R.L. · RUC 20615317315 · © 2026 DealerClub. Lima, Perú.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script type="module" src="/assets/js/brochure.js"></script>
 </body>
 </html>

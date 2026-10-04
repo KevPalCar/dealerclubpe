@@ -961,34 +961,26 @@ button.att-cell:hover { border-color: #ffc107; }
 .insight-suggestion button { flex: 0 0 auto; }
 @media (max-width: 980px) { .bot-grid { grid-template-columns: 1fr; } }
 
-/* ── BROCHURES: editor por páginas y bloques ─────────────────── */
-.bro-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.bro-actions a.btn { text-decoration: none; }
-.bro-layout { display: grid; grid-template-columns: 250px 1fr; gap: 18px; align-items: start; }
-.bro-pages { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-.bro-page-btn {
-    text-align: left; background: #1a1a1a; border: 1px solid #333; color: #ccc; border-radius: 8px;
-    padding: 9px 12px; cursor: pointer; font-size: 0.88em;
+/* ── BROCHURES: una tarjeta por brochure ─────────────────────── */
+.bro-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+.bro-card h4 { color: #ddd; font-size: 0.88em; margin: 18px 0 6px; }
+.bro-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.bro-card-actions a { text-decoration: none; }
+.bro-status { color: #999; font-size: 0.84em; margin: 0 0 10px; }
+.bro-card label { cursor: pointer; }
+
+/* ── ICONO DE AYUDA: explica para qué sirve cada cosa nueva ───── */
+.info-tip {
+    display: inline-flex; align-items: center; justify-content: center; position: relative;
+    width: 17px; height: 17px; margin-left: 6px; border-radius: 50%; vertical-align: middle;
+    border: 1px solid #ffc107; color: #ffc107; background: transparent; cursor: help;
+    font: italic 700 11px/1 Georgia, 'Times New Roman', serif; text-transform: none; letter-spacing: 0;
 }
-.bro-page-btn b { color: #777; margin-right: 6px; }
-.bro-page-btn.active { border-color: #ffc107; color: #ffc107; }
-.bro-pdf ol { color: #aaa; font-size: 0.8em; padding-left: 18px; margin: 0 0 12px; }
-.bro-pdf label { cursor: pointer; }
-.bro-editor label { display: flex; flex-direction: column; gap: 3px; color: #999; font-size: 0.76em; margin-bottom: 8px; }
-.bro-editor input[type="text"], .bro-editor textarea {
-    background: #121212; border: 1px solid #444; color: #eee; border-radius: 6px; padding: 7px 9px;
-    font-size: 13.5px; font-family: inherit; width: 100%; box-sizing: border-box; margin: 0;
+.info-tip::after {
+    content: attr(data-tip); position: absolute; left: 50%; top: calc(100% + 8px); transform: translateX(-50%);
+    width: 280px; max-width: 70vw; background: #0f0f0f; color: #eee; border: 1px solid #ffc107; border-radius: 8px;
+    padding: 10px 12px; font: 400 12.5px/1.45 'Montserrat', Arial, sans-serif; text-align: left; white-space: normal;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .6); z-index: 20000; opacity: 0; visibility: hidden; transition: opacity .15s; pointer-events: none;
 }
-.bro-editor textarea { resize: vertical; line-height: 1.4; }
-.bro-block { border: 1px solid #333; border-radius: 10px; padding: 12px 14px; margin-top: 14px; background: #141414; }
-.bro-block.is-hidden { opacity: 0.5; }
-.bro-block-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.bro-block-head strong { color: #ffc107; font-size: 0.82em; text-transform: uppercase; letter-spacing: 0.5px; }
-.bro-block-head label { flex-direction: row; align-items: center; gap: 6px; margin: 0; cursor: pointer; }
-.bro-item { display: grid; grid-template-columns: 1fr 30px; gap: 8px; border-top: 1px solid #2a2a2a; padding-top: 10px; margin-top: 4px; }
-.bro-item-fields { display: grid; grid-template-columns: 1fr 2fr; gap: 0 10px; }
-.bro-item-fields.one { grid-template-columns: 1fr; }
-.bro-img { display: flex; align-items: center; gap: 14px; }
-.bro-img img { width: 180px; border-radius: 8px; border: 1px solid #333; background: #000; }
-.bro-hint { color: #777; font-size: 0.76em; margin: -4px 0 8px; }
-@media (max-width: 980px) { .bro-layout { grid-template-columns: 1fr; } .bro-item-fields { grid-template-columns: 1fr; } }
+.info-tip:hover::after, .info-tip:focus::after { opacity: 1; visibility: visible; }
+.info-tip.tip-left::after { left: auto; right: -8px; transform: none; }

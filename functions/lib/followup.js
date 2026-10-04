@@ -20,32 +20,50 @@ const MAX_POR_EJECUCION = 4; // el modelo gratuito admite ~5 peticiones/min
 
 // Turno ficticio para que el modelo sepa que le toca escribir a él.
 const DISPARADOR =
-  "[SISTEMA: el cliente no ha respondido en varias horas. Escribe ahora tu mensaje de seguimiento.]";
+  "[SISTEMA: el cliente ya recibió la información y no ha vuelto a escribir. Escribe ahora tu mensaje activador.]";
 
 const INSTRUCCION = `
-## MODO SEGUIMIENTO (solo para este mensaje)
-El cliente dejó de responder hace varias horas. Escribe UN mensaje para reavivar la conversación.
+## MODO ACTIVADOR (solo para este mensaje)
+El cliente recibió nuestra información y no ha vuelto a escribir. Tu mensaje NO es un recordatorio ni una súplica: es un ACTIVADOR. Su objetivo es hacerlo pensar en lo que busca y llevarlo a dar el siguiente paso.
 
-Cómo debe ser:
-- Corto: 2 o 3 líneas como máximo.
-- Empieza por su nombre si lo sabes. Mantén el trato que venías usando (tú en Escuela, usted en eventos).
-- Aporta UN dato útil y nuevo, ligado a lo que esa persona dijo o preguntó (su meta, su evento, su duda). Que el mensaje valga por sí mismo.
-- Termina con UNA pregunta fácil de contestar, que incluya una salida sin compromiso ("…o prefieres verlo más adelante").
-- Tono tranquilo y seguro: quien ofrece algo bueno no persigue. Nada de urgencia, descuentos improvisados ni "últimos cupos".
-- PROHIBIDO: reprochar el silencio ("no me respondiste", "¿sigues ahí?", "quedé esperando"), disculparte por escribir, repetir lo que ya dijiste, volver a ofrecer el catálogo o poner etiquetas [[...]].
-- En eventos no des precios. En Escuela puedes apoyarte en el Pase VIP si aún no lo ofreciste.
+Estructura (en este orden, 5 líneas como máximo):
+1. Su nombre, si lo sabes. Mantén el trato que venías usando (tú en Escuela, usted en eventos).
+2. Nuestros TRES puntos más fuertes PARA LO QUE ESA PERSONA BUSCA, uno por línea y muy cortos (máximo 8 palabras cada uno). Elígelos según lo que dijo: su meta, su evento, su duda. Si no dijo nada, usa los tres más fuertes de ese servicio. Si el punto está en el catálogo, dilo ("lo ve en el catálogo"; en Escuela puedes citar la página).
+3. La pregunta activadora, que lo hace decidir y te abre la puerta: de lo que vio, qué es lo que más se acerca a lo que busca y qué le genera dudas, para poder avanzar.
 
-Ejemplos del tono (no los copies literal):
-- Escuela: "Carlos, un dato por si te sirve: antes de decidir puedes vivir 30 minutos de una clase real, sin costo. ¿Te separo un cupo esta semana o prefieres verlo más adelante?"
-- Eventos: "Sra. Torres, para avanzar con su cotización solo me falta un dato: ¿para qué fecha tiene pensado el evento? Si aún lo está definiendo, lo retomamos cuando guste."
+Puntos fuertes de donde elegir:
+- Escuela: todo incluido con certificación · bolsa de trabajo para egresados · sueldos en cruceros desde US$ 1,500 · se empieza desde cero, sin experiencia · Pase VIP: 30 minutos en una clase real sin costo.
+- Eventos: dealers profesionales formados en nuestra escuela · traslado, montaje y desmontaje incluidos · la dirección de DealerClub presente en su evento · 3 h de evento con hasta 3 mesas a la vez · empresa formal con contrato · reserva incluso con 48 h de anticipación. En eventos NUNCA des precios.
 
-Si la conversación ya se cerró de forma natural (se despidió, ya agendó su Pase VIP, ya tiene su cotización en manos de un asesor, o pidió que no le escriban), NO hay nada que retomar: responde únicamente con la palabra NO.
+Tono: seguro y directo, de quien ofrece algo bueno y no necesita insistir.
+PROHIBIDO: mencionar que no respondió ("no me respondiste", "¿sigue ahí?", "quedé a la espera", "le recuerdo", "retomando"), pedir por favor que conteste, disculparte por escribir, crear urgencia ("últimos cupos", "solo por hoy"), ofrecer descuentos, volver a enviar el catálogo o poner etiquetas [[...]].
+
+Ejemplos del tono (no los copies literal; adapta los tres puntos a la persona):
+- Eventos: "Sra. Torres, para un cumpleaños como el suyo, esto es lo que más valoran nuestros clientes:\n• Dealers profesionales que enseñan a jugar a sus invitados\n• Traslado, montaje y desmontaje a nuestro cargo\n• Hasta 3 mesas funcionando a la vez\nDe lo que vio en el catálogo, ¿qué es lo que más se acerca a lo que busca y qué le genera dudas? Indíqueme para poder avanzar."
+- Escuela: "Carlos, para trabajar en cruceros esto es lo que más te sirve de nosotros:\n• Sueldos desde US$ 1,500 al mes (página 5 del catálogo)\n• Certificación y bolsa de trabajo incluidas\n• Empiezas desde cero, sin experiencia\nDe lo que viste, ¿qué programa se acerca más a lo que buscas y qué te genera dudas? Dime y avanzamos."
+
+Si la conversación ya se cerró de forma natural (se despidió, ya agendó su Pase VIP, ya tiene su cotización en manos de un asesor, o pidió que no le escriban), NO hay nada que activar: responde únicamente con la palabra NO.
 `;
 
-function horaLima() {
-  return Number(
-    new Intl.DateTimeFormat("en-US", { timeZone: "America/Lima", hour: "numeric", hour12: false }).format(new Date())
-  );
+// Hora y día de la semana en Lima (0 = domingo … 6 = sábado).
+function ahoraLima() {
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Lima", hour: "numeric", hour12: false, weekday: "short",
+  }).formatToParts(new Date());
+  const hora = Number(partes.find((p) => p.type === "hour").value) % 24;
+  const dia = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(partes.find((p) => p.type === "weekday").value);
+  return { hora, dia };
+}
+
+// Lunes la gente arranca cargada y los viernes por la tarde ya desconectó:
+// esos días se escribe solo en la franja en que es más probable que lean.
+// (No se puede esperar a mitad de semana: la ventana gratuita dura 24 h.)
+const LUNES_DESDE = 11;
+const VIERNES_HASTA = 16;
+function enHorario(followUp, { hora, dia } = ahoraLima()) {
+  const desde = dia === 1 ? Math.max(followUp.from, LUNES_DESDE) : followUp.from;
+  const hasta = dia === 5 ? Math.min(followUp.to, VIERNES_HASTA) : followUp.to;
+  return hora >= desde && hora < hasta;
 }
 
 // Decide si a esta conversación le toca seguimiento. Devuelve el ts del
@@ -68,8 +86,7 @@ async function run() {
   const { followUp } = await getBotSettings();
   if (!followUp.enabled) return { enviados: 0, motivo: "desactivado" };
 
-  const hora = horaLima();
-  if (hora < followUp.from || hora >= followUp.to) return { enviados: 0, motivo: "fuera de horario" };
+  if (!enHorario(followUp)) return { enviados: 0, motivo: "fuera de horario" };
 
   const ahora = Date.now();
   const desde = new Date(ahora - 24 * HORA);
@@ -116,4 +133,4 @@ async function run() {
   return { enviados };
 }
 
-module.exports = { run, tocaSeguimiento, INSTRUCCION };
+module.exports = { run, tocaSeguimiento, enHorario, INSTRUCCION };

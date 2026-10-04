@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DealerClub — Escuela de Dealers</title>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#000;--ink:#0b0b0c;--ink-2:#141416;--gold:#FBBF0D;--gold-deep:#ca992b;
+    --cream:#F3EFE9;--cream-dim:#cfc9bf;--line:rgba(251,191,13,.22);
+    --display:"Satoshi","Montserrat",sans-serif;--body:"Montserrat",sans-serif;
+    --iso:url("/assets/images/brochure/escuela-1.png");
+    --iso-gray:url("/assets/images/brochure/escuela-2.png");
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body{background:#1a1a1c;font-family:var(--body);color:var(--cream);line-height:1.55}
+  .page{width:210mm;min-height:297mm;margin:14px auto;position:relative;overflow:hidden;background:var(--black);box-shadow:0 18px 60px rgba(0,0,0,.55);display:flex;flex-direction:column}
+  .pad{padding:20mm 18mm;position:relative;z-index:2;flex:1;display:flex;flex-direction:column}
+  .light{background:var(--cream);color:var(--ink)}
+
+  .iso-watermark{position:absolute;background-image:var(--iso);background-repeat:no-repeat;background-size:contain;pointer-events:none;z-index:0}
+  .iso-watermark.gray{background-image:var(--iso-gray)}
+  .suits-bg{position:absolute;inset:0;opacity:.04;pointer-events:none;background-image:radial-gradient(circle at 20% 30%,var(--gold) 0 1px,transparent 2px),radial-gradient(circle at 70% 65%,var(--gold) 0 1px,transparent 2px);background-size:42px 42px,58px 58px}
+
+  h1,h2,h3,.display{font-family:var(--display);font-weight:900;letter-spacing:-.01em;line-height:1.02}
+  .eyebrow{font-weight:600;font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);margin-bottom:13px;display:flex;align-items:center;gap:12px}
+  .eyebrow::before{content:"";width:30px;height:1px;background:var(--gold)}
+  .light .eyebrow{color:var(--gold-deep)}.light .eyebrow::before{background:var(--gold-deep)}
+  p{font-weight:300;font-size:14px;color:var(--cream-dim)}
+  .light p{color:#3a3833}
+  .lead{font-size:16px;font-weight:400;color:var(--cream)}.light .lead{color:var(--ink)}
+  .shead{font-size:38px;color:var(--cream);margin-bottom:6px}.light .shead{color:var(--ink)}
+  .shead em{color:var(--gold);font-style:italic}
+  .rule{height:1px;background:var(--line);margin:22px 0 24px}.light .rule{background:rgba(202,153,43,.3)}
+
+  .logo-lockup{display:flex;align-items:center;gap:15px}
+  .logo-lockup .iso-mark{height:50px;width:auto;display:block}
+  .wordmark{font-family:var(--display);font-weight:900;font-size:32px;letter-spacing:-.02em}
+  .wordmark .w{color:var(--cream)}.wordmark .c{color:var(--gold);font-style:italic}
+
+  /* COVER */
+  .cover .pad{justify-content:space-between;padding:24mm 18mm}
+  .cover-photo{position:absolute;inset:0;z-index:0;background-image:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.4) 40%,rgba(0,0,0,.85) 100%),url("/assets/images/brochure/escuela-3.jpg");background-size:cover;background-position:center top}
+  .cover-center{margin:auto 0}
+  .cover-kicker{font-weight:600;letter-spacing:.34em;text-transform:uppercase;font-size:12px;color:var(--gold);margin-bottom:16px}
+  .cover h1{font-size:62px;color:var(--cream);line-height:.96}
+  .cover h1 em{color:var(--gold);font-style:italic}
+  .slogan{margin-top:20px;font-size:19px;font-weight:300;font-style:italic;color:var(--cream)}
+  .cover-foot{display:flex;justify-content:space-between;align-items:flex-end;font-size:12px;color:var(--cream-dim);font-weight:400}
+  .cover-foot b{color:var(--gold);font-weight:600}
+
+  /* photos */
+  .figure{border-radius:12px;overflow:hidden;border:1px solid var(--line);line-height:0}
+  .figure img{width:100%;height:100%;object-fit:cover;display:block}
+
+  /* manifiesto / credibility */
+  .two{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;align-items:center}
+  .cred{margin-top:14px;border-left:2px solid var(--gold);padding-left:16px;font-size:14px;color:var(--cream)}
+  .diffs{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:26px}
+  .diff{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:14px 15px;background:linear-gradient(180deg,var(--ink-2),var(--ink))}
+  .diff .ic{color:var(--gold);font-family:var(--display);font-weight:900;font-size:16px;line-height:1.2}
+  .diff h4{font-size:14.5px;color:var(--cream);margin-bottom:2px}
+  .diff p{font-size:12px}
+
+  /* packages */
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .pk{border:1px solid var(--line);border-radius:12px;padding:16px 16px 14px;background:linear-gradient(180deg,var(--ink-2),var(--ink));position:relative;display:flex;flex-direction:column}
+  .pk-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .pk h3{font-size:20px;color:var(--cream)}
+  .pk .price{font-family:var(--display);font-weight:900;font-size:25px;color:var(--gold);margin:7px 0 2px}
+  .pk .desc{font-size:12px;color:var(--cream-dim);min-height:30px;font-weight:300}
+  .pk .meta{font-size:11px;color:var(--cream);margin-top:9px;font-weight:400}
+  .pk .meta span{color:var(--gold-deep);font-weight:600}
+  .pk .games{font-size:11px;color:var(--cream-dim);margin-top:5px;font-weight:300}
+  .pk .games b{color:var(--cream)}
+  .badge{font-size:8.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:4px 8px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+  .b-open{background:rgba(54,179,90,.16);color:#5ad17e;border:1px solid rgba(90,209,126,.4)}
+  .b-soon{background:rgba(251,191,13,.14);color:var(--gold);border:1px solid var(--line)}
+  .b-closed{background:rgba(214,69,69,.15);color:#ff8585;border:1px solid rgba(255,133,133,.35)}
+  .tag{position:absolute;top:-9px;left:14px;background:var(--gold);color:#000;font-size:8.5px;font-weight:800;letter-spacing:.1em;padding:4px 9px;border-radius:6px;text-transform:uppercase}
+  .pk .price .per{font-size:12px;font-weight:600;color:var(--cream-dim);font-family:var(--body);letter-spacing:0}
+  .pk.feature{background:linear-gradient(180deg,rgba(251,191,13,.16),rgba(251,191,13,.04));border-color:var(--gold);box-shadow:0 0 0 1px rgba(251,191,13,.22),0 12px 30px rgba(251,191,13,.10)}
+  .pk.feature h3{color:var(--gold)}.pk.feature .price{color:var(--gold)}
+  .soon-cta{margin-top:auto;padding-top:12px;font-family:var(--display);font-weight:900;font-size:14px;color:var(--gold);letter-spacing:.02em}
+  .custom-hours{margin-top:16px;background:var(--gold);color:#000;border-radius:12px;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;gap:20px}
+  .custom-hours .ch-kicker{font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;opacity:.72}
+  .custom-hours h4{font-family:var(--display);font-weight:900;font-size:19px;color:#000;margin:3px 0;line-height:1.05}
+  .custom-hours p{font-size:11px;color:#1a1400;font-weight:500;max-width:82%}
+  .custom-hours .ch-right{text-align:right;flex-shrink:0}
+  .custom-hours .ch-wa{font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;opacity:.72}
+  .custom-hours .ch-num{font-family:var(--display);font-weight:900;font-size:17px;color:#000}
+  .p3compact .pad{padding:13mm 18mm}
+  .p3compact .eyebrow{margin-bottom:9px}
+  .p3compact .shead{font-size:34px}
+  .p3compact .rule{margin:12px 0 14px}
+  .p3compact .pgrid{gap:10px}
+  .p3compact .pk{padding:13px 14px 12px}
+  .p3compact .pk h3{font-size:19px}
+  .p3compact .pk .price{font-size:23px}
+  .p3compact .pk .desc{min-height:0}
+  .p3compact .pk .meta{margin-top:7px}
+  .p3compact .pk .games{margin-top:4px}
+  .p3compact .custom-hours{margin-top:12px;padding:12px 18px}
+  .p3compact .custom-hours h4{font-size:18px;margin:2px 0}
+
+  /* games (light) */
+  .games-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin-top:4px}
+  .g{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.08)}
+  .g .ic{font-size:20px;line-height:1;color:var(--gold-deep);flex-shrink:0;width:24px;text-align:center}
+  .g .ic.red{color:#b3403f}
+  .g h4{font-family:var(--display);font-weight:700;font-size:14px;color:var(--ink);margin-bottom:1px}
+  .g p{font-size:11.5px;color:#56524b;font-weight:300;line-height:1.4}
+  .games-photo{margin-top:16px;height:auto}
+  .games-photo img{height:auto}
+
+  /* futuro + pasos + condiciones */
+  .future{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch;margin-bottom:6px}
+  .paybox{border:1px solid var(--line);border-radius:12px;padding:16px 16px;background:linear-gradient(180deg,var(--ink-2),var(--ink))}
+  .paybox.hi{border-color:var(--gold)}
+  .paybox .loc{font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-deep)}
+  .paybox.hi .loc{color:var(--gold)}
+  .paybox .amt{font-family:var(--display);font-weight:900;font-size:28px;color:var(--gold);margin:6px 0 7px;line-height:1}
+  .paybox .amt span{font-family:var(--body);font-weight:400;font-size:12px;color:var(--cream-dim)}
+  .paybox p{font-size:11.5px}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:6px}
+  .step{border:1px solid var(--line);border-radius:10px;padding:15px 14px;background:linear-gradient(180deg,var(--ink-2),var(--ink))}
+  .step .n{font-family:var(--display);font-weight:900;color:var(--gold);font-size:22px}
+  .step h4{font-size:13.5px;color:var(--cream);margin:6px 0 3px}
+  .step p{font-size:11.5px}
+  .cond{margin-top:8px}
+  .cond li{list-style:none;display:flex;gap:11px;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px;color:var(--cream);font-weight:300}
+  .cond li:first-child{border-top:none}
+  .cond .k{color:var(--gold);font-family:var(--display);font-weight:900;flex-shrink:0}
+
+  /* CTA */
+  .cta{background:var(--gold);color:#000}
+  .cta .pad{justify-content:center}
+  .cta .eyebrow{color:#000}.cta .eyebrow::before{background:#000}
+  .cta h2{font-size:46px;color:#000;line-height:1}.cta h2 em{font-style:italic}
+  .cta .lead{color:#1c1a12;max-width:540px;margin-top:14px;font-weight:400;font-size:15px}
+  .contact{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:28px}
+  .cbox{border:1px solid rgba(0,0,0,.25);border-radius:10px;padding:14px 16px}
+  .cbox .l{font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#5b4d08}
+  .cbox .v{font-family:var(--display);font-weight:700;font-size:15px;color:#000;margin-top:4px;line-height:1.25}
+  .cbox .v small{display:block;font-family:var(--body);font-weight:400;font-size:11.5px;color:#3a3208;margin-top:3px}
+  .socials{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:6px;font-size:12.5px;color:#000;font-weight:500}
+  .socials b{font-weight:700}
+  .wa{margin-top:24px;display:inline-flex;align-items:center;gap:12px;background:#000;color:var(--gold);font-family:var(--display);font-weight:700;font-size:19px;padding:15px 24px;border-radius:12px;width:max-content}
+  .cta-foot{margin-top:26px;display:flex;justify-content:space-between;align-items:flex-end;font-size:11px;color:#1c1a12;font-weight:500}
+  .cta-foot .wordmark{font-size:22px}.cta-foot .wordmark .w{color:#000}.cta-foot .wordmark .c{color:#000}
+
+  .pnum{position:absolute;bottom:11mm;right:18mm;font-size:10px;letter-spacing:.2em;color:var(--cream-dim);z-index:3}
+  .light .pnum{color:#9a958c}.cta .pnum{color:#1c1a12}
+
+  @media print{body{background:#fff}.page{margin:0;box-shadow:none;page-break-after:always}@page{size:A4 portrait;margin:0}}
+  @media (max-width:760px){.page{width:100%;min-height:auto}.two,.diffs,.pgrid,.games-grid,.future,.steps,.contact{grid-template-columns:1fr}.cover h1{font-size:44px}.cta h2{font-size:34px}.shead{font-size:28px}}
+</style>
+<meta name="description" content="Brochure de la Escuela de Dealers de DealerClub: programas, juegos, salida laboral y cómo inscribirte.">
+<link rel="icon" href="/assets/images/favicon_pokerchips.png" type="image/png">
+<link rel="stylesheet" href="/assets/css/brochure.css">
+</head>
+<body data-brochure="escuela" data-version="1">
+<!-- Barra de acciones del sitio (no se imprime) -->
+<div class="bx-bar" id="bx-bar">
+  <a href="/cursos" class="bx-back">← Volver a Cursos</a>
+  <div class="bx-actions">
+    <button type="button" id="bx-print" class="bx-btn">⬇ Descargar PDF</button>
+    <a href="/cursos" class="bx-btn bx-gold">Inscribirme</a>
+  </div>
+</div>
+
+
+<!-- PAGE 1 — COVER -->
+<section class="page cover">
+  <div class="cover-photo"></div>
+  <div class="iso-watermark" style="right:-70px;top:120px;width:430px;height:550px;opacity:.1"></div>
+  <div class="pad">
+    <div class="logo-lockup">
+      <div class="wordmark"><span class="w">Dealer</span><span class="c">Club</span></div>
+      <img class="iso-mark" src="/assets/images/brochure/escuela-4.png" alt="DealerClub">
+    </div>
+    <div class="cover-center">
+      <div class="cover-kicker">Formación profesional de croupiers</div>
+      <h1>Escuela<br>de <em>Dealers</em></h1>
+      <div class="slogan">El juego a otro nivel.</div>
+    </div>
+    <div class="cover-foot">
+      <div>dealerclubpe.com<br><b>+51 929 610 747</b></div>
+      <div style="text-align:right">Lima · Perú<br>Catálogo de programas</div>
+    </div>
+  </div>
+</section>
+
+<!-- PAGE 2 — MANIFIESTO + CREDIBILIDAD -->
+<section class="page">
+  <div class="suits-bg"></div>
+  <div class="iso-watermark" style="left:-150px;bottom:-80px;width:430px;height:550px;opacity:.05"></div>
+  <div class="pad">
+    <div class="eyebrow">Bienvenido al club</div>
+    <h2 class="shead">Conviértete en un <em>dealer de élite</em></h2>
+    <div class="rule"></div>
+    <div class="two">
+      <div>
+        <p class="lead">No aprendes a repartir cartas: aprendes a dominar la mesa. Te formamos con el estándar de los grandes casinos y cruceros del mundo, donde la precisión, el control y la presencia marcan la diferencia.</p>
+        <div class="cred">Aprende de quien lo vive: formación guiada por dealers con experiencia real en casinos y cruceros internacionales.</div>
+      </div>
+      <div class="figure" style="height:280px"><img src="/assets/images/brochure/escuela-5.jpg" alt="Dealer DealerClub en mesa de póker"></div>
+    </div>
+    <div class="diffs">
+      <div class="diff"><div class="ic">♠</div><div><h4>Todo incluido</h4><p>Matrícula, materiales, prácticas y certificación en un solo pago.</p></div></div>
+      <div class="diff"><div class="ic">♥</div><div><h4>Certificación</h4><p>La obtienes al aprobar las pruebas finales del programa.</p></div></div>
+      <div class="diff"><div class="ic">♦</div><div><h4>Bolsa de trabajo</h4><p>Reclutamos y recomendamos a nuestros egresados.</p></div></div>
+      <div class="diff"><div class="ic">♣</div><div><h4>Sin experiencia previa</h4><p>Te llevamos desde cero hasta el nivel profesional.</p></div></div>
+      <div class="diff"><div class="ic">♠</div><div><h4>Campus virtual</h4><p>Plataforma online para reforzar la teoría, repasar y seguir tu progreso cuando quieras.</p></div></div>
+      <div class="diff"><div class="ic">♥</div><div><h4>Capacitadores invitados</h4><p>Dealers en activo de cruceros internacionales que, en fechas puntuales, enseñan y orientan de primera mano.</p></div></div>
+    </div>
+  </div>
+  <div class="pnum">02</div>
+</section>
+
+<!-- PAGE 3 — PAQUETES -->
+<section class="page p3compact">
+  <div class="suits-bg"></div>
+  <div class="iso-watermark" style="right:-150px;top:50%;transform:translateY(-50%);width:430px;height:550px;opacity:.04"></div>
+  <div class="pad">
+    <div class="eyebrow">Programas intensivos</div>
+    <h2 class="shead">Elige tu <em>camino</em></h2>
+    <div class="rule"></div>
+    <div class="pgrid">
+      <div class="pk"><div class="tag">Más vendido</div><div class="pk-top"><h3>Trotamundos</h3><span class="badge b-open">Abierto</span></div><div class="price">S/ 700 <span class="per">/ mes</span></div><div class="desc">Aspirantes a dealers de élite para trabajar en cruceros.</div><div class="meta"><span>Horario:</span> Lun a Vie · 9am–1pm</div><div class="games"><b>Juegos:</b> Blackjack + Dream 21, Ruleta Francesa, Ultimate Texas Hold'em + Three Card Póker, Baccarat (Punto/Banco)</div><div class="meta"><span>Duración:</span> 300–320 h (4 meses)</div></div>
+      <div class="pk"><div class="tag">Recomendado</div><div class="pk-top"><h3>Sabelotodo</h3><span class="badge b-open">Abierto</span></div><div class="price">S/ 500 <span class="per">/ mes</span></div><div class="desc">Formación integral en los juegos más demandados.</div><div class="meta"><span>Horario:</span> Lun a Vie · 3pm–6pm</div><div class="games"><b>Juegos:</b> Blackjack, Ruleta Europea, Póker Caribeño, Baccarat (Punto/Banco)</div><div class="meta"><span>Duración:</span> 140–160 h (3 meses)</div></div>
+      <div class="pk"><div class="pk-top"><h3>Spin a la Carta</h3><span class="badge b-open">Abierto</span></div><div class="price">S/ 350 <span class="per">/ mes</span></div><div class="desc">Ideal para principiantes: inmersión rápida y sólida.</div><div class="meta"><span>Horario:</span> Lun a Vie · 9am–1pm</div><div class="games"><b>Juegos:</b> Blackjack, Ruleta Europea</div><div class="meta"><span>Duración:</span> 100 h (2 meses)</div></div>
+      <div class="pk"><div class="pk-top"><h3>Póker Face</h3><span class="badge b-open">Abierto</span></div><div class="price">S/ 450 <span class="per">· Pago único</span></div><div class="desc">Para entusiastas del póker que quieren dominar el rol del dealer.</div><div class="meta"><span>Horario:</span> Sáb y Dom (consultar)</div><div class="games"><b>Juegos:</b> Texas Hold'em y Póker Caribeño</div><div class="meta"><span>Duración:</span> 80–100 h (1 mes)</div></div>
+      <div class="pk"><div class="pk-top"><h3>Formación a la Carta</h3><span class="badge b-closed">Cerrado</span></div><div class="price">Consultar</div><div class="desc">Diseña tu propio plan eligiendo los módulos de tu interés.</div><div class="games"><b>Juegos:</b> Blackjack, Dream 21, Ultimate Texas Hold'em, Ruleta Europea y Americana, Three Card Póker, Baccarat (Punto/Banco), Póker Caribeño, Craps</div><div class="meta"><span>Duración:</span> A medida</div></div>
+      <div class="pk feature"><div class="pk-top"><h3>Al Asador</h3><span class="badge b-soon">Próximamente</span></div><div class="price" style="font-style:italic">Muy pronto</div><div class="desc">Especialización en el juego más dinámico del sector.</div><div class="meta"><span>Horario:</span> Sáb y Dom (consultar)</div><div class="games"><b>Juegos:</b> Craps, Stick Man</div><div class="meta"><span>Duración:</span> 60–70 h (2 meses)</div><div class="soon-cta">♦ ¡Separa tu cupo!</div></div>
+    </div>
+    <div class="custom-hours"><div class="ch-left"><div class="ch-kicker">♦ Horarios a medida</div><h4>¿Ningún horario te calza?</h4><p>Personaliza tu horario según tu necesidad, con un sobrecargo extra. Escríbenos y lo armamos contigo.</p></div><div class="ch-right"><div class="ch-wa">WhatsApp</div><div class="ch-num">+51 929 610 747</div></div></div>
+  </div>
+  <div class="pnum">03</div>
+</section>
+
+<!-- PAGE 4 — LOS JUEGOS (light) -->
+<section class="page light">
+  <div class="iso-watermark gray" style="right:-140px;top:30px;width:420px;height:540px;opacity:.09"></div>
+  <div class="pad">
+    <div class="eyebrow">El repertorio</div>
+    <h2 class="shead">Los juegos que <em>dominarás</em></h2>
+    <div class="rule"></div>
+    <div class="games-grid">
+      <div class="g"><div class="ic">♠</div><div><h4>Blackjack</h4><p>El clásico del 21. Ritmo, cálculo mental y control de la mesa.</p></div></div>
+      <div class="g"><div class="ic red">♦</div><div><h4>Dream 21</h4><p>Variante del blackjack con apuestas y pagos especiales.</p></div></div>
+      <div class="g"><div class="ic red">♥</div><div><h4>Ruleta · Europea, Francesa y Americana</h4><p>El giro más icónico: rueda, anuncios y pagos.</p></div></div>
+      <div class="g"><div class="ic">♣</div><div><h4>Baccarat — Punto y Banco</h4><p>Elegancia y precisión: el juego de las grandes mesas.</p></div></div>
+      <div class="g"><div class="ic">♠</div><div><h4>Ultimate Texas Hold'em</h4><p>Póker contra la casa. Lectura y velocidad de pago.</p></div></div>
+      <div class="g"><div class="ic red">♦</div><div><h4>Three Card Póker</h4><p>Dinámico y de pagos rápidos, favorito en sala.</p></div></div>
+      <div class="g"><div class="ic red">♥</div><div><h4>Póker Caribeño</h4><p>Póker contra la casa con jackpot progresivo.</p></div></div>
+      <div class="g"><div class="ic">♣</div><div><h4>Texas Hold'em</h4><p>El rey del póker: mesa de torneo y cash game.</p></div></div>
+      <div class="g"><div class="ic">♠</div><div><h4>Craps</h4><p>El juego más vibrante del casino: dados y energía.</p></div></div>
+      <div class="g"><div class="ic red">♦</div><div><h4>Stick Man</h4><p>El rol clave que dirige el ritmo de la mesa de craps.</p></div></div>
+    </div>
+    <div class="figure games-photo"><img src="/assets/images/brochure/escuela-6.jpg" alt="Dealer en mesa profesional"></div>
+  </div>
+  <div class="pnum">04</div>
+</section>
+
+<!-- PAGE 5 — FUTURO + PASOS + CONDICIONES -->
+<section class="page">
+  <div class="suits-bg"></div>
+  <div class="iso-watermark" style="left:-150px;top:40px;width:420px;height:540px;opacity:.045"></div>
+  <div class="pad">
+    <div class="eyebrow">Tu futuro como dealer</div>
+    <h2 class="shead">Una carrera con <em>salida real</em></h2>
+    <div class="rule"></div>
+    <div class="future">
+      <div class="paybox">
+        <div class="loc">Casinos en Lima</div>
+        <div class="amt">S/ 1,500 – 2,000 <span>/ mes aprox.</span></div>
+        <p>En sala, sin contar propinas. Las mesas en dólares suman un ingreso extra.</p>
+      </div>
+      <div class="paybox hi">
+        <div class="loc">Cruceros internacionales</div>
+        <div class="amt">US$ 1,500 – 6,000 <span>/ mes</span></div>
+        <p>El sueldo base suele partir de US$ 1,500 y puede llegar a US$ 5,000–6,000, según el barco, la ruta, la compañía y otros factores.</p>
+      </div>
+    </div>
+    <p style="margin-top:14px">Un dealer formado trabaja en <b style="color:var(--cream)">casinos, eventos privados y cruceros internacionales</b>: la demanda es constante donde haya una mesa de juego.</p>
+
+    <div class="rule"></div>
+    <div class="eyebrow">Inscríbete en 3 pasos</div>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h4>Crea tu usuario</h4><p>Regístrate en dealerclubpe.com con tus datos.</p></div>
+      <div class="step"><div class="n">2</div><h4>Realiza tu pago</h4><p>Por transferencia bancaria: cuota mensual o pago único, según el programa.</p></div>
+      <div class="step"><div class="n">3</div><h4>Valida y accede</h4><p>Envía tu voucher y entra al campus virtual y al curso completo.</p></div>
+    </div>
+
+    <div class="rule"></div>
+    <div class="eyebrow">Condiciones claras</div>
+    <ul class="cond">
+      <li><span class="k">♠</span> El pago se realiza por transferencia bancaria. La mayoría de programas son de cuota mensual; algunos son de pago único, según se indica en cada programa.</li>
+      <li><span class="k">♥</span> La certificación se obtiene al aprobar las pruebas finales. De no aprobarlas, se requiere una extensión: un mes adicional (o el plazo que indique el docente).</li>
+      <li><span class="k">♦</span> Para aprender no necesitas experiencia previa. Para ejercer profesionalmente, la edad mínima es 18 años.</li>
+    </ul>
+  </div>
+  <div class="pnum">05</div>
+</section>
+
+<!-- PAGE 6 — CTA / CONTACTO -->
+<section class="page cta">
+  <div class="iso-watermark gray" style="right:-130px;top:40px;width:410px;height:520px;opacity:.12"></div>
+  <div class="pad">
+    <div class="eyebrow">Tu lugar en la mesa te espera</div>
+    <h2>Empieza tu carrera <em>hoy</em></h2>
+    <p class="lead">Escríbenos y reserva tu cupo. Te enviamos el detalle de cada programa y resolvemos todas tus dudas. Solicita tu <b>Pase VIP</b> ahora: consta de 30 minutos en una clase real en vivo para que vivas la experiencia desde adentro y no esperes más en ser parte de nosotros.</p>
+
+    <div class="contact">
+      <div class="cbox"><div class="l">Ubicación</div><div class="v">Coyllur 167 — 2.º piso<br><small>Zárate, San Juan de Lurigancho · Ref. Av. Gran Chimú / Malecón Checa</small></div></div>
+      <div class="cbox"><div class="l">Inscripción</div><div class="v">100% online<br><small>Crea tu usuario y valida tu pago en la web</small></div></div>
+    </div>
+
+    <div class="cbox" style="margin-top:13px">
+      <div class="l">Síguenos y escríbenos</div>
+      <div class="socials">
+        <span>🌐 <b>dealerclubpe.com</b></span>
+        <span>✉ dealerclubpe@gmail.com</span>
+        <span>📷 Instagram <b>@dealerclubpe</b></span>
+        <span>▶ TikTok <b>@dealerclubpe</b></span>
+        <span>f Facebook <b>/dealerclubperu</b></span>
+      </div>
+    </div>
+
+    <div class="wa">♠ &nbsp;WhatsApp +51 929 610 747</div>
+
+    <div class="cta-foot">
+      <div class="wordmark"><span class="w">Dealer</span><span class="c">Club</span></div>
+      <div style="text-align:right">DealerClub E.I.R.L. · RUC 20615317315<br>El juego a otro nivel.</div>
+    </div>
+  </div>
+  <div class="pnum">06</div>
+</section>
+
+<script type="module" src="/assets/js/brochure.js"></script>
+</body>
+</html>

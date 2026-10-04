@@ -251,14 +251,14 @@
                 <div class="section-header">
                     <h2>Cotizaciones de eventos</h2>
                     <div>
-                        <button class="btn btn-secondary" id="open-tariff-btn"><i class="fas fa-tags"></i> Tarifario</button>
-                        <button class="btn btn-primary" id="new-quote-btn"><i class="fas fa-plus"></i> Nueva cotización</button>
+                        <button class="btn btn-secondary" id="open-tariff-btn"><i class="fas fa-tags"></i> Tarifario</button> <span class="info-tip" data-tip="Precios base de mesas y extras, lo que incluye el servicio y los textos de la hoja de cotización. Lo que guardes aquí se carga en cada cotización nueva.">i</span>
+                        <button class="btn btn-primary" id="new-quote-btn"><i class="fas fa-plus"></i> Nueva cotización</button> <span class="info-tip tip-left" data-tip="Para pedidos que llegan por WhatsApp o teléfono. Si el cliente pidió por la web, usa el botón Cotizar de su solicitud: carga sus datos solo.">i</span>
                     </div>
                 </div>
 
                 <div class="student-tabs" id="quote-tabs">
                     <button type="button" class="student-tab active" data-view="requests">Solicitudes recibidas</button>
-                    <button type="button" class="student-tab" data-view="quotes">Cotizaciones emitidas <span id="quotes-tab-count"></span></button>
+                    <button type="button" class="student-tab" data-view="quotes">Cotizaciones emitidas <span id="quotes-tab-count"></span></button> <span class="info-tip" data-tip="Historial de todas las cotizaciones, se hayan concretado o no. Desde ahí las editas, duplicas, abres su hoja o cambias su estado.">i</span>
                 </div>
 
                 <div id="requests-view">
@@ -436,7 +436,7 @@
                                 <textarea id="onboardingText" rows="2" placeholder="Ej: Envía tu voucher de pago y desbloquea todo el campus virtual."></textarea>
                             </div>
                             <div class="form-group">
-                                <label>Enlace del video de bienvenida (opcional):</label>
+                                <label>Enlace del video de bienvenida (opcional): <span class="info-tip" data-tip="Es el video que ve arriba de todo el alumno que se registró y aún no paga. Si lo dejas vacío, se usa el archivo bienvenida.mp4 publicado con el optimizador del escritorio o, si no hay, el video de presentación.">i</span></label>
                                 <input type="text" id="onboardingVideoUrl" placeholder="Pega el enlace del video (déjalo vacío para usar el video de presentación del sitio)">
                                 <small style="color:#888;">Se reproduce dentro del campus si es de YouTube, Vimeo, Instagram, TikTok, Facebook, Google Drive o un archivo .mp4. Con otros enlaces se muestra un botón que abre el video. Recomendado: YouTube como "No listado", sin costo y con la mejor calidad.</small>
                             </div>
@@ -511,7 +511,7 @@
             <!-- ═══════════════ PROGRESO ALUMNOS ═══════════════ -->
             <section id="progress-management" class="content-section">
                 <div class="section-header">
-                    <h2>Progreso de Alumnos</h2>
+                    <h2>Progreso de Alumnos <span class="info-tip" data-tip="Calendario completo de asistencia, nivel y notas semanales de cada alumno. Para el día a día usa Trabajo del día.">i</span></h2>
                     <small style="color:#888;">Solo alumnos matriculados. Los inscritos sin pago y los suspendidos están en Alumnos.</small>
                 </div>
                 <div class="table-toolbar">
@@ -541,7 +541,7 @@
             <!-- ═══════════════ TRABAJO DEL DÍA ═══════════════ -->
             <section id="daily-management" class="content-section active">
                 <div class="section-header">
-                    <h2>Lista del día</h2>
+                    <h2>Lista del día <span class="info-tip" data-tip="Tu trabajo diario en una sola pantalla. Aparecen los alumnos matriculados que tienen clase en la fecha elegida: marca Presente o Faltó, ajusta su nivel y guarda todo junto. Arriba ves lo que necesita tu atención.">i</span></h2>
                     <div class="daily-date">
                         <button type="button" class="btn-page" id="daily-prev" title="Día anterior"><i class="fas fa-chevron-left"></i></button>
                         <input type="date" id="daily-date">
@@ -554,9 +554,9 @@
                 <div id="daily-alerts" class="daily-alerts"></div>
 
                 <div class="table-toolbar requests-toolbar">
-                    <button type="button" class="btn btn-secondary btn-sm" id="daily-all-present"><i class="fas fa-check-double"></i> Todos presentes</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="daily-all-present"><i class="fas fa-check-double"></i> Todos presentes</button> <span class="info-tip" data-tip="Marca como presentes a los que aún no tienen marca. No cambia a quien ya marcaste con falta.">i</span>
                     <button type="button" class="btn btn-secondary btn-sm" id="daily-new-task"><i class="fas fa-tasks"></i> Nueva tarea</button>
-                    <label class="daily-show-all"><input type="checkbox" id="daily-show-all"> Mostrar a todos los matriculados</label>
+                    <label class="daily-show-all"><input type="checkbox" id="daily-show-all"> Mostrar a todos los matriculados <span class="info-tip" data-tip="Normalmente solo salen los alumnos con clase ese día. Actívalo si hubo una clase fuera de horario o una recuperación.">i</span></label>
                     <span class="results-count" id="daily-count"></span>
                 </div>
 
@@ -573,7 +573,7 @@
             <!-- ═══════════════ ALUMNOS ═══════════════ -->
             <section id="students-management" class="content-section">
                 <div class="section-header">
-                    <h2>Alumnos</h2>
+                    <h2>Alumnos <span class="info-tip" data-tip="Todo sobre cada alumno en un solo lugar: activarlo cuando paga, sus pagos mensuales, su progreso, suspenderlo o reactivarlo. Un Inscrito aún no pagó; un Matriculado ya tiene acceso completo.">i</span></h2>
                 </div>
 
                 <!-- Constancias de pago por revisar (solo aparece si hay alguna) -->
@@ -609,7 +609,7 @@
                         <thead>
                             <tr>
                                 <th>Código</th><th>Alumno</th><th>Curso</th><th>Modalidad</th>
-                                <th>Estado</th><th>Pago</th><th>Acciones</th>
+                                <th>Estado</th><th>Pago <span class="info-tip tip-left" data-tip="Estado de la cuota vigente. El día de pago queda fijo desde el inicio de clases. Avisa 7 días antes del vencimiento.">i</span></th><th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="students-table-body">
@@ -627,54 +627,56 @@
             <!-- ═══════════════ BROCHURES ═══════════════ -->
             <section id="brochures-management" class="content-section">
                 <div class="section-header">
-                    <h2>Brochures</h2>
-                    <div class="bro-actions">
-                        <select id="brochure-type" class="filter-select">
-                            <option value="eventos">Casino de Fantasía (eventos)</option>
-                        </select>
-                        <a href="/brochure-eventos" id="brochure-view" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fas fa-eye"></i> Ver brochure</a>
-                        <button type="button" class="btn btn-secondary" id="brochure-reset"><i class="fas fa-undo"></i> Restaurar original</button>
-                        <button type="button" class="btn btn-primary" id="brochure-save"><i class="fas fa-save"></i> Guardar cambios</button>
-                    </div>
+                    <h2>Brochures <span class="info-tip" data-tip="Cada brochure es una página de tu web con tu diseño original. 'Editar brochure' la abre en modo edición: haces clic en un texto para cambiarlo o en una foto para reemplazarla, y guardas. El bot conoce el texto nuevo al minuto.">i</span></h2>
                 </div>
-                <div class="bro-layout">
-                    <aside>
-                        <div id="brochure-pages" class="bro-pages"></div>
-                        <div class="bot-card bro-pdf">
-                            <h3>PDF que envía el bot</h3>
-                            <p id="brochure-pdf-status" class="activate-note">Comprobando…</p>
-                            <ol>
-                                <li>Guarda tus cambios.</li>
-                                <li>Abre "Ver brochure" y pulsa "Descargar PDF" (destino: Guardar como PDF).</li>
-                                <li>Sube aquí ese archivo.</li>
-                            </ol>
-                            <label class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Subir PDF
-                                <input type="file" id="brochure-pdf-file" accept="application/pdf" hidden>
-                            </label>
+                <div class="bro-cards">
+                    <div class="bot-card bro-card" data-brochure="eventos">
+                        <h3>Casino de Fantasía (eventos)</h3>
+                        <div class="bro-card-actions">
+                            <a href="/brochure-eventos?editar=1" target="_blank" rel="noopener" class="btn btn-primary"><i class="fas fa-pen"></i> Editar brochure</a>
+                            <a href="/brochure-eventos" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fas fa-eye"></i> Ver</a>
                         </div>
-                    </aside>
-                    <div id="brochure-editor" class="bot-card bro-editor"><div class="spinner"></div></div>
+                        <p class="bro-status" data-role="content">Comprobando…</p>
+                        <h4>PDF que envía el bot <span class="info-tip" data-tip="El bot de WhatsApp envía un archivo PDF. Cuando cambies el brochure: abre 'Ver', pulsa 'Descargar PDF' (destino: Guardar como PDF) y sube aquí ese archivo. Hasta entonces el bot sigue enviando el anterior.">i</span></h4>
+                        <p class="bro-status" data-role="pdf">Comprobando…</p>
+                        <label class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Subir PDF
+                            <input type="file" class="bro-pdf-file" accept="application/pdf" hidden>
+                        </label>
+                    </div>
+                    <div class="bot-card bro-card" data-brochure="escuela">
+                        <h3>Escuela de Dealers</h3>
+                        <div class="bro-card-actions">
+                            <a href="/brochure-escuela?editar=1" target="_blank" rel="noopener" class="btn btn-primary"><i class="fas fa-pen"></i> Editar brochure</a>
+                            <a href="/brochure-escuela" target="_blank" rel="noopener" class="btn btn-secondary"><i class="fas fa-eye"></i> Ver</a>
+                        </div>
+                        <p class="bro-status" data-role="content">Comprobando…</p>
+                        <h4>PDF que envía el bot <span class="info-tip" data-tip="El bot de WhatsApp envía un archivo PDF. Cuando cambies el brochure: abre 'Ver', pulsa 'Descargar PDF' (destino: Guardar como PDF) y sube aquí ese archivo. Hasta entonces el bot sigue enviando el anterior.">i</span></h4>
+                        <p class="bro-status" data-role="pdf">Comprobando…</p>
+                        <label class="btn btn-secondary btn-sm"><i class="fas fa-upload"></i> Subir PDF
+                            <input type="file" class="bro-pdf-file" accept="application/pdf" hidden>
+                        </label>
+                    </div>
                 </div>
             </section>
 
             <!-- ═══════════════ BOT DE WHATSAPP ═══════════════ -->
             <section id="bot-management" class="content-section">
                 <div class="section-header">
-                    <h2>Bot de WhatsApp</h2>
-                    <button class="btn btn-primary" id="bot-analyze-btn"><i class="fas fa-chart-bar"></i> Analizar chats ahora</button>
+                    <h2>Bot de WhatsApp <span class="info-tip" data-tip="Controla lo que el bot hace por su cuenta: escribir a quien dejó de responder, y revisar los chats para mejorar. Nada cambia en el bot sin que tú lo apruebes aquí.">i</span></h2>
+                    <button class="btn btn-primary" id="bot-analyze-btn"><i class="fas fa-chart-bar"></i> Analizar chats ahora</button> <span class="info-tip tip-left" data-tip="Genera en el momento el informe de los últimos 7 días, sin esperar al lunes. Tarda cerca de un minuto.">i</span>
                 </div>
                 <div class="bot-grid">
                     <form id="botSettingsForm" class="bot-card">
-                        <h3>Seguimiento automático</h3>
-                        <p class="activate-note">Si un cliente deja de responder, el bot le escribe una sola vez para retomar la conversación, con un dato útil y una pregunta fácil. Solo dentro de las 24 horas desde su último mensaje, que es cuando WhatsApp no cobra.</p>
-                        <label class="qe-check" style="margin-top:0;"><input type="checkbox" id="botFollowEnabled"> Seguimiento activado</label>
+                        <h3>Mensaje activador <span class="info-tip" data-tip="Cuando un cliente recibe la información y no vuelve a escribir, el bot le envía un solo mensaje con nuestros tres puntos más fuertes para lo que busca y una pregunta que lo lleva a decidir. No es un recordatorio. Solo se envía dentro de las 24 horas en que WhatsApp no cobra.">i</span></h3>
+                        <p class="activate-note">Si un cliente deja de responder, el bot le escribe una sola vez: nuestros tres puntos más fuertes para lo que busca y una pregunta que lo lleva a decidir. Los lunes solo desde las 11:00 y los viernes solo hasta las 16:00. Siempre dentro de las 24 horas desde su último mensaje, que es cuando WhatsApp no cobra.</p>
+                        <label class="qe-check" style="margin-top:0;"><input type="checkbox" id="botFollowEnabled"> Mensaje activador encendido</label>
                         <div class="qe-grid qe-3" style="margin-top:10px;">
                             <label>Horas de silencio antes de escribir <input type="number" id="botFollowHours" min="1" max="20" step="1"></label>
                             <label>Enviar desde las (hora) <input type="number" id="botFollowFrom" min="0" max="23" step="1"></label>
                             <label>Enviar hasta las (hora) <input type="number" id="botFollowTo" min="1" max="24" step="1"></label>
                         </div>
 
-                        <h3 style="margin-top:22px;">Notas del bot</h3>
+                        <h3 style="margin-top:22px;">Notas del bot <span class="info-tip" data-tip="Reglas extra que el bot aplica además de sus instrucciones. Escríbelas tú o agrégalas desde las sugerencias de un informe. El bot las toma en un minuto.">i</span></h3>
                         <p class="activate-note">Reglas que el bot aplica además de sus instrucciones, una por línea. Puedes escribirlas tú o agregarlas desde las sugerencias de un informe. El bot las toma en un minuto.</p>
                         <textarea id="botNotes" rows="9" class="qe-notes" placeholder="Ej.: Si preguntan por estacionamiento, di que hay cochera pública a media cuadra."></textarea>
 
@@ -685,7 +687,7 @@
                     </form>
 
                     <div class="bot-card">
-                        <h3>Informes de chats</h3>
+                        <h3>Informes de chats <span class="info-tip" data-tip="Cada lunes a las 8:00 el bot revisa las conversaciones de la semana: cuántos llegaron, dónde se quedaron y qué mejorar. El botón "A las notas" pasa una sugerencia a las reglas del bot.">i</span></h3>
                         <p class="activate-note">Cada lunes el bot revisa las conversaciones de la semana: cuántos llegaron, dónde se quedaron y qué mejorar. Tú decides qué sugerencia pasa a sus notas.</p>
                         <div id="bot-insights"><div class="spinner"></div></div>
                     </div>

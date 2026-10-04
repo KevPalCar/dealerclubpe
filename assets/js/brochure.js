@@ -1,105 +1,192 @@
 // ============================================================
-// BROCHURE — página pública (/brochure-eventos, /brochure-escuela)
+// BROCHURES — /brochure-eventos y /brochure-escuela
 // ============================================================
-// El contenido es datos: páginas con bloques (tarjetas, pasos,
-// listas, fotos…). Sale del archivo base /assets/data/brochure-*.json
-// o, si el admin ya lo editó, de Firestore (brochures/{tipo}).
-// "Descargar PDF" usa la impresión del navegador: una hoja A4 por
-// página del brochure, con el mismo diseño.
+// Cada página es el diseño ORIGINAL del brochure (el mismo HTML con
+// que se hizo el PDF). Este módulo solo:
+//   1. aplica los cambios que el admin guardó (textos y fotos);
+//   2. ajusta la hoja a pantallas angostas y permite "Descargar PDF";
+//   3. con ?editar=1 y sesión de admin, deja editar sobre la propia
+//      página: clic en un texto para escribir, clic en una foto para
+//      cambiarla, y Guardar.
+// Los cambios viven en Firestore (brochures/{tipo}) como parches
+// sobre el diseño base; si el diseño base cambia de versión, los
+// parches viejos se ignoran para no descuadrar nada.
 // ============================================================
 
-import { db, dbPath } from './firebase.js';
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { auth, db, dbPath } from './firebase.js';
+import { compressImage } from './image.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { doc, getDoc, setDoc, deleteDoc, addDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-const esc = (v) => String(v ?? '').replace(/[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-// *palabra* dentro de un título se pinta en dorado.
-const rich = (v) => esc(v).replace(/\*(.+?)\*/g, '<span class="bp-hl">$1</span>');
-const chipsOf = (v) => String(v || '').split(',').map(x => x.trim()).filter(Boolean);
+const tipo    = document.body.dataset.brochure;
+const VERSION = document.body.dataset.version || '1';
+const pages   = [...document.querySelectorAll('.page')];
+const A4_W = 794, A4_H = 1123;   // 210 × 297 mm en px de pantalla
 
-// Las fotos subidas desde el admin se guardan aparte ("img:ID").
+// ── Elementos editables ──────────────────────────────────────
+// Texto: cada elemento con texto propio (no los contenedores).
+// El orden en el documento da su clave (t0, t1…), estable mientras
+// no cambie el diseño base.
+const textEls = [];
+const walk = (el) => {
+    if (el.tagName.toLowerCase() === 'svg') return;
+    const hasOwnText = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
+    if (hasOwnText) { textEls.push(el); return; }
+    [...el.children].forEach(walk);
+};
+pages.forEach(walk);
+textEls.forEach((el, i) => { el.dataset.e = `t${i}`; el._base = el.innerHTML; });
+
+// Fotos: todas menos logos, marca de agua y QR.
+const imgEls = [...document.querySelectorAll('.page img')]
+    .filter(img => !img.closest('.wm, .brand, .legal, .qrbox, .logo-lockup'));
+imgEls.forEach((el, i) => { el.dataset.e = `i${i}`; });
+
+// Solo se conserva el formato que usa el diseño (negritas, saltos, cursivas…).
+const ALLOWED = new Set(['B', 'BR', 'EM', 'I', 'SMALL', 'SPAN', 'STRONG']);
+const sanitize = (html) => {
+    const tpl = document.createElement('template');
+    tpl.innerHTML = html;
+    const clean = (node) => {
+        [...node.childNodes].forEach(child => {
+            if (child.nodeType === 1) {
+                if (!ALLOWED.has(child.tagName)) { child.replaceWith(document.createTextNode(child.textContent)); return; }
+                [...child.attributes].forEach(a => { if (!['class', 'style'].includes(a.name)) child.removeAttribute(a.name); });
+                clean(child);
+            } else if (child.nodeType !== 3) child.remove();
+        });
+    };
+    clean(tpl.content);
+    return tpl.innerHTML;
+};
+// La base se compara ya normalizada, para detectar solo cambios reales.
+textEls.forEach(el => { el._base = sanitize(el._base); });
+
 const resolveImage = async (src) => {
-    if (!src || !src.startsWith('img:')) return src || '';
+    if (!src.startsWith('img:')) return src;
+    const snap = await getDoc(doc(db, dbPath(`brochure_images/${src.slice(4)}`)));
+    return snap.exists() ? snap.data().data : null;
+};
+
+// ── 1. Cambios guardados por el admin ────────────────────────
+const applyOverrides = async () => {
     try {
-        const snap = await getDoc(doc(db, dbPath(`brochure_images/${src.slice(4)}`)));
-        return snap.exists() ? snap.data().data : '';
-    } catch { return ''; }
-};
-
-const BLOCKS = {
-    tagline: (b) => `<p class="bp-tagline"><b>${esc(b.strong)}</b> <i>${esc(b.text)}</i></p>`,
-    image:   (b) => `<figure class="bp-image"><img data-src="${esc(b.src)}" alt=""></figure>`,
-    note:    (b) => `<p class="bp-note"><strong>${esc(b.strong)}</strong> ${esc(b.text)}</p>`,
-    banner:  (b) => `<div class="bp-banner"><span>${esc(b.label)}</span><div><strong>${esc(b.title)}</strong><p>${esc(b.text)}</p></div></div>`,
-    chips:   (b) => `<div class="bp-chips-box">
-                        ${b.title ? `<h3>${esc(b.title)}</h3>` : ''}
-                        <ul class="bp-chips">${(b.items || []).map(i => `<li>${esc(i)}</li>`).join('')}</ul>
-                        ${b.foot ? `<p class="bp-foot">${esc(b.foot)}</p>` : ''}
-                     </div>`,
-    cards:   (b) => `${b.title ? `<h3 class="bp-subtitle">${esc(b.title)}</h3>` : ''}
-                     <div class="bp-cards">${(b.items || []).map(i =>
-                        `<div class="bp-card"><strong>${esc(i.title)}</strong><p>${esc(i.text)}</p></div>`).join('')}</div>`,
-    checks:  (b) => `<div class="bp-checks">${(b.items || []).map(i =>
-                        `<div class="bp-check"><span>✓</span><div><strong>${esc(i.title)}</strong><p>${esc(i.text)}</p></div></div>`).join('')}</div>`,
-    steps:   (b) => `<ol class="bp-steps">${(b.items || []).map((i, n) =>
-                        `<li><span>${n + 1}</span><div><strong>${esc(i.title)}</strong><p>${esc(i.text)}</p></div></li>`).join('')}</ol>`,
-    games:   (b) => `<div class="bp-games">${(b.items || []).map(i =>
-                        `<div class="bp-game"><h3>${esc(i.title)}</h3><em>${esc(i.sub)}</em><p>${esc(i.text)}</p>
-                         <ul class="bp-chips">${chipsOf(i.chips).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`).join('')}</div>`
-};
-
-export const renderBrochure = async (data, root) => {
-    const footer = data.footer || {};
-    root.innerHTML = (data.pages || []).map((p, n) => `
-        <section class="bp-page${p.cover ? ' bp-cover' : ''}">
-            ${p.cover ? `<header class="bp-brand"><img src="/assets/images/isotipo_principal.png" alt=""><strong>DEALER<em>CLUB</em></strong><span>LIMA · PERÚ</span></header>` : ''}
-            <div class="bp-body">
-                ${p.kicker ? `<p class="bp-kicker">${esc(p.kicker)}</p>` : ''}
-                ${p.title ? `<h2 class="bp-title">${rich(p.title)}</h2>` : ''}
-                ${p.text ? `<p class="bp-lead">${esc(p.text)}</p>` : ''}
-                ${(p.blocks || []).filter(b => !b.hidden).map(b => (BLOCKS[b.type] ? BLOCKS[b.type](b) : '')).join('')}
-            </div>
-            <footer class="bp-pagefoot">
-                ${n === 0 || n === (data.pages.length - 1)
-                    ? `<span>${esc(footer.web)}</span><span>WhatsApp <b>${esc(footer.whatsapp)}</b></span>`
-                    : `<span>${esc(footer.legal)}</span><span>${n + 1}</span>`}
-            </footer>
-        </section>`).join('');
-
-    await Promise.all([...root.querySelectorAll('img[data-src]')].map(async (img) => {
-        img.src = await resolveImage(img.dataset.src);
-    }));
-};
-
-// Contenido vigente: el editado en el admin o, si no hay, el archivo base.
-export const loadBrochure = async (tipo) => {
-    try {
-        // Si la base tarda, no se deja al visitante esperando: se usa el archivo base.
+        // Si la base tarda, no se deja al visitante esperando: se queda el diseño base.
         const snap = await Promise.race([
             getDoc(doc(db, dbPath(`brochures/${tipo}`))),
             new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3500))
         ]);
-        if (snap.exists() && (snap.data().pages || []).length) return snap.data();
-    } catch { /* sin conexión a la base o sin permiso: se usa el archivo base */ }
-    const res = await fetch(`/assets/data/brochure-${tipo}.json`);
-    if (!res.ok) throw new Error('sin contenido');
-    return res.json();
+        if (!snap.exists() || String(snap.data().version) !== VERSION) return;
+        const { texts = {}, images = {} } = snap.data();
+        textEls.forEach(el => { if (texts[el.dataset.e] != null) el.innerHTML = sanitize(texts[el.dataset.e]); });
+        await Promise.all(imgEls.map(async (el) => {
+            const src = images[el.dataset.e];
+            if (!src) return;
+            const url = await resolveImage(src);
+            if (url) { el.src = url; el.dataset.saved = src; }
+        }));
+    } catch { /* sin conexión o sin cambios: se muestra el diseño base */ }
 };
 
-// ── Página pública ───────────────────────────────────────────
-const root = document.getElementById('brochure-root');
-if (root) {
-    const tipo = document.body.dataset.brochure;
-    loadBrochure(tipo)
-        .then(async (data) => {
-            document.title = `${data.name || 'Brochure'} - DealerClub`;
-            await renderBrochure(data, root);
-            document.getElementById('bp-status').style.display = 'none';
-            document.getElementById('bp-bar').style.display = 'flex';
-        })
-        .catch(() => {
-            document.getElementById('bp-status').textContent =
-                'No se pudo cargar el brochure. Revisa tu conexión e inténtalo de nuevo.';
+// ── 2. Ajuste a pantalla y PDF ───────────────────────────────
+const fit = () => document.documentElement.style.setProperty(
+    '--bx-zoom', Math.min(1, (window.innerWidth - 12) / A4_W).toFixed(4));
+fit();
+window.addEventListener('resize', fit);
+document.getElementById('bx-print')?.addEventListener('click', () => window.print());
+
+// ── 3. Modo edición ──────────────────────────────────────────
+const checkOverflow = () => pages.forEach(p => {
+    const inner = p.querySelector('.layer') || p;
+    const over = inner.scrollHeight > inner.clientHeight + 2 || p.scrollHeight > A4_H + 2;
+    p.classList.toggle('bx-overflow', over);
+});
+
+const enableEditing = () => {
+    document.body.classList.add('bx-editing');
+    const bar = document.getElementById('bx-bar');
+    bar.innerHTML = `
+        <span class="bx-label">Modo edición</span>
+        <span class="bx-msg" id="bx-msg">Clic en un texto para escribir · clic en una foto para cambiarla</span>
+        <div class="bx-actions">
+            <button type="button" class="bx-btn bx-ghost" id="bx-reset">Restaurar original</button>
+            <a href="${location.pathname}" class="bx-btn bx-ghost">Salir sin guardar</a>
+            <button type="button" class="bx-btn bx-gold" id="bx-save">Guardar cambios</button>
+        </div>`;
+    const msg = document.getElementById('bx-msg');
+
+    textEls.forEach(el => {
+        el.contentEditable = 'true';
+        el.spellcheck = true;
+        el.addEventListener('input', checkOverflow);
+        // Pegar siempre como texto simple, sin el formato de origen.
+        el.addEventListener('paste', (e) => {
+            e.preventDefault();
+            document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text/plain'));
         });
-    document.getElementById('bp-print')?.addEventListener('click', () => window.print());
-}
+    });
+
+    const picker = document.createElement('input');
+    picker.type = 'file'; picker.accept = 'image/*'; picker.hidden = true;
+    document.body.appendChild(picker);
+    let target = null;
+    imgEls.forEach(img => img.addEventListener('click', () => { target = img; picker.click(); }));
+    picker.addEventListener('change', async () => {
+        const file = picker.files[0];
+        picker.value = '';
+        if (!file || !target) return;
+        msg.textContent = 'Cargando la foto…';
+        try {
+            const data = await compressImage(file, 1600, 0.82);
+            if (data.length > 950000) { msg.textContent = 'La foto pesa demasiado incluso comprimida. Prueba con otra.'; return; }
+            const ref = await addDoc(collection(db, dbPath('brochure_images')), { data, createdAt: new Date() });
+            target.src = data;
+            target.dataset.saved = `img:${ref.id}`;
+            msg.textContent = 'Foto cambiada. Pulsa "Guardar cambios" para publicarla.';
+        } catch { msg.textContent = 'No se pudo cargar la foto. Inténtalo de nuevo.'; }
+    });
+
+    document.getElementById('bx-save').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        checkOverflow();
+        if (document.querySelector('.bx-overflow') &&
+            !confirm('Hay una página donde el contenido no cabe y se cortará en el PDF. ¿Guardar de todos modos?')) return;
+        btn.disabled = true;
+        try {
+            const texts = {}, images = {};
+            textEls.forEach(el => { const html = sanitize(el.innerHTML); if (html !== el._base) texts[el.dataset.e] = html; });
+            imgEls.forEach(el => { if (el.dataset.saved) images[el.dataset.e] = el.dataset.saved; });
+            await setDoc(doc(db, dbPath(`brochures/${tipo}`)), {
+                version: VERSION, texts, images,
+                // Texto completo, para que el bot conozca el contenido vigente.
+                plain: pages.map(p => p.innerText.replace(/\n{2,}/g, '\n').trim()).join('\n\n'),
+                updatedAt: new Date()
+            });
+            msg.textContent = 'Guardado. Ahora descarga el PDF y súbelo en el admin para el bot.';
+        } catch (err) { msg.textContent = `No se pudo guardar: ${err.message}`; }
+        btn.disabled = false;
+    });
+
+    document.getElementById('bx-reset').addEventListener('click', async () => {
+        if (!confirm('¿Volver al brochure original? Se perderán todos los cambios guardados.')) return;
+        await deleteDoc(doc(db, dbPath(`brochures/${tipo}`)));
+        location.reload();
+    });
+
+    checkOverflow();
+};
+
+applyOverrides().then(() => {
+    if (!new URLSearchParams(location.search).has('editar')) return;
+    onAuthStateChanged(auth, async (user) => {
+        let isAdmin = false;
+        if (user && !user.isAnonymous) {
+            try {
+                const role = await getDoc(doc(db, dbPath(`user_roles/${user.uid}`)));
+                isAdmin = role.exists() && role.data().role === 'admin';
+            } catch { /* sin permiso: no es admin */ }
+        }
+        if (isAdmin) enableEditing();
+        else alert('Para editar el brochure, inicia sesión en el admin y vuelve a abrirlo desde la sección Brochures.');
+    });
+});
