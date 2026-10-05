@@ -116,6 +116,17 @@ async function getMedia(path) {
 async function setSrc(el, path) {
   try { el.src = await getMedia(path); } catch (e) { el.alt = "no se pudo cargar"; }
 }
+// Abre el archivo en pestaña nueva. Los navegadores bloquean data: URLs con
+// window.open, así que lo convertimos a un blob: URL (permitido).
+async function openMedia(path) {
+  try {
+    const dataUrl = await getMedia(path);
+    const blob = await (await fetch(dataUrl)).blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) { alert("No se pudo abrir el archivo."); }
+}
 
 // ---- Login ----
 $("loginBtn").onclick = async () => {
@@ -209,7 +220,7 @@ async function loadChat() {
       if (m.storagePath && (m.type === "image" || m.type === "sticker")) {
         const img = document.createElement("img");
         img.className = "imgmsg";
-        img.onclick = async () => window.open(await getMedia(m.storagePath), "_blank");
+        img.onclick = () => openMedia(m.storagePath);
         d.appendChild(img);
         setSrc(img, m.storagePath);
       } else if (m.storagePath && m.type === "audio") {
@@ -226,7 +237,7 @@ async function loadChat() {
         const link = document.createElement("a");
         link.href = "#"; link.className = "doclink";
         link.textContent = "📄 " + (m.filename || "documento");
-        link.onclick = async (e) => { e.preventDefault(); window.open(await getMedia(m.storagePath), "_blank"); };
+        link.onclick = (e) => { e.preventDefault(); openMedia(m.storagePath); };
         d.appendChild(link);
       } else {
         d.textContent = m.text;
