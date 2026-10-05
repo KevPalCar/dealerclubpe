@@ -30,7 +30,7 @@ service cloud.firestore {
       // ── CONTENIDO PÚBLICO DEL SITIO (solo lectura) ────────────
       match /{col}/{id} {
         allow read: if col in ['courses', 'professors', 'alumni', 'dealers',
-                               'tables', 'services', 'config',
+                               'tables', 'config',
                                'brochures', 'brochure_images'];
       }
 

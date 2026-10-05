@@ -910,8 +910,6 @@ button.att-cell:hover { border-color: #ffc107; }
 .qe-check input { accent-color: #ffc107; }
 
 .qe-row { display: grid; gap: 5px; align-items: center; }
-.qe-row.cols-item   { grid-template-columns: 1.3fr 2fr 96px 30px; }
-.qe-row.cols-adj    { grid-template-columns: 3fr 110px 30px; }
 .qe-row.cols-tariff { grid-template-columns: 104px 1.3fr 2fr 110px 30px; }
 .qe-del { background: none; border: 1px solid #444; color: #dc3545; border-radius: 6px; height: 30px; cursor: pointer; padding: 0; }
 .qe-del:hover { border-color: #dc3545; }
@@ -937,7 +935,7 @@ button.att-cell:hover { border-color: #ffc107; }
     .qe-col { overflow: visible; }
     .qe-col + .qe-col { border-left: 0; border-top: 1px solid #333; }
     .qe-4, .qe-3 { grid-template-columns: 1fr 1fr; }
-    .qe-row.cols-item, .qe-row.cols-tariff { grid-template-columns: 1fr 1fr; }
+    .qe-row.cols-tariff { grid-template-columns: 1fr 1fr; }
     .qe-adj-grid { grid-template-columns: 1fr; }
     .qe-foot { position: sticky; bottom: 0; }
 }

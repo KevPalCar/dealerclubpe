@@ -12,3 +12,6 @@ Thumbs.db
 .vscode/
 .claude/
 *.log
+
+# Caché que genera Firebase al desplegar el panel (no es código)
+.firebase/

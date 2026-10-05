@@ -1,16 +1,20 @@
-# Brochures (catálogos en PDF)
+# Brochures en PDF (respaldo del bot)
 
-El bot envía estos PDF por WhatsApp cuando el usuario elige una ruta:
-- **Escuela de Dealers** → `escuela.pdf`
-- **Casino de Fantasía** → `eventos.pdf`
+Estos dos archivos son los que el bot envía por WhatsApp **mientras no se haya subido otro desde el admin**:
 
-## Cómo actualizarlos
-1. Reemplaza el archivo PDF en esta carpeta **manteniendo el mismo nombre** (`escuela.pdf` o `eventos.pdf`).
-2. Avísame para volver a desplegar (`firebase deploy --only functions`) y que el bot use la versión nueva.
+- `escuela.pdf` → Escuela de Dealers
+- `eventos.pdf` → Casino de Fantasía
 
-## Nombres EXACTOS que espera el código
-- `c:\DealerClub\functions\brochures\escuela.pdf`
-- `c:\DealerClub\functions\brochures\eventos.pdf`
+## Cómo se actualiza hoy un brochure
 
-> El bot agrega automáticamente un texto (caption) indicando que los precios/datos
-> son **vigentes a la fecha de envío**, así no quedan desactualizados con el tiempo.
+1. Admin → **Brochures** → "Editar brochure": se cambia el texto o las fotos sobre la propia página.
+2. En la página del brochure, "Descargar PDF".
+3. Admin → Brochures → "Subir PDF". Desde ese momento el bot envía ese archivo.
+
+No hace falta tocar esta carpeta ni volver a publicar el bot. El PDF subido se guarda en la base de datos (`brochure_files`), y si algún día no se puede leer, el bot vuelve a estos dos archivos.
+
+## Dónde está cada parte
+
+- Diseño y contenido base de cada brochure: `brochure-eventos.html` y `brochure-escuela.html`, en la raíz del sitio.
+- Fotos: `assets/images/brochure/`.
+- Los nombres `escuela.pdf` y `eventos.pdf` no deben cambiar: el código los busca así.

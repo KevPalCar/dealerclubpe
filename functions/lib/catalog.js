@@ -1,12 +1,12 @@
 // ============================================================
-// Catálogo en vivo (cursos y servicios) desde Firestore
+// Catálogo en vivo (cursos y brochures) desde Firestore
 // ------------------------------------------------------------
 // El cerebro NO debe llevar precios escritos a mano: se
 // desactualizan. Este módulo lee las MISMAS colecciones que
 // edita el panel de admin y arma un bloque de texto que se
 // inyecta en el system prompt en cada respuesta.
 //
-// Ruta: /artifacts/{APP_SCOPE}/public/data/{courses|services}
+// Ruta: /artifacts/{APP_SCOPE}/public/data/{courses|brochures}
 // (ver assets/js/firebase.js — dbPath()).
 // ============================================================
 const admin = require("firebase-admin");
@@ -61,16 +61,6 @@ function lineaCurso(c) {
   return `- ${partes.join(" — ")}`;
 }
 
-function lineaServicio(s) {
-  const partes = [
-    s.name || "Servicio",
-    s.status || "Activo",
-    s.price ? s.price : "se cotiza a medida",
-    s.description ? s.description.replace(/\s+/g, " ").trim() : null,
-  ].filter(Boolean);
-  return `- ${partes.join(" — ")}`;
-}
-
 async function leerColeccion(nombre) {
   const snap = await db.collection(`${BASE}/${nombre}`).get();
   return snap.docs.map((d) => d.data());
@@ -82,17 +72,16 @@ async function getCatalogoTexto() {
   if (cache.texto && Date.now() - cache.ts < TTL_MS) return cache.texto;
 
   try {
-    const [cursos, servicios, brochureEventos, brochureEscuela] = await Promise.all([
+    const [cursos, brochureEventos, brochureEscuela] = await Promise.all([
       leerColeccion("courses"),
-      leerColeccion("services"),
       leerBrochure("eventos"),
       leerBrochure("escuela"),
     ]);
 
-    if (!cursos.length && !servicios.length && !brochureEventos && !brochureEscuela) return cache.texto || null;
+    if (!cursos.length && !brochureEventos && !brochureEscuela) return cache.texto || null;
 
     // El catálogo en vivo (precios, horarios) va primero: manda sobre el brochure.
-    const texto = [formatear(cursos, servicios), brochureEscuela, brochureEventos].filter(Boolean).join("\n\n");
+    const texto = [formatear(cursos), brochureEscuela, brochureEventos].filter(Boolean).join("\n\n");
     cache = { texto, ts: Date.now() };
     return texto;
   } catch (err) {
@@ -116,27 +105,15 @@ async function leerBrochure(tipo) {
 }
 
 // Separado de la lectura para poder probarlo con datos de ejemplo.
-function formatear(cursos, servicios) {
-  const bloques = [];
-  if (cursos.length) {
-    bloques.push(
-      "### Programas de la Escuela (dato vivo)\n" +
-        cursos.sort(porOrden).map(lineaCurso).join("\n")
-    );
-  }
-  if (servicios.length) {
-    bloques.push(
-      "### Servicios de Casino de Fantasía (dato vivo)\n" +
-        servicios.sort(porOrden).map(lineaServicio).join("\n") +
-        "\nRecuerda: en eventos NUNCA das precio, siempre se cotiza a medida."
-    );
-  }
-
+function formatear(cursos) {
+  if (!cursos.length) return null;
   return (
     "## CATÁLOGO VIGENTE (fuente de verdad — leído del panel de admin)\n" +
     "Estos datos MANDAN sobre cualquier precio, horario o duración que aparezca en otra parte de tus instrucciones o en el catálogo PDF. " +
     "Si algo no está aquí, no lo inventes.\n\n" +
-    bloques.join("\n\n")
+    "### Programas de la Escuela (dato vivo)\n" +
+    cursos.sort(porOrden).map(lineaCurso).join("\n") +
+    "\n\nRecuerda: en eventos (Casino de Fantasía) NUNCA das precio, siempre se cotiza a medida."
   );
 }
 

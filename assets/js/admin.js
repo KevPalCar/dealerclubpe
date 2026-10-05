@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const titles = {
             courses: 'Gestión de Cursos',         professors: 'Gestión de Profesores',
             alumni: 'Gestión de Egresados',        dealers: 'Gestión de Dealers',
-            tables: 'Juegos del Casino',           services: 'Gestión de Servicios',
+            tables: 'Juegos del Casino',
             referrals: 'Referidos & Marketing',
             requests: 'Cotizaciones de eventos',   announcements: 'Config & Anuncios',
             materials: 'Material Didáctico',        tasks: 'Asignar Tareas',
@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const loaders = {
             courses: loadCourses,      professors: loadProfessors,
             alumni: loadAlumni,        dealers: loadDealers,
-            tables: loadTables,        services: loadServices,
+            tables: loadTables,
             referrals: loadReferrals,
             requests: loadRequests,    announcements: loadAnnouncements,
             materials: loadMaterials,  tasks: loadTasks,
@@ -236,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initSearch('alumni',      renderAlumniRow,     'No hay egresados registrados.');
         initSearch('dealers',     renderDealerRow,     'No hay dealers registrados.');
         initSearch('tables',      renderTableRow,      'No hay juegos registrados.');
-        initSearch('services',    renderServiceRow,    'No hay servicios registrados.');
         initSearch('requests',    renderRequestRow,    'No hay solicitudes.');
         initSearch('materials',   renderMaterialRow,   'No hay materiales subidos aún.');
         initSearch('tasks',       renderTaskRow,       'No hay tareas asignadas.');
@@ -762,73 +761,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ══════════════════════════════════════════════════════════
-    // CRUD: SERVICIOS
-    // ══════════════════════════════════════════════════════════
-    const renderServiceRow = (s) => {
-        const tbody = document.getElementById('services-table-body');
-        const tr = tbody.insertRow();
-        tr.innerHTML = `
-            <td>${s.order ?? '-'}</td><td>${s.name}</td>
-            <td>${(s.description || '').substring(0, 30)}…</td>
-            <td>${s.price || 'Consultar'}</td><td>${s.status || 'Activo'}</td>
-            <td class="action-buttons">
-                <button class="btn btn-secondary btn-edit" data-id="${s.id}"><i class="fas fa-edit"></i></button>
-                <button class="btn btn-danger btn-delete" data-id="${s.id}"><i class="fas fa-trash"></i></button>
-            </td>
-        `;
-        tr.querySelector('.btn-edit').addEventListener('click', () => {
-            document.getElementById('serviceId').value          = s.id;
-            document.getElementById('serviceName').value        = s.name || '';
-            document.getElementById('serviceOrder').value       = s.order || 0;
-            document.getElementById('serviceDescription').value = s.description || '';
-            document.getElementById('servicePrice').value       = s.price || '';
-            document.getElementById('serviceStatus').value      = s.status || 'Activo';
-            document.getElementById('service-modal-title-action').textContent = 'Editar';
-            openModal(document.getElementById('serviceModal'));
-        });
-        tr.querySelector('.btn-delete').addEventListener('click', () =>
-            confirmDelete(`¿Eliminar el servicio "${s.name}"?`, () => deleteItem('services', s.id))
-        );
-    };
-
-    const loadServices = () => {
-        document.getElementById('services-table-body').innerHTML =
-            `<tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>`;
-        unsubscribeListeners.services = onSnapshot(collection(db, dbPath('services')), (snap) => {
-            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-                .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
-            pState.services.data = data;
-            renderPaged('services', renderServiceRow, 'No hay servicios registrados.');
-        });
-    };
-
-    document.getElementById('add-service-btn').addEventListener('click', () => {
-        document.getElementById('serviceForm').reset();
-        document.getElementById('serviceId').value = '';
-        document.getElementById('service-modal-title-action').textContent = 'Añadir';
-        openModal(document.getElementById('serviceModal'));
-    });
-    document.getElementById('serviceForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('serviceId').value;
-        const data = {
-            name: document.getElementById('serviceName').value, order: parseInt(document.getElementById('serviceOrder').value) || 0,
-            description: document.getElementById('serviceDescription').value, price: document.getElementById('servicePrice').value,
-            status: document.getElementById('serviceStatus').value, lastUpdated: new Date()
-        };
-        try {
-            if (id) await updateDoc(doc(db, dbPath(`services/${id}`)), data);
-            else     await addDoc(collection(db, dbPath('services')), data);
-            closeModal(document.getElementById('serviceModal'));
-            showToast(id ? 'Servicio actualizado.' : 'Servicio añadido.', 'success');
-        } catch (err) { showToast(`Error: ${err.message}`, 'error'); }
-    });
-    document.getElementById('closeServiceModalBtn').addEventListener('click', () =>
-        closeModal(document.getElementById('serviceModal'))
-    );
-
-
-    // ══════════════════════════════════════════════════════════
     // ALTA DE ALUMNOS — helpers de código y activación
     // (la aprobación vive en la sección Alumnos, más abajo)
     // ══════════════════════════════════════════════════════════
@@ -895,7 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ══════════════════════════════════════════════════════════
-    // SOLICITUDES DE CONTACTO
+    // COTIZACIONES — SOLICITUDES RECIBIDAS
     // ══════════════════════════════════════════════════════════
     const REQUEST_STATUSES = ['Nuevo', 'Respondido', 'Cerrado'];
 

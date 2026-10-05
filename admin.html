@@ -186,35 +186,6 @@
                 </div>
             </section>
 
-            <!-- ═══════════════ SERVICIOS ═══════════════ -->
-            <section id="services-management" class="content-section">
-                <div class="section-header">
-                    <h2>Listado de Servicios</h2>
-                    <button class="btn btn-primary" id="add-service-btn"><i class="fas fa-plus"></i> Añadir Servicio</button>
-                </div>
-                <div class="table-toolbar">
-                    <input type="text" class="table-search" id="search-services" placeholder="Buscar por nombre...">
-                    <span class="results-count" id="count-services"></span>
-                </div>
-                <div class="admin-table-container">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Orden</th><th>Nombre</th><th>Descripción</th><th>Precio</th><th>Estado</th><th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="services-table-body">
-                            <tr><td colspan="6" class="spinner-cell"><div class="spinner"></div></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="pagination-bar" id="pagination-services" style="display:none">
-                    <button class="btn-page btn-prev-page" id="prev-services"><i class="fas fa-chevron-left"></i></button>
-                    <span class="page-info" id="page-info-services">1 / 1</span>
-                    <button class="btn-page btn-next-page" id="next-services"><i class="fas fa-chevron-right"></i></button>
-                </div>
-            </section>
-
             <!-- ═══════════════ JUEGOS DEL CASINO ═══════════════ -->
             <section id="tables-management" class="content-section">
                 <div class="section-header">
@@ -819,30 +790,6 @@
                 <div class="form-group"><label>URL Imagen de Perfil:</label><input type="text" id="dealerImageUrl"></div>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Dealer</button>
                 <div id="dealerFormMessage" class="form-message" style="display:none;"></div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal: Servicio -->
-    <div id="serviceModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" id="closeServiceModalBtn">&times;</span>
-            <h2><span id="service-modal-title-action">Añadir</span> Servicio</h2>
-            <form id="serviceForm">
-                <input type="hidden" id="serviceId">
-                <div class="form-group"><label>Nombre del Servicio:</label><input type="text" id="serviceName" required></div>
-                <div class="form-group"><label>Orden de Visualización:</label><input type="number" id="serviceOrder" value="0" required></div>
-                <div class="form-group"><label>Descripción:</label><textarea id="serviceDescription" rows="3" required></textarea></div>
-                <div class="form-group"><label>Precio:</label><input type="text" id="servicePrice" placeholder="Ej: Consultar o S/ 500" required></div>
-                <div class="form-group">
-                    <label>Estado:</label>
-                    <select id="serviceStatus" required>
-                        <option value="Activo">Activo</option>
-                        <option value="Inactivo">Inactivo</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Servicio</button>
-                <div id="serviceFormMessage" class="form-message" style="display:none;"></div>
             </form>
         </div>
     </div>
