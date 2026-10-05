@@ -38,22 +38,24 @@ Todos los estilos están en `assets/css/` y la lógica en `assets/js/`. `main.cs
 | `billing.js` | Cuotas, vencimientos y estado de pago de un alumno |
 | `chip-rain.js` | Lluvia de fichas del inicio de sesión |
 
-## El admin (`assets/js/admin.js`)
+## El admin (`assets/js/admin/`)
 
-Un solo archivo, dividido en bloques con un título en mayúsculas. Para ir a uno, búscalo por ese título:
+`assets/js/admin.js` solo carga las secciones y comprueba que quien entra sea admin. Cada sección del menú vive en su propio archivo:
 
-| Menú | Título del bloque en el código |
+| Menú | Archivo |
 |---|---|
-| Trabajo del día | `TRABAJO DEL DÍA` |
-| Alumnos (activar, suspender, pagos) | `CAMPUS VIRTUAL — ALUMNOS` |
-| Material, Tareas, Progreso | `CAMPUS VIRTUAL — MATERIAL DIDÁCTICO`, `— TAREAS`, `— PROGRESO DE ALUMNOS` |
-| Referidos | `REFERIDOS & MARKETING` |
-| Cotizaciones | `COTIZACIONES — SOLICITUDES RECIBIDAS` y `COTIZACIONES DE EVENTOS` |
-| Juegos del Casino, Dealers | `CRUD: JUEGOS DEL CASINO`, `CRUD: DEALERS` |
-| Brochures | `BROCHURES` |
-| Bot y seguimiento | `BOT DE WHATSAPP` |
-| Cursos, Profesores, Egresados | `CRUD: CURSOS`, `CRUD: PROFESORES`, `CRUD: EGRESADOS` |
-| Config & Anuncios | `CONFIG & ANUNCIOS` |
+| Trabajo del día | `admin/diario.js` |
+| Alumnos (activar, suspender, pagos, constancias) | `admin/alumnos.js` |
+| Material, Tareas, Progreso | `admin/campus.js` |
+| Referidos | `admin/referidos.js` |
+| Cotizaciones (solicitudes, editor, tarifario, historial) | `admin/cotizaciones.js` |
+| Cursos, Profesores, Egresados, Dealers, Juegos del Casino | `admin/contenido.js` |
+| Brochures | `admin/brochures.js` |
+| Bot y seguimiento | `admin/bot.js` |
+| Config & Anuncios | `admin/config.js` |
+| Lo común a todas: avisos, tablas con buscador, ventanas, menú | `admin/core.js` |
+
+Para agregar una sección nueva: se crea su archivo en `admin/`, se registra con `registerSection(...)` al final y se añade su `import` en `admin.js`.
 
 ## Datos (Firestore)
 

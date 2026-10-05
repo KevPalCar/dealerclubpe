@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── REFERENCIAS AL DOM ────────────────────────────────────
     const quoteModal           = $('#quoteModal');
-    const quoteSplit           = $('.quote-split');
     const closeQuoteModalBtn   = $('#closeQuoteModalBtn');
     const openGeneralQuoteBtn  = $('#openGeneralQuoteModal');
     const quoteForm            = $('#quoteForm');
