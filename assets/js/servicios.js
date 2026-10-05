@@ -2,6 +2,7 @@
 // SERVICIOS — DealerClub
 // ============================================================
 import { auth, db, dbPath } from './firebase.js';
+import { HOJA_W, HOJA_H, FICHA_D, FICHAS } from './chip-rain.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
     collection, addDoc, getDocs, doc, onSnapshot
@@ -38,12 +39,6 @@ const DISTRITOS = [
     'Villa María del Triunfo', 'Callao', 'Fuera de Lima'
 ];
 
-// Geometría de /assets/images/fichas-sheet.webp: 7 fichas de 150 px.
-const HOJA_W = 792, HOJA_H = 783, FICHA_D = 150;
-const FICHAS = [
-    { x: 115, y: 157 }, { x: 332, y: 157 }, { x: 551, y: 157 }, { x: 114, y: 375 },
-    { x: 330, y: 375 }, { x: 548, y: 375 }, { x: 339, y: 593 }
-];
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -420,10 +415,11 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(animar);
         if (quoteModal.style.display !== 'flex' || !RH) return;
 
-        const objetivo = RW < 420 ? 8 : 14;
+        const objetivo = RW < 420 ? 14 : 24;
         while (lluvia.length < objetivo) {
             const d = 30 + Math.random() * 30;
-            const p = crearFicha(quoteRain, Math.random() * Math.max(1, RW - d), -d - Math.random() * RH, d);
+            // Repartidas por toda la altura: se ven en cuanto se abre el cotizador.
+            const p = crearFicha(quoteRain, Math.random() * Math.max(1, RW - d), Math.random() * (RH + d) - d, d);
             p.vy = .35 + Math.random() * .75;
             p.vx = (Math.random() - .5) * .25;
             p.el.style.opacity = (.26 + Math.random() * .2).toFixed(2);

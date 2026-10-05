@@ -1,11 +1,8 @@
 import { auth, db, dbPath } from './firebase.js';
-import { startChipRain } from './chip-rain.js';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
-
-    startChipRain(document.getElementById('authRain'));
 
     // ── ANNOUNCE BAR ─────────────────────────────────────────
     const announceBar  = document.getElementById('announce-bar');

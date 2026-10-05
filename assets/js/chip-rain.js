@@ -1,13 +1,16 @@
 // ============================================================
-// LLUVIA 3D DE FICHAS — fondo decorativo (páginas de acceso)
+// LLUVIA 3D DE FICHAS — fondo decorativo
 // ============================================================
-// Misma hoja de fichas y mismo movimiento que el cotizador de
-// servicios.js: cada ficha rota en los tres ejes y cae en bucle.
+// Cada ficha rota en los tres ejes y cae en bucle. Este archivo
+// se carga solo, sin esperar a Firebase, y arranca la lluvia en
+// todo elemento marcado con data-chip-rain: así las fichas ya
+// están cayendo en cuanto se ve la página. El cotizador de
+// servicios.js reutiliza de aquí la geometría de la hoja.
 // ============================================================
 
 // Geometría de /assets/images/fichas-sheet.webp: 7 fichas de 150 px.
-const HOJA_W = 792, HOJA_H = 783, FICHA_D = 150;
-const FICHAS = [
+export const HOJA_W = 792, HOJA_H = 783, FICHA_D = 150;
+export const FICHAS = [
     { x: 115, y: 157 }, { x: 332, y: 157 }, { x: 551, y: 157 }, { x: 114, y: 375 },
     { x: 330, y: 375 }, { x: 548, y: 375 }, { x: 339, y: 593 }
 ];
@@ -35,7 +38,8 @@ export function startChipRain(capa) {
         return {
             el, d,
             x: Math.random() * Math.max(1, W - d),
-            y: -d - Math.random() * H,
+            // Repartidas por toda la altura: se ven desde el primer instante.
+            y: Math.random() * (H + d) - d,
             vy: .35 + Math.random() * .75,
             vx: (Math.random() - .5) * .25,
             rx: Math.random() * 360, ry: Math.random() * 360, rz: Math.random() * 360,
@@ -50,7 +54,7 @@ export function startChipRain(capa) {
         requestAnimationFrame(animar);
         if (document.hidden || !H) return;
 
-        const objetivo = W < 600 ? 10 : 22;
+        const objetivo = W < 600 ? 18 : 40;
         while (lluvia.length < objetivo) lluvia.push(crearFicha());
 
         for (const p of lluvia) {
@@ -65,3 +69,5 @@ export function startChipRain(capa) {
     };
     animar();
 }
+
+document.querySelectorAll('[data-chip-rain]').forEach(startChipRain);
