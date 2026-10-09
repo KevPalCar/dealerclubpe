@@ -18,7 +18,7 @@ const store = require("./lib/store");
 const brain = require("./lib/brain");
 const wa = require("./lib/whatsapp");
 const notify = require("./lib/notify");
-const { BROCHURES, getBrochureBuffer } = require("./lib/brochures");
+const { BROCHURES, enviarBrochure } = require("./lib/brochures");
 
 // Región cercana a Perú y límites razonables para v1.
 setGlobalOptions({ region: "us-central1", maxInstances: 10 });
@@ -73,6 +73,70 @@ function parseIncoming(body) {
   } catch (err) {
     logger.error("Error parseando entrante", err);
     return null;
+  }
+}
+
+// --- Estados de entrega de lo que enviamos ------------------
+// Meta avisa aparte si cada mensaje saliente se entregó, se leyó o falló.
+// OJO: fuera de la ventana de 24 h acepta el envío y el fallo llega SOLO por
+// aquí; sin leerlo, un mensaje perdido se vería como enviado.
+function parseStatuses(body) {
+  const out = [];
+  for (const entry of body?.entry || []) {
+    for (const change of entry.changes || []) {
+      for (const s of change.value?.statuses || []) {
+        if (!s.id || !s.recipient_id) continue;
+        const e = s.errors?.[0];
+        out.push({
+          waId: s.id,
+          phone: s.recipient_id,
+          status: s.status,
+          code: e?.code || null,
+          detail: e?.error_data?.details || e?.title || e?.message || null,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+// Motivo del fallo en palabras de Kevin (se muestra en el panel y en la alerta).
+function motivoFallo(code, detail) {
+  const conocidos = {
+    131047: "Pasaron más de 24 h desde su último mensaje: WhatsApp solo deja escribirle con plantilla de pago. Pídele que te escriba primero.",
+    131026: "WhatsApp no pudo entregarlo: el número no tiene WhatsApp, lo tiene desactualizado o no acepta mensajes de empresas.",
+    131049: "WhatsApp decidió no entregarlo para no saturar a esta persona. Vuelve a intentarlo más tarde.",
+    131056: "Demasiados mensajes seguidos a este número. Espera un momento y reenvíalo.",
+    131052: "WhatsApp no pudo procesar el archivo. Prueba con otro formato o un archivo más liviano.",
+    131053: "WhatsApp no pudo procesar el archivo. Prueba con otro formato o un archivo más liviano.",
+    131042: "Hay un problema con el método de pago de la cuenta de WhatsApp Business. Revísalo en Meta.",
+  };
+  return conocidos[code] || `WhatsApp no lo entregó (${detail || "sin detalle"}${code ? `, código ${code}` : ""}).`;
+}
+
+async function handleStatuses(statuses) {
+  for (const s of statuses) {
+    if (!["delivered", "read", "failed"].includes(s.status)) continue;
+    const fallo = s.status === "failed";
+    const error = fallo ? motivoFallo(s.code, s.detail) : null;
+    try {
+      // Un fallo puede llegar antes de que el mensaje quede guardado: se reintenta.
+      let r = await store.setMessageStatus(s.phone, s.waId, s.status, error);
+      for (let i = 0; fallo && !r && i < 2; i++) {
+        await new Promise((ok) => setTimeout(ok, 1500));
+        r = await store.setMessageStatus(s.phone, s.waId, s.status, error);
+      }
+      if (!fallo) continue;
+      logger.error("Mensaje NO entregado", { to: s.phone, code: s.code, detail: s.detail });
+      if (r === "unchanged") continue; // Meta repitió el aviso: ya se alertó
+      await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
+        title: "Mensaje NO entregado",
+        message: `Un mensaje a +${s.phone} no llegó.\n${error}`,
+        click: PANEL_URL + "?to=" + s.phone,
+      });
+    } catch (e) {
+      logger.error("No se pudo anotar el estado de entrega", { error: e.message });
+    }
   }
 }
 
@@ -141,6 +205,9 @@ function inferirBrochure(respuestaBot, mensajesLead) {
   return null;
 }
 
+// Panel de atención (bandeja de la empresa). Con ?to=<número> abre ese chat.
+const PANEL_URL = "https://dealerclubpe.web.app/";
+
 // Enlace que abre WhatsApp hacia el número de empresa con el comando
 // "@<lead> " ya escrito, para que Kevin solo complete su mensaje.
 function adminReplyLink(leadPhone) {
@@ -153,7 +220,7 @@ function adminReplyLink(leadPhone) {
 //   @<numero> /bot       -> reactiva el bot en ese chat.
 const ADMIN_HELP =
   "👋 Para atender a un lead tienes 2 formas:\n\n" +
-  "1) PANEL (lo más fácil): https://dealerclubpe.web.app — botones para responder y para pausar/reactivar el bot.\n\n" +
+  `1) PANEL (lo más fácil): ${PANEL_URL} — botones para responder, enviar el catálogo y pausar/reactivar el bot.\n\n` +
   "2) Por aquí (WhatsApp):\n" +
   "• Responder:  @<número del lead> tu mensaje\n" +
   "• Reactivar el bot:  @<número del lead> bot\n\n" +
@@ -178,13 +245,21 @@ async function handleAdminCommand(msg) {
     return;
   }
 
+  // Con la ventana de 24 h cerrada WhatsApp lo aceptaría y lo descartaría.
+  if (store.windowState(await store.getConversation(lead)) === "closed") {
+    await wa.sendText(msg.from, `⚠️ NO se envió a +${lead}. ${store.VENTANA_CERRADA}`);
+    return;
+  }
+
   try {
-    await wa.sendText(lead, body);
+    const r = await wa.sendText(lead, body);
     await store.setHumanTakeover(lead, true);
-    await store.appendMessages(lead, [{ role: "assistant", text: body, ts: Date.now() }]);
+    await store.appendMessages(lead, [
+      { role: "assistant", text: body, ts: Date.now(), waId: r?.messages?.[0]?.id || null },
+    ]);
     await wa.sendText(
       msg.from,
-      `✅ Enviado al cliente +${lead} como DealerClub (tu número personal NO se mostró).\n` +
+      `✅ Enviado al cliente +${lead} como DealerClub (tu número personal NO se mostró). Si WhatsApp no logra entregarlo, te llega una alerta.\n` +
         `⏸️ El bot quedó en pausa en ese chat.\n` +
         `▶️ Para que el bot vuelva a responder ahí, escribe:  @${lead} bot`
     );
@@ -227,7 +302,8 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
 
   const msg = parseIncoming(req.body);
   if (!msg || !msg.text) {
-    logger.info("POST sin mensaje de texto (probable notificación de estado)");
+    // Sin mensaje: es un aviso de estado (entregado / leído / falló).
+    await handleStatuses(parseStatuses(req.body));
     return;
   }
   logger.info("Mensaje entrante", { from: msg.from, type: msg.type });
@@ -329,7 +405,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
         id: sendResult?.messages?.[0]?.id,
       });
       await store.appendMessages(msg.from, [
-        { role: "assistant", text: cleanReply, ts: Date.now() },
+        { role: "assistant", text: cleanReply, ts: Date.now(), waId: sendResult?.messages?.[0]?.id || null },
       ]);
     }
 
@@ -354,56 +430,23 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     );
     const enviados = [];
     for (const t of nuevos) {
-      const b = BROCHURES[t];
-      const caption = b.caption();
       try {
-        // Dos intentos: un fallo puntual de WhatsApp no debe dejar al lead sin su PDF.
-        let r, pdf = null, fallo = null;
-        for (let intento = 1; intento <= 2; intento++) {
-          try {
-            pdf = pdf || (await getBrochureBuffer(t));
-            r = await wa.sendDocument(msg.from, pdf, b.filename, caption);
-            fallo = r && r.error ? r.error : null;
-          } catch (e) {
-            fallo = e.message;
-          }
-          if (!fallo) break;
-          logger.warn("Fallo enviando el brochure", { tipo: t, intento, error: fallo });
+        const r = await enviarBrochure(msg.from, t);
+        if (r.ok) {
+          enviados.push(t);
+          continue;
         }
-        if (fallo) {
-          // El bot ya dijo que lo compartía: avisa a Kevin para que lo mande a mano.
-          logger.error("Brochure NO enviado tras reintento", { tipo: t, error: fallo });
-          await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
-            title: "El bot no pudo enviar el catalogo",
-            message: `A ${msg.profileName || "un lead"} (+${msg.from}) se le anunció el catálogo de ${t} pero el PDF no salió (${fallo}). Envíaselo desde el panel.`,
-            click: adminReplyLink(msg.from),
-          });
-          continue; // no lo marcamos como enviado ni lo ponemos en el chat
-        }
-        logger.info("Brochure enviado", { tipo: t });
-        enviados.push(t);
-        // Guardar copia en Storage para que en el panel se VEA clickeable
-        // (así confirmas que el PDF realmente salió).
-        const entry = {
-          role: "assistant",
-          type: "document",
-          text: `[documento] ${b.filename}`,
-          filename: b.filename,
-          mime: "application/pdf",
-          caption,
-          ts: Date.now(),
-        };
-        try {
-          entry.storagePath = await store.saveMedia(msg.from, "brochure_" + t + "_" + Date.now(), pdf, "application/pdf");
-        } catch (e) {
-          logger.warn("No se pudo guardar copia del brochure en Storage", { error: e.message });
-        }
-        await store.appendMessages(msg.from, [entry]);
+        // El bot ya dijo que lo compartía: avisa a Kevin para que lo mande a mano.
+        logger.error("Brochure NO enviado tras reintento", { tipo: t, error: r.error });
+        await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
+          title: "El bot no pudo enviar el catalogo",
+          message: `A ${msg.profileName || "un lead"} (+${msg.from}) se le anunció el catálogo de ${t} pero el PDF no salió (${r.error}). Envíaselo desde el panel con el botón Catálogo.`,
+          click: PANEL_URL + "?to=" + msg.from,
+        });
       } catch (e) {
         logger.error("No se pudo enviar el brochure", { tipo: t, error: e.message });
       }
     }
-    if (enviados.length) await store.addBrochuresSent(msg.from, enviados);
 
     // 9.2) Casino de Fantasía: TODA cotización la arma un humano (depende del
     //      lugar, invitados, mesas, extras). Avisamos a Kevin apenas entra el
@@ -456,7 +499,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
 });
 
 // Helpers expuestos solo para pruebas locales (no afecta a producción).
-exports._test = { parseIncoming, isValidSignature, inferirBrochure, anunciaEntrega };
+exports._test = { parseIncoming, parseStatuses, motivoFallo, isValidSignature, inferirBrochure, anunciaEntrega };
 
 // ---- Tareas programadas ------------------------------------
 // Seguimiento a leads en silencio: revisa cada 30 min, solo escribe dentro
@@ -492,5 +535,6 @@ exports.adminSendReply = adminFns.adminSendReply;
 exports.adminSetTakeover = adminFns.adminSetTakeover;
 exports.adminGetMedia = adminFns.adminGetMedia;
 exports.adminSendMedia = adminFns.adminSendMedia;
+exports.adminSendBrochure = adminFns.adminSendBrochure;
 exports.adminStartChat = adminFns.adminStartChat;
 exports.adminAnalyzeChats = adminFns.adminAnalyzeChats;

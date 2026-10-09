@@ -5,7 +5,7 @@
 import { db, dbPath } from '../firebase.js';
 import { toYmd, fromYmd, fmtDate } from '../billing.js';
 import { collection, addDoc, setDoc, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { esc, showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmDelete, deleteItem, numOrNull, registerSection, registerSearch, unsubscribeListeners } from './core.js';
+import { esc, showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmDelete, deleteItem, numOrNull, registerSection, registerSearch, unsubscribeListeners, setNavBadge } from './core.js';
 
 // ══════════════════════════════════════════════════════════
 // COTIZACIONES — SOLICITUDES RECIBIDAS
@@ -86,6 +86,7 @@ const renderRequestRow = (r) => {
     const tr     = tbody.insertRow();
     const status = r.status || 'Nuevo';
     const dateStr = r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleDateString('es-PE') : '-';
+    tr.classList.toggle('row-new', status === 'Nuevo');
     tr.innerHTML = `
         <td>${dateStr}</td>
         <td>${esc(r.fullName) || '-'}</td><td>${esc(r.email) || '-'}</td>
@@ -141,6 +142,18 @@ document.getElementById('clear-request-filters')?.addEventListener('click', () =
     if (pState.requests) pState.requests.term = '';
     applyRequestFilters();
 });
+
+// Solicitudes sin responder (estado "Nuevo"): marca en el menú y en la
+// pestaña desde cualquier sección. Arranca una vez al entrar al admin.
+export const watchNewRequests = () => {
+    onSnapshot(collection(db, dbPath('service_requests')), (snap) => {
+        const n   = snap.docs.filter(d => (d.data().status || 'Nuevo') === 'Nuevo').length;
+        const tab = document.getElementById('requests-tab-new');
+        tab.textContent   = n;
+        tab.style.display = n ? 'inline-flex' : 'none';
+        setNavBadge('requests', 'nuevas', n, 'solicitud(es) sin responder');
+    });
+};
 
 const loadRequests = () => {
     document.getElementById('requests-table-body').innerHTML =

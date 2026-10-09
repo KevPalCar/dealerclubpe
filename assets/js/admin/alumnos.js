@@ -6,8 +6,8 @@
 
 import { db, dbPath, generateStudentCode } from '../firebase.js';
 import { toYmd, fmtDate, nextMonday, billingSchedule, billingSummary, daysLabel } from '../billing.js';
-import { collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, getDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { esc, showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmModal, confirmDelete, viewImage, DAY_LABELS, registerSection, unsubscribeListeners, onVouchersChange } from './core.js';
+import { collection, addDoc, doc, setDoc, updateDoc, deleteDoc, onSnapshot, getDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { esc, showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmModal, confirmDelete, viewImage, DAY_LABELS, registerSection, unsubscribeListeners, setNavBadge } from './core.js';
 import { openProgressModal } from './campus.js';
 
 // ── EMAILJS — notificaciones automáticas al aprobar inscripciones ──
@@ -485,13 +485,13 @@ const renderStudentRow = (s) => {
 
     tr.innerHTML = `
         <td><code style="color:#ffc107;">${esc(s.studentCode) || '—'}</code></td>
-        <td>${esc(s.fullName) || '-'}
+        <td>${esc(s.fullName) || '-'}${isNewStudent(s) ? ' <span class="badge badge-new">Nuevo</span>' : ''}
             <span class="student-sub">${esc(s.email) || ''}${s.dni ? ` · DNI ${esc(s.dni)}` : ''}</span>
             ${s.phone ? `<span class="student-sub"><i class="fab fa-whatsapp"></i> ${esc(s.phone)}</span>` : ''}</td>
         <td>${s.courses.length ? s.courses.map(esc).join('<br>')
             : s.waitlist.length ? `${s.waitlist.map(esc).join('<br>')}<span class="student-sub" style="color:#17a2b8;">Lista de espera</span>`
             : '<span style="color:#888;">Sin inscripción</span>'}
-            ${s.enrolledAt ? `<span class="student-sub">Inscrito el ${s.enrolledAt}</span>` : ''}</td>
+            ${s.registeredAt ? `<span class="student-sub">Registrado el ${new Date(s.registeredAt * 1000).toLocaleDateString('es-PE')}</span>` : ''}</td>
         <td>${custom
             ? `<span class="badge badge-info">Personalizado</span>${days ? `<span class="student-sub">${days}</span>` : ''}`
             : 'Regular'}</td>
@@ -538,7 +538,9 @@ const applyStudentFilters = () => {
     if (!pState.students) return;
     const st  = _studentTab;
     document.querySelectorAll('#student-tabs .student-tab').forEach(b => {
-        b.querySelector('span').textContent = `(${S.students.filter(x => inStudentTab(x, b.dataset.status)).length})`;
+        const inTab = S.students.filter(x => inStudentTab(x, b.dataset.status));
+        b.querySelector('span').textContent = `(${inTab.length})`;
+        b.classList.toggle('has-new', inTab.some(isNewStudent));   // punto rojo: ahí hay registros nuevos
     });
     const mod = document.getElementById('filter-student-modality').value;
     const pay = document.getElementById('filter-student-pay').value;
@@ -561,9 +563,12 @@ const applyStudentFilters = () => {
                 courses:    coursesOf(s),
                 waitlist:   [...new Set(list.filter(e => e.type === 'Lista de Espera').map(e => e.courseName).filter(Boolean))],
                 phone:      s.phone || list.find(e => e.phone)?.phone || '',
-                enrolledAt: first ? new Date(first * 1000).toLocaleDateString('es-PE') : ''
+                // Fecha de registro (segundos): la de la cuenta o, en las antiguas, la de su primera inscripción.
+                registeredAt: s.createdAt?.seconds ?? first ?? 0
             };
-        });
+        })
+        // Los registros más recientes arriba; sin fecha, al final por nombre.
+        .sort((a, b) => (b.registeredAt - a.registeredAt) || (a.fullName || '').localeCompare(b.fullName || ''));
     renderPaged('students', renderStudentRow, 'No hay alumnos en este grupo.');
 };
 ['filter-student-modality', 'filter-student-pay'].forEach(id =>
@@ -628,19 +633,60 @@ const watchVoucherQueue = () => {
         (snap) => {
             S.reported = snap.docs.map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0));
-            const badge = document.getElementById('nav-students-badge');
-            badge.textContent   = S.reported.length;
-            badge.style.display = S.reported.length ? 'inline-flex' : 'none';
             if (document.getElementById('students-management').style.display === 'block') {
                 renderVoucherQueue();
                 applyStudentFilters();
             }
-            onVouchersChange.forEach(fn => fn());
+            setNavBadge('students', 'vouchers', S.reported.length, 'constancia(s) de pago por revisar');
         }
     );
 };
 
+// ── Registros nuevos ──────────────────────────────────────
+// Un registro es "nuevo" hasta que abres Alumnos después de que llegó:
+// ahí se apaga la marca del menú y esos alumnos quedan resaltados solo
+// durante esa visita. La lista de los ya vistos se guarda en Firestore
+// (admin_state/seen), así la marca coincide en el celular y en la PC.
+const seenRef = () => doc(db, dbPath('admin_state/seen'));
+let _seenUids  = null;        // cuentas ya vistas (null = aún cargando)
+let _roster    = null;        // todos los alumnos, desde cualquier sección
+let _freshUids = new Set();   // los que eran nuevos al abrir Alumnos esta vez
+
+const unseenUids   = () => (_seenUids && _roster ? _roster.filter(uid => !_seenUids.has(uid)) : []);
+const isNewStudent = (s) => _freshUids.has(s.uid) || (!!_seenUids && !_seenUids.has(s.uid));
+const saveSeen = () => {
+    _seenUids = new Set(_roster);
+    setDoc(seenRef(), { studentUids: _roster }, { merge: true })
+        .catch(err => console.warn('No se pudo guardar los registros vistos:', err));
+};
+const refreshNewStudents = () => {
+    if (!_roster || _seenUids === null) return;
+    // Primera vez: lo que ya existía no cuenta como nuevo.
+    if (_seenUids === false) saveSeen();
+    setNavBadge('students', 'nuevos', unseenUids().length, 'registro(s) nuevo(s)');
+};
+const markStudentsSeen = () => {
+    _freshUids = new Set(unseenUids());
+    if (!_freshUids.size) return;
+    saveSeen();
+    refreshNewStudents();
+};
+
+// Vigila los registros desde cualquier sección. Arranca una vez al entrar.
+const watchNewStudents = () => {
+    onSnapshot(seenRef(), (snap) => {
+        const uids = snap.data()?.studentUids;
+        _seenUids = uids ? new Set(uids) : false;
+        refreshNewStudents();
+    });
+    onSnapshot(query(collection(db, dbPath('user_roles')), where('role', '==', 'student')), (snap) => {
+        _roster = snap.docs.map(d => d.id);
+        refreshNewStudents();
+    });
+};
+
 const loadStudents = () => {
+    markStudentsSeen();
     document.getElementById('students-table-body').innerHTML =
         `<tr><td colspan="7" class="spinner-cell"><div class="spinner"></div></td></tr>`;
     getDocs(collection(db, dbPath('courses')))
@@ -664,4 +710,4 @@ const loadStudents = () => {
 
 registerSection('students', { title: 'Alumnos', load: loadStudents, row: renderStudentRow, empty: 'No hay alumnos registrados.' });
 
-export { S, coursesOf, inStudentTab, reconcileApprovedStudents, statusOf, watchVoucherQueue };
+export { S, coursesOf, inStudentTab, reconcileApprovedStudents, statusOf, watchNewStudents, watchVoucherQueue };

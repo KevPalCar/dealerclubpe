@@ -36,7 +36,7 @@
 
                     <!-- GRUPO: Eventos -->
                     <li class="nav-group-label"><span><i class="fas fa-glass-cheers"></i> Eventos</span></li>
-                    <li><a href="#" id="nav-requests"><i class="fas fa-clipboard-list"></i> Cotizaciones</a></li>
+                    <li><a href="#" id="nav-requests"><i class="fas fa-clipboard-list"></i> Cotizaciones <span id="nav-requests-badge" class="nav-badge" style="display:none;"></span></a></li>
                     <li><a href="#" id="nav-tables"><i class="fas fa-dice"></i> Juegos del Casino</a></li>
                     <li><a href="#" id="nav-dealers"><i class="fas fa-star"></i> Dealers Destacados</a></li>
                     <li><a href="#" id="nav-brochures"><i class="fas fa-book-open"></i> Brochures</a></li>
@@ -228,7 +228,7 @@
                 </div>
 
                 <div class="student-tabs" id="quote-tabs">
-                    <button type="button" class="student-tab active" data-view="requests">Solicitudes recibidas</button>
+                    <button type="button" class="student-tab active" data-view="requests">Solicitudes recibidas <span id="requests-tab-new" class="nav-badge" style="display:none;"></span></button> <span class="info-tip" data-tip="Las más recientes van arriba. El número rojo (aquí y en el menú) cuenta las solicitudes en estado Nuevo: baja solo cuando respondes, cotizas o cambias su estado.">i</span>
                     <button type="button" class="student-tab" data-view="quotes">Cotizaciones emitidas <span id="quotes-tab-count"></span></button> <span class="info-tip" data-tip="Historial de todas las cotizaciones, se hayan concretado o no. Desde ahí las editas, duplicas, abres su hoja o cambias su estado.">i</span>
                 </div>
 
@@ -544,7 +544,7 @@
             <!-- ═══════════════ ALUMNOS ═══════════════ -->
             <section id="students-management" class="content-section">
                 <div class="section-header">
-                    <h2>Alumnos <span class="info-tip" data-tip="Todo sobre cada alumno en un solo lugar: activarlo cuando paga, sus pagos mensuales, su progreso, suspenderlo o reactivarlo. Un Inscrito aún no pagó; un Matriculado ya tiene acceso completo.">i</span></h2>
+                    <h2>Alumnos <span class="info-tip" data-tip="Todo sobre cada alumno en un solo lugar: activarlo cuando paga, sus pagos mensuales, su progreso, suspenderlo o reactivarlo. Un Inscrito aún no pagó; un Matriculado ya tiene acceso completo. Los registros más recientes van arriba. El número rojo del menú avisa de registros nuevos y constancias por revisar: el punto rojo te indica en qué grupo están y cada uno lleva la etiqueta Nuevo hasta tu siguiente visita.">i</span></h2>
                 </div>
 
                 <!-- Constancias de pago por revisar (solo aparece si hay alguna) -->

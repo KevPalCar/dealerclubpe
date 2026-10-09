@@ -786,6 +786,14 @@ button.att-cell:hover { border-color: #ffc107; }
 .student-tab:hover { border-color: #ffc107; color: #fff; }
 .student-tab.active { background: #ffc107; border-color: #ffc107; color: #1a1405; }
 .student-tab span { opacity: 0.75; margin-left: 4px; }
+.student-tab .nav-badge { opacity: 1; }
+/* Punto rojo: en ese grupo hay registros nuevos */
+.student-tab.has-new::after {
+    content: ''; display: inline-block; width: 8px; height: 8px; margin-left: 6px;
+    border-radius: 50%; background: #dc3545; vertical-align: middle;
+}
+.badge-new { background: #dc3545; color: #fff; border: 1px solid #dc3545; margin-left: 6px; }
+tr.row-new td:first-child { box-shadow: inset 3px 0 0 #dc3545; }
 
 /* ── TRABAJO DEL DÍA: lista de asistencia y pendientes ───────── */
 .daily-date { display: flex; align-items: center; gap: 8px; }

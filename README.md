@@ -53,7 +53,7 @@ Todos los estilos están en `assets/css/` y la lógica en `assets/js/`. `main.cs
 | Brochures | `admin/brochures.js` |
 | Bot y seguimiento | `admin/bot.js` |
 | Config & Anuncios | `admin/config.js` |
-| Lo común a todas: avisos, tablas con buscador, ventanas, menú | `admin/core.js` |
+| Lo común a todas: avisos, tablas con buscador, ventanas, menú y sus marcas rojas | `admin/core.js` |
 
 Para agregar una sección nueva: se crea su archivo en `admin/`, se registra con `registerSection(...)` al final y se añade su `import` en `admin.js`.
 
@@ -74,6 +74,7 @@ Todo cuelga de `/artifacts/default-app-id/public/data/`. Quién puede leer o esc
 | `quotes`, `quote_settings` | Cotizaciones emitidas y tarifario | Solo con el enlace de cada cotización |
 | `brochure_files` | PDF que envía el bot | No |
 | `bot_settings`, `bot_insights` | Ajustes e informes del bot | No |
+| `admin_state` | Registros de alumnos que el admin ya vio (para la marca roja del menú) | No |
 
 El bot guarda sus chats aparte, en `wa_conversations`, `wa_leads` y `wa_processed`.
 
@@ -85,12 +86,12 @@ El bot guarda sus chats aparte, en `wa_conversations`, `wa_leads` y `wa_processe
 | `knowledge/cerebro.md` | Instrucciones del bot: tono, flujo de venta, reglas |
 | `lib/brain.js` | Llama al modelo de IA |
 | `lib/catalog.js` | Le pasa al bot los cursos vigentes y el texto de los brochures |
-| `lib/brochures.js` | Qué PDF envía (el subido en el admin o el de `brochures/`) |
+| `lib/brochures.js` | Qué PDF envía (el subido en el admin o el de `brochures/`) y el envío en sí, para el bot y para el botón Catálogo del panel |
 | `lib/followup.js` | Mensaje activador a quien dejó de responder |
 | `lib/insights.js` | Informe semanal de chats |
 | `lib/botsettings.js` | Lee los ajustes que se cambian en el admin |
-| `lib/whatsapp.js`, `lib/store.js`, `lib/notify.js`, `lib/config.js` | Envío por WhatsApp, guardado de chats, avisos al celular, claves |
-| `lib/admin.js` | Funciones del panel de atención |
+| `lib/whatsapp.js`, `lib/store.js`, `lib/notify.js`, `lib/config.js` | Envío por WhatsApp, guardado de chats (con estado de entrega y ventana de 24 h), avisos al celular, claves |
+| `lib/admin.js` | Funciones del panel de atención (responder, adjuntar, enviar catálogo, pausar el bot) |
 | `brochures/` | PDF de respaldo de cada brochure |
 | `test/` | Pruebas que no envían nada a nadie |
 

@@ -8,6 +8,8 @@ const path = require("path");
 const fs = require("fs");
 const logger = require("firebase-functions/logger");
 const { db, BASE } = require("./botsettings");
+const store = require("./store");
+const wa = require("./whatsapp");
 
 function fechaLima() {
   return new Date().toLocaleDateString("es-PE", {
@@ -69,4 +71,49 @@ async function getBrochureBuffer(tipo) {
   }
 }
 
-module.exports = { BROCHURES, getBrochureBuffer };
+// Envía el catálogo `tipo` a un número y lo deja anotado en su chat. Lo usan
+// el bot (cuando el cerebro lo pide) y el panel (botón "Catálogo").
+// Dos intentos: un fallo puntual de WhatsApp no debe dejar al lead sin su PDF.
+// Devuelve { ok: true } o { ok: false, error, waCode }.
+async function enviarBrochure(phone, tipo) {
+  const b = BROCHURES[tipo];
+  const caption = b.caption();
+  let r, pdf = null, fallo = null, waCode = null;
+  for (let intento = 1; intento <= 2; intento++) {
+    try {
+      pdf = pdf || (await getBrochureBuffer(tipo));
+      r = await wa.sendDocument(phone, pdf, b.filename, caption);
+      fallo = r && r.error ? r.error : null;
+    } catch (e) {
+      fallo = e.message;
+      waCode = e.waCode || null;
+    }
+    if (!fallo) break;
+    logger.warn("Fallo enviando el brochure", { tipo, intento, error: fallo });
+  }
+  if (fallo) return { ok: false, error: fallo, waCode };
+
+  // Copia en Storage para que en el panel se VEA y se pueda abrir.
+  const entry = {
+    role: "assistant",
+    type: "document",
+    text: `[documento] ${b.filename}`,
+    filename: b.filename,
+    mime: "application/pdf",
+    caption,
+    ts: Date.now(),
+  };
+  const waId = r && r.messages && r.messages[0] && r.messages[0].id;
+  if (waId) entry.waId = waId;
+  try {
+    entry.storagePath = await store.saveMedia(phone, "brochure_" + tipo + "_" + Date.now(), pdf, "application/pdf");
+  } catch (e) {
+    logger.warn("No se pudo guardar copia del brochure en Storage", { error: e.message });
+  }
+  await store.appendMessages(phone, [entry]);
+  await store.addBrochuresSent(phone, [tipo]);
+  logger.info("Brochure enviado", { tipo, phone });
+  return { ok: true };
+}
+
+module.exports = { BROCHURES, getBrochureBuffer, enviarBrochure };

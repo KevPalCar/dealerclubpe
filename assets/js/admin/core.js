@@ -197,9 +197,26 @@ export const guessClassDays = (schedule) => {
     return days;   // vacío = sin días fijos (p. ej. "Consultar")
 };
 
-// Avisos entre secciones sin que una dependa de otra: Alumnos anuncia que
-// cambió la cola de constancias y quien se haya apuntado (Trabajo del día) se redibuja.
-export const onVouchersChange = [];
+// ── MARCAS DEL MENÚ ──────────────────────────────────────────
+// Número rojo junto a una sección cuando hay algo por atender. Varias
+// fuentes pueden sumar en la misma sección (Alumnos: constancias por
+// revisar + registros nuevos); el detalle sale al pasar el cursor.
+// Quien se apunte en onPendingChange (Trabajo del día) se redibuja con
+// cada cambio, sin que una sección dependa de otra.
+const navBadges = {};
+export const onPendingChange = [];
+export const navCount = (section, source) => navBadges[section]?.[source]?.count || 0;
+export const setNavBadge = (section, source, count, label) => {
+    (navBadges[section] ??= {})[source] = { count, label };
+    const parts = Object.values(navBadges[section]).filter(p => p.count > 0);
+    const badge = document.getElementById(`nav-${section}-badge`);
+    if (badge) {
+        badge.textContent   = parts.reduce((sum, p) => sum + p.count, 0);
+        badge.title         = parts.map(p => `${p.count} ${p.label}`).join(' · ');
+        badge.style.display = parts.length ? 'inline-flex' : 'none';
+    }
+    onPendingChange.forEach(fn => fn());
+};
 
 // ══════════════════════════════════════════════════════════
 // VISOR DE IMÁGENES (constancias y evidencias en Base64)

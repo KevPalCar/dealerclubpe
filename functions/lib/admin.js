@@ -5,9 +5,11 @@
 // las reglas de Firestore de la web).
 // ============================================================
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const logger = require("firebase-functions/logger");
 const cfg = require("./config");
 const store = require("./store");
 const wa = require("./whatsapp");
+const { BROCHURES, enviarBrochure } = require("./brochures");
 
 function assertAdmin(request) {
   const email = request.auth && request.auth.token && request.auth.token.email;
@@ -59,14 +61,24 @@ const adminGetConversation = onCall(async (request) => {
     name: conv && conv.name,
     humanTakeover: !!(conv && conv.humanTakeover),
     history: (conv && conv.history) || [],
+    // "open" | "closed" | "unknown": si WhatsApp aún deja escribirle gratis.
+    window: store.windowState(conv),
+    lastInboundAt: store.lastInboundOf(conv),
     lead: leadSnap.exists ? leadSnap.data() : {},
   };
 });
 
-const COLD_MSG =
-  "No se pudo enviar. Si esta persona no te ha escrito en las últimas 24 horas, " +
-  "WhatsApp exige una plantilla aprobada (tiene costo) para iniciar tú la conversación. " +
-  "Alternativa gratis: que te escriba primero (por ej. un enlace wa.me).";
+const COLD_MSG = "No se envió. " + store.VENTANA_CERRADA;
+const ES_VENTANA = (e) => e.waCode === 131047 || e.waCode === 131026 || e.waCode === 470;
+
+// WhatsApp ACEPTA un envío fuera de la ventana de 24 h y lo descarta después,
+// así que se corta antes: si no, el panel lo mostraría como enviado.
+async function assertWindowOpen(phone) {
+  if (store.windowState(await store.getConversation(phone)) === "closed") {
+    throw new HttpsError("failed-precondition", COLD_MSG);
+  }
+}
+const waIdOf = (r) => (r && r.messages && r.messages[0] && r.messages[0].id) || null;
 
 // Responder a un lead DESDE el número de empresa (pausa el bot ahí).
 const adminSendReply = onCall({ secrets: cfg.ALL_SECRETS }, async (request) => {
@@ -74,16 +86,16 @@ const adminSendReply = onCall({ secrets: cfg.ALL_SECRETS }, async (request) => {
   const phone = onlyDigits(request.data && request.data.phone);
   const text = (request.data && request.data.text ? request.data.text : "").trim();
   if (!phone || !text) throw new HttpsError("invalid-argument", "Faltan datos.");
+  await assertWindowOpen(phone);
+  let r;
   try {
-    await wa.sendText(phone, text);
+    r = await wa.sendText(phone, text);
   } catch (e) {
-    if (e.waCode === 131047 || e.waCode === 131026 || e.waCode === 470) {
-      throw new HttpsError("failed-precondition", COLD_MSG);
-    }
+    if (ES_VENTANA(e)) throw new HttpsError("failed-precondition", COLD_MSG);
     throw new HttpsError("internal", "No se pudo enviar el mensaje.");
   }
   await store.setHumanTakeover(phone, true);
-  await store.appendMessages(phone, [{ role: "assistant", text, ts: Date.now() }]);
+  await store.appendMessages(phone, [{ role: "assistant", text, ts: Date.now(), waId: waIdOf(r) }]);
   return { ok: true };
 });
 
@@ -93,19 +105,23 @@ const adminSendMedia = onCall({ secrets: cfg.ALL_SECRETS }, async (request) => {
   const d = request.data || {};
   const phone = onlyDigits(d.phone);
   if (!phone || !d.dataBase64) throw new HttpsError("invalid-argument", "Faltan datos.");
+  await assertWindowOpen(phone);
   const buffer = Buffer.from(d.dataBase64, "base64");
   let r;
   try {
     r = await wa.sendMediaBuffer(phone, buffer, d.mime, d.filename, d.caption);
   } catch (e) {
-    if (e.waCode === 131047 || e.waCode === 131026 || e.waCode === 470) {
-      throw new HttpsError("failed-precondition", COLD_MSG);
-    }
+    if (ES_VENTANA(e)) throw new HttpsError("failed-precondition", COLD_MSG);
     throw new HttpsError("internal", "No se pudo enviar el archivo.");
   }
   await store.setHumanTakeover(phone, true);
   // Guardar en Storage para verlo también en el panel (best-effort).
-  const entry = { role: "assistant", text: d.caption || `[${r.waType || "archivo"} enviado]`, ts: Date.now() };
+  const entry = {
+    role: "assistant",
+    text: d.caption || `[${r.waType || "archivo"} enviado]`,
+    ts: Date.now(),
+    waId: waIdOf(r),
+  };
   try {
     const path = await store.saveMedia(phone, "out_" + Date.now(), buffer, d.mime);
     entry.type = r.waType;
@@ -117,6 +133,23 @@ const adminSendMedia = onCall({ secrets: cfg.ALL_SECRETS }, async (request) => {
     logger.warn("No se pudo guardar copia de la media enviada", { error: e.message });
   }
   await store.appendMessages(phone, [entry]);
+  return { ok: true };
+});
+
+// Enviar el catálogo vigente (el mismo PDF y texto que manda el bot) con un
+// clic. Sirve con el bot en pausa; no cambia si el bot está pausado o no, y
+// queda anotado como enviado para que el bot no lo repita.
+const adminSendBrochure = onCall({ secrets: cfg.ALL_SECRETS }, async (request) => {
+  assertAdmin(request);
+  const phone = onlyDigits(request.data && request.data.phone);
+  const tipo = String((request.data && request.data.tipo) || "").toLowerCase();
+  if (!phone || !BROCHURES[tipo]) throw new HttpsError("invalid-argument", "Faltan datos.");
+  await assertWindowOpen(phone);
+  const r = await enviarBrochure(phone, tipo);
+  if (!r.ok) {
+    if (ES_VENTANA(r)) throw new HttpsError("failed-precondition", COLD_MSG);
+    throw new HttpsError("internal", "No se pudo enviar el catálogo. Inténtalo de nuevo.");
+  }
   return { ok: true };
 });
 
@@ -163,6 +196,7 @@ module.exports = {
   adminGetConversation,
   adminSendReply,
   adminSendMedia,
+  adminSendBrochure,
   adminStartChat,
   adminSetTakeover,
   adminGetMedia,

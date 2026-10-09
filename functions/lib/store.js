@@ -82,11 +82,57 @@ async function appendMessages(phone, newEntries) {
     const snap = await tx.get(ref);
     const prev = snap.exists ? snap.data().history || [] : [];
     const history = [...prev, ...newEntries].slice(-MAX_HISTORY);
-    tx.set(
-      ref,
-      { history, updatedAt: FieldValue.serverTimestamp() },
-      { merge: true }
-    );
+    const patch = { history, updatedAt: FieldValue.serverTimestamp() };
+    // Último mensaje del lead: de ahí cuenta la ventana de 24 h de WhatsApp.
+    const delLead = newEntries.filter((e) => e.role === "user" && e.ts).pop();
+    if (delLead) patch.lastInboundAt = delLead.ts;
+    tx.set(ref, patch, { merge: true });
+  });
+}
+
+// --- Ventana de 24 h ----------------------------------------
+// WhatsApp solo deja escribir texto libre durante las 24 h siguientes al
+// último mensaje del lead. Fuera de ese plazo ACEPTA el envío y lo descarta
+// después (el fallo llega por webhook), así que conviene saberlo antes.
+// Devuelve "open" | "closed" | "unknown" (sin datos para afirmarlo).
+const VENTANA_MS = 24 * 60 * 60 * 1000;
+const VENTANA_CERRADA =
+  "Esta persona no te ha escrito en las últimas 24 horas, y WhatsApp solo deja " +
+  "escribirle con una plantilla aprobada (tiene costo). Alternativa gratis: que te " +
+  "escriba primero (por ej. con un enlace wa.me); apenas lo haga, podrás responderle.";
+function lastInboundOf(conv) {
+  if (!conv) return null;
+  if (conv.lastInboundAt) return conv.lastInboundAt;
+  const delLead = [...(conv.history || [])].reverse().find((h) => h.role === "user" && h.ts);
+  return delLead ? delLead.ts : null;
+}
+function windowState(conv, ahora = Date.now()) {
+  const ultimo = lastInboundOf(conv);
+  if (!ultimo) return "unknown";
+  return ahora - ultimo < VENTANA_MS ? "open" : "closed";
+}
+
+// --- Estado de entrega --------------------------------------
+// Meta avisa por webhook si cada mensaje saliente se entregó, se leyó o
+// falló. Se anota en la entrada del historial que tenga ese id (waId).
+// Devuelve "updated", "unchanged" (ya lo estaba) o null (no hay tal mensaje).
+// El estado solo avanza: un "entregado" que llega tarde no pisa un "leído".
+const RANGO = { sent: 1, delivered: 2, read: 3, failed: 4 };
+async function setMessageStatus(phone, waId, status, error) {
+  if (!phone || !waId || !RANGO[status]) return null;
+  const ref = db.collection("wa_conversations").doc(phone);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return null;
+    const history = snap.data().history || [];
+    const i = history.findIndex((h) => h.waId === waId);
+    if (i === -1) return null;
+    if ((RANGO[history[i].status] || 0) >= RANGO[status]) return "unchanged";
+    history[i] = { ...history[i], status };
+    if (error) history[i].error = error;
+    // Sin updatedAt: un "leído" no debe reordenar la lista de chats.
+    tx.update(ref, { history });
+    return "updated";
   });
 }
 
@@ -153,6 +199,10 @@ module.exports = {
   getConversation,
   ensureConversation,
   appendMessages,
+  lastInboundOf,
+  windowState,
+  VENTANA_CERRADA,
+  setMessageStatus,
   isHumanTakeover,
   setHumanTakeover,
   marcarAvisoUnico,

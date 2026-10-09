@@ -69,6 +69,27 @@ function check(name, cond) {
   check("infiere por la elección anterior del lead", _test.inferirBrochure("Gracias, Ana. Te comparto el catálogo.", ["2", "Ana Pérez"]) === "eventos");
   check("no infiere nada si solo lo promete", _test.inferirBrochure("Para enviarle el catálogo de eventos, ¿con quién tengo el gusto?", ["2"]) === null);
 
+  // --- 2.7) Estados de entrega y ventana de 24 h ------------
+  const estados = _test.parseStatuses({
+    entry: [{ changes: [{ value: { statuses: [
+      { id: "wamid.OUT1", recipient_id: "51999111222", status: "delivered" },
+      { id: "wamid.OUT2", recipient_id: "51999111222", status: "failed", errors: [{ code: 131047, title: "Re-engagement message" }] },
+    ] } }] }],
+  });
+  check("lee los avisos de estado", estados.length === 2 && estados[0].status === "delivered");
+  check("lee el código del fallo", estados[1].code === 131047 && estados[1].phone === "51999111222");
+  check("un mensaje entrante no trae estados", _test.parseStatuses(fakePayload).length === 0);
+  check("explica el fallo por ventana de 24 h", /24 h/.test(_test.motivoFallo(131047)));
+  check("fallo desconocido muestra el código", /código 999/.test(_test.motivoFallo(999, "Algo raro")));
+
+  const store = require("../lib/store.js");
+  const HORA = 60 * 60 * 1000;
+  const t0 = Date.now();
+  check("ventana abierta si escribió hace 2 h", store.windowState({ lastInboundAt: t0 - 2 * HORA }, t0) === "open");
+  check("ventana cerrada si escribió hace 25 h", store.windowState({ lastInboundAt: t0 - 25 * HORA }, t0) === "closed");
+  check("chats antiguos: usa el último mensaje del lead", store.windowState({ history: [{ role: "user", ts: t0 - 30 * HORA }, { role: "assistant", ts: t0 }] }, t0) === "closed");
+  check("sin datos no se afirma nada", store.windowState({ history: [] }, t0) === "unknown" && store.windowState(null, t0) === "unknown");
+
   // --- 3) Cerebro (solo si hay clave) -----------------------
   if (process.env.LLM_API_KEY) {
     const brain = require("../lib/brain.js");

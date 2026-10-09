@@ -96,7 +96,9 @@ async function sendDocument(to, file, filename, caption) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     logger.error("Error enviando el documento", { status: res.status, data });
-    throw new Error(`send document failed: ${res.status}`);
+    const err = new Error(`send document failed: ${res.status}`);
+    err.waCode = data?.error?.code;
+    throw err;
   }
   return data;
 }

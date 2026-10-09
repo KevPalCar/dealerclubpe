@@ -241,7 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 fullName:    enrollmentData.fullName,
                 email:       enrollmentData.email,
                 dni:         enrollmentData.dni,
-                phone:       enrollmentData.phone
+                phone:       enrollmentData.phone,
+                createdAt:   new Date()
             });
 
             // 3. Guardar inscripción

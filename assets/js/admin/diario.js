@@ -5,7 +5,7 @@
 import { db, dbPath } from '../firebase.js';
 import { toYmd, fromYmd, fmtDate, billingSummary } from '../billing.js';
 import { collection, doc, onSnapshot, query, where, writeBatch, getCountFromServer } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { esc, showToast, guessClassDays, registerSection, unsubscribeListeners, loadSection, onVouchersChange } from './core.js';
+import { esc, showToast, guessClassDays, registerSection, unsubscribeListeners, loadSection, onPendingChange, navCount } from './core.js';
 import { attPct, openProgressModal } from './campus.js';
 import { S, coursesOf, inStudentTab, statusOf } from './alumnos.js';
 
@@ -50,6 +50,8 @@ const renderDailyAlerts = () => {
     const pays    = actives.map(s => billingSummary(s.billing).state);
     const count   = (state) => pays.filter(p => p === state).length;
     const alerts  = [
+        [navCount('students', 'nuevos'), 'danger', 'registros nuevos',                       'students'],
+        [navCount('requests', 'nuevas'), 'danger', 'solicitudes de cotización sin responder', 'requests'],
         [S.reported.length,   'warn',   'constancias de pago por revisar', 'students'],
         [count('overdue'),   'danger', 'pagos vencidos',                  'students'],
         [count('soon'),      'warn',   'pagos vencen en 7 días o menos',  'students'],
@@ -242,4 +244,4 @@ const loadDaily = () => {
 };
 
 registerSection('daily', { title: 'Trabajo del día', load: loadDaily });
-onVouchersChange.push(renderDaily);
+onPendingChange.push(renderDaily);

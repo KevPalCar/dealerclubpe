@@ -119,7 +119,9 @@ async function run() {
 
       const r = await wa.sendText(phone, texto);
       if (r && r.error) throw new Error(JSON.stringify(r.error));
-      await store.appendMessages(phone, [{ role: "assistant", text: texto, followUp: true, ts: Date.now() }]);
+      await store.appendMessages(phone, [
+        { role: "assistant", text: texto, followUp: true, ts: Date.now(), waId: r?.messages?.[0]?.id || null },
+      ]);
       await store.db
         .collection("wa_conversations")
         .doc(phone)

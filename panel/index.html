@@ -16,7 +16,7 @@
   #login h1 { font-size:20px; margin:0 0 4px; } #login p { color:var(--muted); margin:0 0 16px; font-size:13px; }
   #login input { width:100%; padding:11px; margin:6px 0; background:#0e0e10; border:1px solid var(--line); border-radius:8px; color:var(--txt); }
   .btn { background:var(--gold); color:#1a1a1a; border:none; border-radius:8px; padding:11px 14px; font-weight:600; }
-  .btn:disabled { opacity:.5; }
+  .btn:disabled, .ghost:disabled { opacity:.45; cursor:default; }
   .err { color:#ff7a7a; font-size:13px; min-height:18px; }
   /* App */
   #app { display:none; height:100vh; grid-template-columns:320px 1fr; }
@@ -40,6 +40,16 @@
   .medmsg { display:block; max-width:240px; }
   .doclink { color:var(--gold); text-decoration:none; font-weight:600; }
   .cap { margin-top:4px; font-size:13px; }
+  /* Estado de entrega bajo cada mensaje nuestro */
+  .st { margin-top:4px; font-size:11px; text-align:right; opacity:.7; white-space:normal; }
+  .st.read { color:#7fd0ff; opacity:1; }
+  .b.fail { background:#5b2330; }
+  .b.fail .st { color:#ffd7d7; opacity:1; text-align:left; font-size:12px; }
+  /* Menú del botón Catálogo */
+  .composer { position:relative; }
+  #brochureMenu { display:none; position:absolute; left:10px; bottom:60px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px; z-index:5; }
+  #brochureMenu button { display:block; width:100%; text-align:left; background:transparent; color:var(--txt); border:none; border-radius:6px; padding:9px 12px; }
+  #brochureMenu button:hover { background:#26262c; }
   .banner { background:#5b2330; color:#ffd7d7; padding:8px 12px; font-size:13px; text-align:center; }
   .composer { display:flex; gap:8px; padding:10px; border-top:1px solid var(--line); }
   .composer textarea { flex:1; resize:none; height:44px; padding:10px; background:#0e0e10; border:1px solid var(--line); border-radius:8px; color:var(--txt); }
@@ -76,7 +86,13 @@
         </span>
       </div>
       <div id="msgs"></div>
+      <div class="banner" id="winBanner" style="display:none"></div>
       <div class="composer">
+        <div id="brochureMenu">
+          <button data-tipo="escuela">♠️ Escuela de Dealers</button>
+          <button data-tipo="eventos">🎰 Casino de Fantasía</button>
+        </div>
+        <button class="ghost" id="brochureBtn" title="Envía el catálogo vigente (el mismo PDF y texto que manda el bot). Funciona aunque el bot esté en pausa.">📄 Catálogo</button>
         <label class="ghost" for="fileInput" id="attachBtn" title="Adjuntar archivo" style="display:flex;align-items:center;cursor:pointer">📎</label>
         <input id="fileInput" type="file" style="display:none" accept="image/*,video/*,audio/*,application/pdf,.pdf,.doc,.docx" />
         <textarea id="reply" placeholder="Escribe como DealerClub…"></textarea>
@@ -247,9 +263,33 @@ async function loadChat() {
         cap.className = "cap"; cap.textContent = m.caption;
         d.appendChild(cap);
       }
+      // Estado de entrega que reporta WhatsApp (solo en lo que enviamos).
+      if (m.role !== "user" && (m.waId || m.status)) {
+        const st = document.createElement("div");
+        st.className = "st";
+        if (m.status === "failed") {
+          d.classList.add("fail");
+          st.textContent = "⚠ NO ENTREGADO. " + (m.error || "WhatsApp no lo entregó.");
+        } else if (m.status === "read") { st.classList.add("read"); st.textContent = "✓✓ leído"; }
+        else if (m.status === "delivered") st.textContent = "✓✓ entregado";
+        else st.textContent = "✓ enviado";
+        d.appendChild(st);
+      }
       box.appendChild(d);
     }
     if (atBottom) box.scrollTop = box.scrollHeight;
+    // Ventana de 24 h cerrada: WhatsApp descartaría lo que se envíe.
+    const closed = data.window === "closed";
+    const wb = $("winBanner");
+    wb.style.display = closed ? "block" : "none";
+    if (closed) {
+      const horas = Math.floor((Date.now() - data.lastInboundAt) / 3600000);
+      wb.textContent = "No puedes escribirle ahora: su último mensaje fue hace " + horas +
+        " h y WhatsApp solo permite responder gratis dentro de las 24 h. Cuando te vuelva a escribir, se habilita solo.";
+    }
+    for (const id of ["sendBtn", "brochureBtn"]) $(id).disabled = closed;
+    $("attachBtn").style.opacity = closed ? ".4" : "";
+    $("attachBtn").style.pointerEvents = closed ? "none" : "";
     const tb = $("toggleBot");
     tb.textContent = data.humanTakeover ? "▶ Reactivar bot" : "⏸ Pausar bot";
     tb.onclick = async () => { await call("adminSetTakeover")({ phone: current, value: !data.humanTakeover }); loadChat(); refreshList(); };
@@ -263,10 +303,32 @@ $("sendBtn").onclick = async () => {
   try {
     await call("adminSendReply")({ phone: current, text: t });
     $("reply").value = "";
-    await loadChat(); refreshList();
   } catch (e) { alert("No se pudo enviar: " + (e.message || e)); }
   $("sendBtn").disabled = false;
+  await loadChat(); refreshList();   // loadChat decide si el botón sigue habilitado
 };
+
+// Enviar el catálogo vigente con un clic (sirve con el bot en pausa)
+$("brochureBtn").onclick = () => {
+  const m = $("brochureMenu");
+  m.style.display = m.style.display === "block" ? "none" : "block";
+};
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("#brochureBtn, #brochureMenu")) $("brochureMenu").style.display = "none";
+});
+$("brochureMenu").querySelectorAll("button").forEach((b) => {
+  b.onclick = async () => {
+    $("brochureMenu").style.display = "none";
+    if (!current) return;
+    if (!confirm("¿Enviar el catálogo de " + b.textContent.trim() + " a este chat?")) return;
+    $("brochureBtn").textContent = "⏳ Enviando…";
+    try {
+      await call("adminSendBrochure")({ phone: current, tipo: b.dataset.tipo });
+      await loadChat(); refreshList();
+    } catch (e) { alert("No se pudo enviar el catálogo: " + (e.message || e)); }
+    $("brochureBtn").textContent = "📄 Catálogo";
+  };
+});
 
 // Nuevo chat con cualquier número
 $("newChat").onclick = async () => {

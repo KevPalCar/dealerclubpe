@@ -25,9 +25,9 @@ import './admin/contenido.js';
 import './admin/config.js';
 import './admin/referidos.js';
 import './admin/campus.js';
-import { reconcileApprovedStudents, watchVoucherQueue } from './admin/alumnos.js';
+import { reconcileApprovedStudents, watchNewStudents, watchVoucherQueue } from './admin/alumnos.js';
 import './admin/diario.js';
-import './admin/cotizaciones.js';
+import { watchNewRequests } from './admin/cotizaciones.js';
 import './admin/bot.js';
 import './admin/brochures.js';
 
@@ -42,6 +42,8 @@ onAuthStateChanged(auth, async (user) => {
                 startAdmin('daily');
                 reconcileApprovedStudents();
                 watchVoucherQueue();
+                watchNewStudents();
+                watchNewRequests();
             } else {
                 await signOut(auth);
                 window.location.replace('/iniciar-sesion');
