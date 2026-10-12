@@ -9,14 +9,7 @@ import { toYmd, fmtDate, nextMonday, billingSchedule, billingSummary, daysLabel 
 import { collection, addDoc, doc, setDoc, updateDoc, deleteDoc, onSnapshot, getDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { esc, showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmModal, confirmDelete, viewImage, DAY_LABELS, registerSection, unsubscribeListeners, setNavBadge, gmailCompose, waPanelLink, waNumber, COMPANY_WA } from './core.js';
 import { openProgressModal } from './campus.js';
-
-// ── EMAILJS — notificaciones automáticas al aprobar inscripciones ──
-// Credenciales del proyecto DealerClub en emailjs.com (cuenta gratuita, 200/mes).
-// Si necesitas cambiar la plantilla o el servicio, actualiza solo estas 3 constantes.
-import emailjs from 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/+esm';
-const EJS_SERVICE  = 'service_w76xi5m';
-const EJS_TEMPLATE = 'template_n6t2bx8';
-emailjs.init('_S-T8AGnU-LZveZ7y');
+import { sendMail } from '../mail.js';
 
 // ══════════════════════════════════════════════════════════
 // ALTA DE ALUMNOS — helpers de código y activación
@@ -119,9 +112,7 @@ const isWaitlisted = (s) => {
 const sendApprovalEmail = async ({ name, email, course, code }) => {
     if (!email) return;
     try {
-        await emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
-            to_name: name, to_email: email, course_name: course, student_code: code
-        });
+        await sendMail('approval', { to_name: name, to_email: email, course_name: course, student_code: code });
         showToast(`Email de confirmación enviado a ${esc(email)}`, 'info');
     } catch {
         showToast('Alumno aprobado, pero el email no se pudo enviar. Revisa EmailJS.', 'warning');

@@ -6,7 +6,7 @@ Dónde está cada cosa y qué archivo tocar para cada cambio. Web estática (HTM
 
 1. **Un archivo por página.** Cada página tiene su `.html` en la raíz, su `.css` y su `.js` con el mismo nombre.
 2. **Firebase se configura en un solo sitio:** `assets/js/firebase.js`. Ningún otro archivo vuelve a inicializarlo.
-3. **Lo que se comparte va en su módulo:** `image.js`, `billing.js`, `chip-rain.js`. No se copia código entre páginas.
+3. **Lo que se comparte va en su módulo:** `image.js`, `billing.js`, `mail.js`, `chip-rain.js`. No se copia código entre páginas.
 4. **Los permisos viven en `firestore.rules`.** Se publican con `firebase deploy --only firestore:rules`; nunca se editan en la consola.
 5. **Nada generado ni temporal entra al repositorio** (`node_modules`, cachés, pruebas sueltas).
 6. **Cada función nueva del admin lleva su icono de ayuda** (`<span class="info-tip" data-tip="…">i</span>`).
@@ -36,6 +36,7 @@ Todos los estilos están en `assets/css/` y la lógica en `assets/js/`. `main.cs
 | `firebase.js` | Conexión a Firebase, `dbPath()` y `generateStudentCode()` |
 | `image.js` | Comprime fotos antes de guardarlas (constancias, evidencias, fotos de brochure) |
 | `billing.js` | Cuotas, vencimientos y estado de pago de un alumno |
+| `mail.js` | Correos automáticos por EmailJS: bienvenida al registrarse y aviso de alumno aprobado |
 | `chip-rain.js` | Lluvia de fichas del inicio de sesión |
 
 ## El admin (`assets/js/admin/`)

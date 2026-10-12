@@ -1,6 +1,7 @@
 import { auth, db, dbPath } from './firebase.js';
 import { onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { sendMail } from './mail.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const registerForm    = document.getElementById('register-form');
@@ -76,7 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Último paso: que el alumno nos escriba por WhatsApp. Al abrir él la
             // conversación, el bot lo atiende y podemos responderle sin costo.
             const text = `Hola DealerClub, soy ${fullName}. Me registré en el campus y quiero información para inscribirme.`;
-            document.getElementById('register-wa-btn').href = `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`;
+            const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`;
+            document.getElementById('register-wa-btn').href = waLink;
+            // Bienvenida por correo con el mismo botón, por si cierra esta página sin escribirnos.
+            sendMail('welcome', { to_name: fullName.split(' ')[0], to_email: user.email, wa_link: waLink })
+                .catch(err => console.warn('No se pudo enviar la bienvenida:', err));
             document.getElementById('register-done-name').textContent = fullName.split(' ')[0];
             registerForm.style.display = 'none';
             document.getElementById('register-done').style.display = 'flex';
