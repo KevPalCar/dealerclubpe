@@ -4,6 +4,7 @@ node_modules/
 # Secretos locales (NUNCA subir a Git)
 .env
 .env.local
+.env.dealerclubpe
 .secret.local
 *.local
 
