@@ -89,7 +89,7 @@ El bot guarda sus chats aparte, en `wa_conversations`, `wa_leads` y `wa_processe
 | `lib/catalog.js` | Le pasa al bot los cursos vigentes y el texto de los brochures |
 | `lib/brochures.js` | Qué PDF envía (el subido en el admin o el de `brochures/`) y el envío en sí, para el bot y para el botón Catálogo del panel |
 | `lib/followup.js` | Mensaje activador a quien dejó de responder, relevo del bot en chats en pausa sin respuesta (2 h) y confirmación de citas |
-| `lib/citas.js` | Citas de Pase VIP: enlace de calendario y textos para confirmar antes de la visita |
+| `lib/citas.js` | Citas de Pase VIP: las anota en el Google Calendar del negocio, enlace de calendario para el lead y textos para confirmar antes de la visita |
 | `lib/insights.js` | Informe semanal de chats |
 | `lib/botsettings.js` | Lee los ajustes que se cambian en el admin |
 | `lib/whatsapp.js`, `lib/store.js`, `lib/notify.js`, `lib/config.js` | Envío por WhatsApp, guardado de chats (con estado de entrega y ventana de 24 h), avisos al celular, claves |

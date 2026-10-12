@@ -550,6 +550,25 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     //      para que su propio teléfono se lo recuerde.
     if (cita) {
       await store.db.collection("wa_conversations").doc(msg.from).set({ vipAt: cita.at, vipVideo: cita.video }, { merge: true });
+      // También en el calendario del negocio (si se reagenda, se mueve el mismo evento).
+      try {
+        const datos = avisos.find((a) => /pase vip/i.test(a)) || "";
+        const eventId = await citas.anotarEnCalendario(cfg.CALENDAR_ID.value(), {
+          cita,
+          eventId: conv?.vipEventId,
+          titulo: `Pase VIP${cita.video ? " (videollamada)" : ""} - ${msg.profileName || "+" + msg.from}`,
+          detalle: `${datos}\nWhatsApp: +${msg.from}\nChat: ${PANEL_URL}?to=${msg.from}`,
+        });
+        await store.db.collection("wa_conversations").doc(msg.from).set({ vipEventId: eventId }, { merge: true });
+      } catch (e) {
+        logger.error("No se pudo anotar la cita en Google Calendar", { error: e.message });
+        await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
+          title: "La cita no se anoto en tu calendario",
+          message: `El Pase VIP de +${msg.from} quedó agendado, pero no pude anotarlo en Google Calendar (${e.message}). Revisa que el calendario siga compartido con el bot.`,
+          click: PANEL_URL + "?to=" + msg.from,
+          priority: "default",
+        });
+      }
       try {
         const texto = `📅 Guárdalo en tu calendario para que no se te pase:\n${citas.enlaceCalendario(cita, cfg.WHATSAPP_DISPLAY_NUMBER.value())}`;
         const r = await wa.sendText(msg.from, texto);

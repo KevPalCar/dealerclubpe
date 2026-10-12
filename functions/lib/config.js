@@ -32,6 +32,9 @@ const LLM_PROVIDER = defineString("LLM_PROVIDER", { default: "gemini" });
 const LLM_MODEL = defineString("LLM_MODEL", { default: "" });
 // Correo autorizado para entrar al panel admin.
 const ADMIN_EMAIL = defineString("ADMIN_EMAIL", { default: "dealerclubpe@gmail.com" });
+// Calendario de Google donde se anotan las citas de Pase VIP. Debe estar
+// compartido ("hacer cambios en eventos") con la cuenta de servicio del bot.
+const CALENDAR_ID = defineString("CALENDAR_ID", { default: "dealerclubpe@gmail.com" });
 
 module.exports = {
   META_VERIFY_TOKEN,
@@ -46,5 +49,6 @@ module.exports = {
   WHATSAPP_DISPLAY_NUMBER,
   LLM_PROVIDER,
   LLM_MODEL,
+  CALENDAR_ID,
   ADMIN_EMAIL,
 };

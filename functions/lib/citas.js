@@ -71,4 +71,39 @@ function textoRecordatorio(tipo, conv) {
   );
 }
 
-module.exports = { enlaceCalendario, tocaRecordatorio, textoRecordatorio, MARCA, sello };
+// --- Google Calendar del negocio ----------------------------
+// La cita se anota en el calendario de la empresa para que a Kevin no se le
+// pase. El bot entra con su propia cuenta de servicio (sin claves que
+// guardar): basta con que ese calendario esté compartido con ella.
+const METADATA = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default";
+async function tokenCalendario() {
+  const res = await fetch(`${METADATA}/token?scopes=https://www.googleapis.com/auth/calendar.events`, {
+    headers: { "Metadata-Flavor": "Google" },
+  });
+  if (!res.ok) throw new Error(`sin token (${res.status})`);
+  return (await res.json()).access_token;
+}
+
+// Crea el evento, o lo mueve si la cita ya tenía uno (eventId). Devuelve su id.
+async function anotarEnCalendario(calendarId, { cita, titulo, detalle, eventId }) {
+  const base = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`;
+  const fecha = (ms) => ({ dateTime: new Date(ms).toISOString(), timeZone: "America/Lima" });
+  const evento = {
+    summary: titulo,
+    description: detalle,
+    location: cita.video ? "Videollamada" : DIRECCION,
+    start: fecha(cita.at),
+    end: fecha(cita.at + 30 * 60 * 1000),
+    reminders: { useDefault: false, overrides: [{ method: "popup", minutes: 24 * 60 }, { method: "popup", minutes: 60 }] },
+  };
+  const res = await fetch(eventId ? `${base}/${eventId}` : base, {
+    method: eventId ? "PATCH" : "POST",
+    headers: { Authorization: `Bearer ${await tokenCalendario()}`, "Content-Type": "application/json" },
+    body: JSON.stringify(evento),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`${res.status} ${data?.error?.message || ""}`.trim());
+  return data.id;
+}
+
+module.exports = { enlaceCalendario, tocaRecordatorio, textoRecordatorio, anotarEnCalendario, MARCA, sello };
