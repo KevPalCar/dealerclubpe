@@ -44,6 +44,7 @@ const adminListConversations = onCall(async (request) => {
       humanTakeover: !!x.humanTakeover,
       last: last ? previewOf(last) : "",
       lastRole: last ? last.role : null,
+      lastFailed: !!(last && last.status === "failed"),
       updatedAt: x.updatedAt ? x.updatedAt._seconds * 1000 : null,
     };
   });

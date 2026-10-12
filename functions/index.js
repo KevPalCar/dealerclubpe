@@ -65,6 +65,10 @@ function parseIncoming(body) {
       mime = obj.mime_type || null;
       const label = LABELS[message.type] || message.type;
       text = filename ? `[${label}] ${filename}` : caption ? `[${label}] ${caption}` : `[${label}]`;
+    } else if (message.type === "reaction") {
+      // Un gesto sobre un mensaje anterior: se guarda para verlo en el panel,
+      // pero el bot no lo contesta (no es un mensaje nuevo).
+      text = `[reacción ${message.reaction?.emoji || "(quitada)"}]`;
     } else {
       text = `[mensaje de tipo ${message.type}]`;
     }
@@ -125,6 +129,10 @@ async function handleStatuses(statuses) {
       for (let i = 0; fallo && !r && i < 2; i++) {
         await new Promise((ok) => setTimeout(ok, 1500));
         r = await store.setMessageStatus(s.phone, s.waId, s.status, error);
+      }
+      if (fallo && !r) {
+        const chat = await store.findPhoneByWaId(s.waId);
+        if (chat) { r = await store.setMessageStatus(chat, s.waId, s.status, error); s.phone = chat; }
       }
       if (!fallo) continue;
       logger.error("Mensaje NO entregado", { to: s.phone, code: s.code, detail: s.detail });
@@ -192,8 +200,9 @@ function inferirBrochure(respuestaBot, mensajesLead) {
   if (!anunciaEntrega(respuestaBot)) return null;
   const bot = (respuestaBot || "").toLowerCase();
 
-  // Pistas explícitas en lo que dijo el bot.
-  if (/casino de fantas|evento|alquiler de mesas/.test(bot)) return "eventos";
+  // Pistas explícitas en lo que dijo el bot. "evento" a secas no vale: una
+  // frase de la Escuela que mencione eventos mandaba el PDF equivocado.
+  if (/casino de fantas|cat[aá]logo de eventos|alquiler de mesas/.test(bot)) return "eventos";
   if (/escuela|curso|programa|dealer/.test(bot)) return "escuela";
 
   // Si no, por lo que eligió el lead (del mensaje más reciente al más antiguo).
@@ -207,6 +216,19 @@ function inferirBrochure(respuestaBot, mensajesLead) {
 
 // Panel de atención (bandeja de la empresa). Con ?to=<número> abre ese chat.
 const PANEL_URL = "https://dealerclubpe.web.app/";
+
+const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
+const ESPERA_MS = 5000; // margen para que el lead termine de escribir
+const MODEL_HISTORY = 40; // mensajes recientes que lee el modelo
+const AVISO_PAUSA_MS = 30 * 60 * 1000; // como mucho un aviso cada 30 min por chat en pausa
+const { RESCATE_HORAS } = require("./lib/followup");
+const citas = require("./lib/citas");
+
+// ¿El mensaje `mid` sigue siendo lo último que escribió el lead?
+function esElUltimoDelLead(conv, mid) {
+  const ultimo = [...(conv?.history || [])].reverse().find((h) => h.role === "user" && h.text && !/^\[reacción/.test(h.text));
+  return !ultimo || !ultimo.mid || ultimo.mid === mid;
+}
 
 // Enlace que abre WhatsApp hacia el número de empresa con el comando
 // "@<lead> " ya escrito, para que Kevin solo complete su mensaje.
@@ -326,7 +348,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     await store.ensureConversation(msg.from, msg.profileName);
 
     // 3) Guarda el mensaje del usuario (si trae archivo, lo descarga a Storage)
-    const userEntry = { role: "user", text: msg.text, ts: Date.now() };
+    const userEntry = { role: "user", text: msg.text, ts: Date.now(), mid: msg.id };
     if (msg.mediaId) {
       try {
         const media = await wa.downloadMedia(msg.mediaId);
@@ -351,12 +373,32 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     // 5) Intervención humana: si está activa, el bot calla
     if (await store.isHumanTakeover(msg.from)) {
       logger.info("Takeover activo: el bot no responde", { from: msg.from });
+      // El bot está callado: que el mensaje no se quede sin respuesta.
+      if (msg.type !== "reaction" && (await store.marcarAvisoCada(msg.from, "pausedAlertAt", AVISO_PAUSA_MS))) {
+        await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
+          title: "Te escribieron en un chat en pausa",
+          message:
+            `${msg.profileName || "Un lead"} (+${msg.from}): ${msg.text}\n` +
+            `El bot está en pausa ahí. Si no respondes en ${RESCATE_HORAS} h, el bot retoma solo.`,
+          click: PANEL_URL + "?to=" + msg.from,
+        });
+      }
+      return;
+    }
+    if (msg.type === "reaction") return;
+
+    // 5.5) Mensajes seguidos: la gente escribe en varios envíos cortos. Se
+    //      espera un momento y responde solo el último, con todo a la vista
+    //      (antes cada envío recibía su propia respuesta, a veces con PDF repetido).
+    await sleep(ESPERA_MS);
+    let conv = await store.getConversation(msg.from);
+    if (!esElUltimoDelLead(conv, msg.id)) {
+      logger.info("Llegó otro mensaje después: responde ese", { from: msg.from });
       return;
     }
 
     // 6) Cerebro -> respuesta (con respaldo si el modelo falla)
-    const conv = await store.getConversation(msg.from);
-    const history = (conv?.history || []).map((h) => ({ role: h.role, text: h.text }));
+    const history = (conv?.history || []).slice(-MODEL_HISTORY).map((h) => ({ role: h.role, text: h.text }));
     let reply;
     try {
       reply = await brain.generateReply(history);
@@ -373,14 +415,35 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     }
     if (!reply) return;
 
-    // 7) Detectar etiquetas del cerebro: [[ESCALAR]] (derivar a humano)
-    //    y [[BROCHURE:escuela|eventos]] (enviar PDF). Se quitan del texto.
+    // Si escribió algo más mientras se redactaba, esta respuesta ya quedó
+    // vieja: la contesta el envío más reciente. Igual si un asesor tomó el chat.
+    conv = await store.getConversation(msg.from);
+    if (!esElUltimoDelLead(conv, msg.id) || conv?.humanTakeover) {
+      logger.info("Respuesta descartada: el chat cambió mientras se redactaba", { from: msg.from });
+      return;
+    }
+
+    // 7) Detectar etiquetas del cerebro: [[ESCALAR]] (derivar a humano),
+    //    [[AVISO:…]] (avisar sin pausar) y [[BROCHURE:escuela|eventos]]
+    //    (enviar PDF). Se quitan del texto.
     let escalar = false;
+    let cita = null;
+    const avisos = [];
     const pedidos = [];
     const imagenes = [];
     const sinEtiquetas = reply
       .replace(/\[\[ESCALAR\]\]/gi, () => {
         escalar = true;
+        return "";
+      })
+      .replace(/\[\[AVISO:([^\]]+)\]\]/gi, (_m, texto) => {
+        avisos.push(texto.trim());
+        return "";
+      })
+      .replace(/\[\[CITA:(\d{4}-\d{2}-\d{2})T(\d{1,2}):(\d{2})(:video)?\]\]/gi, (_m, dia, h, min, video) => {
+        // Hora de Lima (UTC-5 todo el año).
+        const at = Date.parse(`${dia}T${h.padStart(2, "0")}:${min}:00-05:00`);
+        if (at > Date.now()) cita = { at, video: !!video };
         return "";
       })
       .replace(/\[\[BROCHURE:(escuela|eventos)\]\]/gi, (_m, tipo) => {
@@ -482,6 +545,33 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       }
     }
 
+    // 9.7) Cita de Pase VIP: se guarda (el seguimiento le escribe para
+    //      confirmar antes de la visita) y se le manda el enlace de calendario,
+    //      para que su propio teléfono se lo recuerde.
+    if (cita) {
+      await store.db.collection("wa_conversations").doc(msg.from).set({ vipAt: cita.at, vipVideo: cita.video }, { merge: true });
+      try {
+        const texto = `📅 Guárdalo en tu calendario para que no se te pase:\n${citas.enlaceCalendario(cita, cfg.WHATSAPP_DISPLAY_NUMBER.value())}`;
+        const r = await wa.sendText(msg.from, texto);
+        await store.appendMessages(msg.from, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null }]);
+      } catch (e) {
+        logger.error("No se pudo enviar el enlace de calendario", { error: e.message });
+      }
+    }
+
+    // 9.8) Avisos al asesor que NO pausan el bot: cita agendada, horario
+    //      personalizado por cotizar, un dato por confirmar.
+    for (const aviso of avisos) {
+      const cita = /pase vip/i.test(aviso);
+      await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
+        title: cita ? "Pase VIP agendado" : "El bot necesita que confirmes algo",
+        message: `${aviso}\n${msg.profileName || "Lead"} (+${msg.from}). El bot sigue atendiendo.`,
+        click: PANEL_URL + "?to=" + msg.from,
+        tags: cita ? "calendar" : "bell",
+      });
+      logger.info("Aviso al asesor enviado", { from: msg.from, aviso });
+    }
+
     // 10) Escalación a humano: pausa el bot en esta conversación y
     //     avisa a Kevin por push (ntfy) para que intervenga rápido.
     if (escalar) {
@@ -499,7 +589,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
 });
 
 // Helpers expuestos solo para pruebas locales (no afecta a producción).
-exports._test = { parseIncoming, parseStatuses, motivoFallo, isValidSignature, inferirBrochure, anunciaEntrega };
+exports._test = { parseIncoming, parseStatuses, motivoFallo, isValidSignature, inferirBrochure, anunciaEntrega, esElUltimoDelLead };
 
 // ---- Tareas programadas ------------------------------------
 // Seguimiento a leads en silencio: revisa cada 30 min, solo escribe dentro

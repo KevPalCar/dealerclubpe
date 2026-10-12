@@ -31,6 +31,11 @@
                     <input type="email" id="registerEmail" placeholder="tu@ejemplo.com" required>
                 </div>
                 <div class="form-group">
+                    <label for="registerPhone">Celular / WhatsApp (opcional):</label>
+                    <input type="tel" id="registerPhone" placeholder="Ej: 987 654 321" inputmode="numeric" autocomplete="tel">
+                    <small>Para coordinar tu inscripción más rápido.</small>
+                </div>
+                <div class="form-group">
                     <label for="registerPassword">Contraseña:</label>
                     <input type="password" id="registerPassword" placeholder="Crea tu contraseña" required>
                     <small>Mínimo 6 caracteres.</small>
@@ -39,6 +44,14 @@
                 <div id="register-message" class="message"></div>
                 <p class="auth-link">¿Ya tienes cuenta? <a href="/iniciar-sesion">Inicia Sesión aquí</a></p>
             </form>
+            <!-- Tras crear la cuenta: el alumno abre la conversación por WhatsApp -->
+            <div id="register-done" class="register-done" style="display:none;">
+                <p class="register-done-ok"><i class="fas fa-check-circle"></i> ¡Cuenta creada, <span id="register-done-name"></span>!</p>
+                <p><strong>Último paso:</strong> escríbenos por WhatsApp. Te damos la bienvenida, te enviamos el catálogo con programas, horarios y precios, y te ayudamos a completar tu inscripción.</p>
+                <a id="register-wa-btn" class="btn register-wa-btn" href="#" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> Continuar por WhatsApp</a>
+                <a href="/panel-estudiante" class="register-done-skip">Ir a mi campus</a>
+                <small>Te enviamos un correo de verificación: revísalo (y la carpeta de spam) para confirmar tu cuenta.</small>
+            </div>
         </section>
     </main>
 

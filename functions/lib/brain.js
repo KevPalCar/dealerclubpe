@@ -32,18 +32,23 @@ async function buildSystem(extra = "") {
     month: "long",
     day: "numeric",
   });
+  const hora = new Date().toLocaleTimeString("es-PE", { timeZone: "America/Lima", hour: "numeric", minute: "2-digit" });
   // Precios/horarios reales, leídos del mismo sitio que edita el admin.
   const catalogo = await getCatalogoTexto();
   // Aprendizajes que Kevin aprobó desde el admin tras revisar chats reales.
   const { notes } = await getBotSettings();
   return (
     getSystemPrompt() +
-    (catalogo ? `\n\n${catalogo}` : "") +
+    (catalogo
+      ? `\n\n${catalogo}`
+      : "\n\nCATÁLOGO VIGENTE: NO DISPONIBLE en este momento. No inventes nombres de programas, " +
+        "horarios ni precios: remite al catálogo PDF y di que un asesor le confirma el dato.") +
     (notes
       ? `\n\n## Aprendizajes aprobados (ajustes que mandan sobre el estilo general)\n${notes}`
       : "") +
     (extra ? `\n\n${extra.trim()}` : "") +
-    `\n\n## Contexto temporal\nHoy es ${fecha} (hora de Lima). Es solo referencia; NO propongas días ni fechas concretas al cliente.`
+    `\n\n## Contexto temporal\nHoy es ${fecha}, ${hora} (hora de Lima). Úsalo para proponer horarios REALES de Pase VIP ` +
+    `(nunca una hora que ya pasó ni fuera de los horarios de visita). Para todo lo demás no propongas fechas.`
   );
 }
 

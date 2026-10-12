@@ -144,6 +144,18 @@ body {
 .message.success { background-color: #28a745; color: #fff; }
 .message.loading { background-color: #ffc107; color: #000; }
 
+/* Registro completado: último paso por WhatsApp */
+.register-done { display: flex; flex-direction: column; align-items: center; gap: 14px; color: #ddd; line-height: 1.5; }
+.register-done-ok { font-size: 1.2em; font-weight: bold; color: #28a745; margin: 0; }
+.register-wa-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 14px; border-radius: 5px; font-size: 1.1em; font-weight: bold;
+    background-color: #25d366; color: #fff; text-decoration: none; transition: background-color 0.3s ease;
+}
+.register-wa-btn:hover { background-color: #1ebe5a; }
+.register-done-skip { color: #ffc107; font-size: 0.95em; }
+.register-done small { color: #888; font-size: 0.85em; }
+
 /* Enlaces extra (Registro, Olvidé Contraseña) */
 .auth-link {
     margin-top: 20px;

@@ -5,20 +5,14 @@
 import { db, dbPath } from '../firebase.js';
 import { toYmd, fromYmd, fmtDate } from '../billing.js';
 import { collection, addDoc, setDoc, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { esc, showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmDelete, deleteItem, numOrNull, registerSection, registerSearch, unsubscribeListeners, setNavBadge } from './core.js';
+import { esc, showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmDelete, deleteItem, numOrNull, registerSection, registerSearch, unsubscribeListeners, setNavBadge, gmailCompose, waPanelLink, waNumber } from './core.js';
 
 // ══════════════════════════════════════════════════════════
 // COTIZACIONES — SOLICITUDES RECIBIDAS
 // ══════════════════════════════════════════════════════════
 const REQUEST_STATUSES = ['Nuevo', 'Respondido', 'Cerrado'];
 
-// Correo oficial de la empresa (cuenta desde la que se responde)
-const COMPANY_EMAIL = 'dealerclubpe@gmail.com';
-
-// Abre la ventana de redacción de Gmail directamente en la cuenta de la
-// empresa, con destinatario, asunto y cuerpo autollenados con los datos de
-// la solicitud. Si esa cuenta no está logueada en el navegador, Gmail
-// pedirá iniciar sesión (queda garantizado que se responde desde la empresa).
+// Correo de respuesta autollenado con los datos de la solicitud.
 const buildGmailCompose = (r) => {
     const subject = `DealerClub — Respuesta a tu solicitud${r.quoteContext ? ` (${r.quoteContext})` : ''}`;
     const body =
@@ -28,21 +22,15 @@ const buildGmailCompose = (r) => {
         (r.eventDate ? `• Fecha del evento: ${r.eventDate}\n` : '') +
         (r.details   ? `• Detalle: ${r.details}\n`           : '') +
         `\n[Escribe aquí tu respuesta]\n\nSaludos cordiales,\nEquipo DealerClub`;
-    const params = new URLSearchParams({ view: 'cm', fs: '1', to: r.email || '', su: subject, body });
-    return `https://mail.google.com/mail/?authuser=${encodeURIComponent(COMPANY_EMAIL)}&${params.toString()}`;
+    return gmailCompose({ to: r.email, subject, body });
 };
-// URL del panel de atención de WhatsApp (bandeja de la empresa).
-const WA_PANEL_URL = 'https://dealerclubpe.web.app/';
-// Construye un enlace al PANEL (no al WhatsApp personal): abre el chat de ese
-// número y autollena un mensaje con los datos de la solicitud, listo para enviar
-// desde el número de la empresa.
+// Abre el chat en el panel de WhatsApp con un saludo sobre la solicitud.
 const buildWa = (r) => {
-    const phone = (r.phone || '').replace(/\D/g, '');
-    if (!phone) return '';
+    if (!waNumber(r.phone)) return '';
     const text = `Hola ${r.fullName || ''}, te escribo de DealerClub 👋 sobre tu solicitud` +
         (r.eventType ? ` de ${r.eventType}` : '') +
         (r.eventDate ? ` (fecha tentativa: ${r.eventDate})` : '') + '.';
-    return `${WA_PANEL_URL}?to=${phone}&msg=${encodeURIComponent(text)}`;
+    return waPanelLink(r.phone, text);
 };
 // Registra que se tomó acción (marca como 'Respondido' si seguía 'Nuevo')
 const markRequestResponded = async (r) => {
@@ -641,18 +629,16 @@ const withSavedQuote = async (buildUrl, { markSent = false } = {}) => {
     if (markSent) markQuoteSent(q);
 };
 const quoteWaUrl = (q) => {
-    const phone = (q.client.phone || '').replace(/\D/g, '');
-    if (!phone) { showMsg(document.getElementById('quoteFormMessage'), 'Falta el WhatsApp del cliente.', 'error'); return ''; }
-    return `${WA_PANEL_URL}?to=${phone.length === 9 ? `51${phone}` : phone}&msg=${encodeURIComponent(quoteMessage(q))}`;
+    if (!waNumber(q.client.phone)) { showMsg(document.getElementById('quoteFormMessage'), 'Falta el WhatsApp del cliente.', 'error'); return ''; }
+    return waPanelLink(q.client.phone, quoteMessage(q));
 };
 const quoteMailUrl = (q) => {
     if (!q.client.email) { showMsg(document.getElementById('quoteFormMessage'), 'Falta el correo del cliente.', 'error'); return ''; }
-    const params = new URLSearchParams({
-        view: 'cm', fs: '1', to: q.client.email,
-        su: `Cotización N.° ${q.number} — Casino de Fantasía DealerClub`,
+    return gmailCompose({
+        to: q.client.email,
+        subject: `Cotización N.° ${q.number} — Casino de Fantasía DealerClub`,
         body: `${quoteMessage(q)}\n\nSaludos cordiales,\n${q.advisor || 'Equipo DealerClub'}\nDealerClub`
     });
-    return `https://mail.google.com/mail/?authuser=${encodeURIComponent(COMPANY_EMAIL)}&${params.toString()}`;
 };
 
 document.getElementById('quoteForm').addEventListener('submit', (e) => { e.preventDefault(); saveQuote(); });

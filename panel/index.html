@@ -43,6 +43,8 @@
   /* Estado de entrega bajo cada mensaje nuestro */
   .st { margin-top:4px; font-size:11px; text-align:right; opacity:.7; white-space:normal; }
   .st.read { color:#7fd0ff; opacity:1; }
+  .st.wait { color:#ffd27f; opacity:1; }
+  .ls.fail { color:#ff9c9c; }
   .b.fail { background:#5b2330; }
   .b.fail .st { color:#ffd7d7; opacity:1; text-align:left; font-size:12px; }
   /* Menú del botón Catálogo */
@@ -51,6 +53,7 @@
   #brochureMenu button { display:block; width:100%; text-align:left; background:transparent; color:var(--txt); border:none; border-radius:6px; padding:9px 12px; }
   #brochureMenu button:hover { background:#26262c; }
   .banner { background:#5b2330; color:#ffd7d7; padding:8px 12px; font-size:13px; text-align:center; }
+  .banner a { display:inline-block; margin-top:6px; color:#fff; background:#25d366; border-radius:6px; padding:5px 10px; text-decoration:none; font-weight:600; }
   .composer { display:flex; gap:8px; padding:10px; border-top:1px solid var(--line); }
   .composer textarea { flex:1; resize:none; height:44px; padding:10px; background:#0e0e10; border:1px solid var(--line); border-radius:8px; color:var(--txt); }
   .ghost { background:transparent; color:var(--muted); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:12.5px; }
@@ -86,7 +89,8 @@
         </span>
       </div>
       <div id="msgs"></div>
-      <div class="banner" id="winBanner" style="display:none"></div>
+      <div class="banner" id="winBanner" style="display:none"><span id="winText"></span><br>
+        <a id="winPhone" href="#" target="_blank" rel="noopener" title="Abre WhatsApp en este dispositivo con el mensaje del cuadro. Sale desde el número que tengas ahí, no desde el de la empresa, y no queda en este panel.">📱 Escribirle desde mi WhatsApp (gratis)</a></div>
       <div class="composer">
         <div id="brochureMenu">
           <button data-tipo="escuela">♠️ Escuela de Dealers</button>
@@ -199,7 +203,7 @@ async function refreshList() {
       div.className = "item" + (current === c.phone ? " active" : "");
       const name = c.name || ("+" + c.phone);
       div.innerHTML = `<div class="nm"><span>${esc(name)}</span>${c.humanTakeover ? '<span class="pill">pausado</span>' : ''}</div>
-        <div class="ls">${c.lastRole === 'user' ? '' : '✓ '}${esc(c.last || '')}</div>`;
+        <div class="ls${c.lastFailed ? ' fail' : ''}">${c.lastFailed ? '⚠ No entregado: ' : c.lastRole === 'user' ? '' : '✓ '}${esc(c.last || '')}</div>`;
       div.onclick = () => openChat(c.phone, name);
       list.appendChild(div);
     }
@@ -272,20 +276,22 @@ async function loadChat() {
           st.textContent = "⚠ NO ENTREGADO. " + (m.error || "WhatsApp no lo entregó.");
         } else if (m.status === "read") { st.classList.add("read"); st.textContent = "✓✓ leído"; }
         else if (m.status === "delivered") st.textContent = "✓✓ entregado";
-        else st.textContent = "✓ enviado";
+        else { st.classList.add("wait"); st.textContent = "✓ enviado · WhatsApp aún no confirma que llegó"; }
         d.appendChild(st);
       }
       box.appendChild(d);
     }
     if (atBottom) box.scrollTop = box.scrollHeight;
     // Ventana de 24 h cerrada: WhatsApp descartaría lo que se envíe.
+    // Si nunca escribió, tampoco se le puede escribir primero desde la empresa.
     const closed = data.window === "closed";
-    const wb = $("winBanner");
-    wb.style.display = closed ? "block" : "none";
+    $("winBanner").style.display = closed ? "block" : "none";
     if (closed) {
       const horas = Math.floor((Date.now() - data.lastInboundAt) / 3600000);
-      wb.textContent = "No puedes escribirle ahora: su último mensaje fue hace " + horas +
-        " h y WhatsApp solo permite responder gratis dentro de las 24 h. Cuando te vuelva a escribir, se habilita solo.";
+      $("winText").textContent = (data.lastInboundAt
+        ? "No puedes escribirle desde la empresa: su último mensaje fue hace " + horas + " h y WhatsApp solo permite responder gratis dentro de las 24 h."
+        : "Esta persona aún no ha escrito al WhatsApp de la empresa, y WhatsApp no deja escribirle primero sin plantilla de pago.") +
+        " Cuando te escriba, se habilita solo.";
     }
     for (const id of ["sendBtn", "brochureBtn"]) $(id).disabled = closed;
     $("attachBtn").style.opacity = closed ? ".4" : "";
@@ -295,6 +301,11 @@ async function loadChat() {
     tb.onclick = async () => { await call("adminSetTakeover")({ phone: current, value: !data.humanTakeover }); loadChat(); refreshList(); };
   } catch (e) { console.error(e); }
 }
+
+// Alternativa gratis con la ventana cerrada: WhatsApp del propio celular/PC.
+$("winPhone").onclick = () => {
+  $("winPhone").href = "https://wa.me/" + current + "?text=" + encodeURIComponent($("reply").value.trim());
+};
 
 $("sendBtn").onclick = async () => {
   const t = $("reply").value.trim();
@@ -334,7 +345,8 @@ $("brochureMenu").querySelectorAll("button").forEach((b) => {
 $("newChat").onclick = async () => {
   const raw = prompt("Escribir a un número nuevo.\nPon el número con código de país (solo dígitos), ej. 51999888777:");
   if (!raw) return;
-  const phone = raw.replace(/\D/g, "");
+  let phone = raw.replace(/\D/g, "");
+  if (phone.length === 9) phone = "51" + phone;   // celular peruano sin código de país
   if (phone.length < 8) { alert("Número inválido. Incluye el código de país (ej. 51...)."); return; }
   try {
     await call("adminStartChat")({ phone });

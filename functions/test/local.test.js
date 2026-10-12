@@ -68,6 +68,20 @@ function check(name, cond) {
   check("infiere eventos por el texto del bot", _test.inferirBrochure("Le comparto el catálogo de Casino de Fantasía.", ["hola"]) === "eventos");
   check("infiere por la elección anterior del lead", _test.inferirBrochure("Gracias, Ana. Te comparto el catálogo.", ["2", "Ana Pérez"]) === "eventos");
   check("no infiere nada si solo lo promete", _test.inferirBrochure("Para enviarle el catálogo de eventos, ¿con quién tengo el gusto?", ["2"]) === null);
+  check("una frase de la Escuela que menciona eventos NO manda el PDF de eventos", _test.inferirBrochure("Te comparto el catálogo de la Escuela de Dealers. ¿Te llama trabajar en casinos o en eventos?", ["1"]) === "escuela");
+
+  // --- 2.6) Mensajes seguidos, reacciones y chats en pausa ---
+  const ultimo = _test.esElUltimoDelLead;
+  const seguidos = { history: [{ role: "user", text: "hola", mid: "a" }, { role: "user", text: "info", mid: "b" }] };
+  check("con mensajes seguidos responde solo el último", ultimo(seguidos, "b") === true && ultimo(seguidos, "a") === false);
+  check("una reacción posterior no cuenta como mensaje nuevo", ultimo({ history: [{ role: "user", text: "hola", mid: "a" }, { role: "user", text: "[reacción 👍]", mid: "r" }] }, "a") === true);
+  const reaccion = _test.parseIncoming({ entry: [{ changes: [{ value: { messages: [{ from: "51999", id: "x", type: "reaction", reaction: { emoji: "👍", message_id: "m" } }] } }] }] });
+  check("lee las reacciones con su emoji", reaccion.type === "reaction" && reaccion.text === "[reacción 👍]");
+  const { tocaRescate } = require("../lib/followup");
+  const H = 3600 * 1000, now = Date.now();
+  check("retoma un chat en pausa sin respuesta hace 3 h", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "¿y el precio?", ts: now - 3 * H }] }, now) === now - 3 * H);
+  check("no lo retoma si el asesor aún tiene tiempo", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 1 * H }] }, now) === null);
+  check("no lo retoma si ya le respondieron o pasó la ventana", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 3 * H }, { role: "assistant", text: "dime", ts: now - 2 * H }] }, now) === null && tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 30 * H }] }, now) === null);
 
   // --- 2.7) Estados de entrega y ventana de 24 h ------------
   const estados = _test.parseStatuses({
@@ -88,7 +102,8 @@ function check(name, cond) {
   check("ventana abierta si escribió hace 2 h", store.windowState({ lastInboundAt: t0 - 2 * HORA }, t0) === "open");
   check("ventana cerrada si escribió hace 25 h", store.windowState({ lastInboundAt: t0 - 25 * HORA }, t0) === "closed");
   check("chats antiguos: usa el último mensaje del lead", store.windowState({ history: [{ role: "user", ts: t0 - 30 * HORA }, { role: "assistant", ts: t0 }] }, t0) === "closed");
-  check("sin datos no se afirma nada", store.windowState({ history: [] }, t0) === "unknown" && store.windowState(null, t0) === "unknown");
+  check("nunca escribió: cerrada", store.windowState({ history: [] }, t0) === "closed" && store.windowState(null, t0) === "closed");
+  check("escribió sin hora registrada: no se afirma nada", store.windowState({ history: [{ role: "user", text: "hola" }] }, t0) === "unknown");
 
   // --- 3) Cerebro (solo si hay clave) -----------------------
   if (process.env.LLM_API_KEY) {

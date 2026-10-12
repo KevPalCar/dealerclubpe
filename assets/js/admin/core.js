@@ -185,6 +185,28 @@ export const startAdmin = (firstSection) => {
 export const DAY_LABELS = [[1, 'L'], [2, 'M'], [3, 'M'], [4, 'J'], [5, 'V'], [6, 'S'], [0, 'D']];   // valor = getDay()
 export const numOrNull = (v) => (v === '' || v == null || Number.isNaN(+v) ? null : +v);
 
+// ── CONTACTAR DESDE EL ADMIN (correo y WhatsApp de la empresa) ──
+const COMPANY_EMAIL  = 'dealerclubpe@gmail.com';
+export const COMPANY_WA = '51929610747';
+const WA_PANEL_URL   = 'https://dealerclubpe.web.app/';
+
+// Número con código de país: uno peruano de 9 dígitos recibe el 51.
+export const waNumber = (raw) => {
+    const d = String(raw || '').replace(/\D/g, '');
+    return d.length === 9 ? `51${d}` : d;
+};
+// Redacción de Gmail abierta en la cuenta de la empresa, ya llena. Si esa
+// cuenta no está iniciada en el navegador, Gmail pide entrar con ella.
+export const gmailCompose = ({ to, subject, body }) => {
+    const params = new URLSearchParams({ view: 'cm', fs: '1', to: to || '', su: subject, body });
+    return `https://mail.google.com/mail/?authuser=${encodeURIComponent(COMPANY_EMAIL)}&${params.toString()}`;
+};
+// Abre ese chat en el PANEL de WhatsApp (número de la empresa) con el
+// mensaje autollenado. Si la persona no escribió en las últimas 24 h, el
+// panel lo avisa y ofrece escribirle desde el WhatsApp del celular.
+export const waPanelLink = (phone, text) =>
+    `${WA_PANEL_URL}?to=${waNumber(phone)}&msg=${encodeURIComponent(text)}`;
+
 // Días de clase del curso (0 = domingo … 6 = sábado). Si el curso aún
 // no los tiene guardados, se deducen del texto del horario.
 export const guessClassDays = (schedule) => {

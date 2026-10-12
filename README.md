@@ -45,7 +45,7 @@ Todos los estilos están en `assets/css/` y la lógica en `assets/js/`. `main.cs
 | Menú | Archivo |
 |---|---|
 | Trabajo del día | `admin/diario.js` |
-| Alumnos (activar, suspender, pagos, constancias) | `admin/alumnos.js` |
+| Alumnos (activar, suspender, pagos, constancias, escribirles por correo o WhatsApp) | `admin/alumnos.js` |
 | Material, Tareas, Progreso | `admin/campus.js` |
 | Referidos | `admin/referidos.js` |
 | Cotizaciones (solicitudes, editor, tarifario, historial) | `admin/cotizaciones.js` |
@@ -53,7 +53,7 @@ Todos los estilos están en `assets/css/` y la lógica en `assets/js/`. `main.cs
 | Brochures | `admin/brochures.js` |
 | Bot y seguimiento | `admin/bot.js` |
 | Config & Anuncios | `admin/config.js` |
-| Lo común a todas: avisos, tablas con buscador, ventanas, menú y sus marcas rojas | `admin/core.js` |
+| Lo común a todas: avisos, tablas con buscador, ventanas, menú y sus marcas rojas, correo y WhatsApp de la empresa | `admin/core.js` |
 
 Para agregar una sección nueva: se crea su archivo en `admin/`, se registra con `registerSection(...)` al final y se añade su `import` en `admin.js`.
 
@@ -87,7 +87,8 @@ El bot guarda sus chats aparte, en `wa_conversations`, `wa_leads` y `wa_processe
 | `lib/brain.js` | Llama al modelo de IA |
 | `lib/catalog.js` | Le pasa al bot los cursos vigentes y el texto de los brochures |
 | `lib/brochures.js` | Qué PDF envía (el subido en el admin o el de `brochures/`) y el envío en sí, para el bot y para el botón Catálogo del panel |
-| `lib/followup.js` | Mensaje activador a quien dejó de responder |
+| `lib/followup.js` | Mensaje activador a quien dejó de responder, relevo del bot en chats en pausa sin respuesta (2 h) y confirmación de citas |
+| `lib/citas.js` | Citas de Pase VIP: enlace de calendario y textos para confirmar antes de la visita |
 | `lib/insights.js` | Informe semanal de chats |
 | `lib/botsettings.js` | Lee los ajustes que se cambian en el admin |
 | `lib/whatsapp.js`, `lib/store.js`, `lib/notify.js`, `lib/config.js` | Envío por WhatsApp, guardado de chats (con estado de entrega y ventana de 24 h), avisos al celular, claves |
@@ -95,7 +96,7 @@ El bot guarda sus chats aparte, en `wa_conversations`, `wa_leads` y `wa_processe
 | `brochures/` | PDF de respaldo de cada brochure |
 | `test/` | Pruebas que no envían nada a nadie |
 
-El panel de atención de WhatsApp es aparte: `panel/index.html`, publicado en `dealerclubpe.web.app`.
+El panel de atención de WhatsApp es aparte: `panel/index.html`, publicado en `dealerclubpe.web.app`. Si la persona no escribió en las últimas 24 h (o nunca), el panel no deja escribirle desde la empresa y ofrece hacerlo gratis desde el WhatsApp del propio celular. Por eso, al registrarse, el alumno ve el botón "Continuar por WhatsApp": así es quien abre la conversación.
 
 ## Cómo se publica
 

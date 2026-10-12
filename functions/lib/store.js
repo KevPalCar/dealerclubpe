@@ -34,7 +34,9 @@ async function getMediaBase64(path) {
   return `data:${mime};base64,${buf.toString("base64")}`;
 }
 
-const MAX_HISTORY = 20; // pares de mensajes que recordamos
+// Mensajes que se guardan por chat (lo que ve el panel). Al modelo se le pasa
+// solo la cola más reciente (ver MODEL_HISTORY en index.js).
+const MAX_HISTORY = 200;
 
 // --- Anti-duplicados ----------------------------------------
 // Devuelve true si el mensaje YA fue procesado (duplicado).
@@ -95,6 +97,8 @@ async function appendMessages(phone, newEntries) {
 // último mensaje del lead. Fuera de ese plazo ACEPTA el envío y lo descarta
 // después (el fallo llega por webhook), así que conviene saberlo antes.
 // Devuelve "open" | "closed" | "unknown" (sin datos para afirmarlo).
+// Quien NUNCA escribió (chat abierto por nosotros) cuenta como "closed":
+// WhatsApp tampoco deja escribirle primero sin plantilla.
 const VENTANA_MS = 24 * 60 * 60 * 1000;
 const VENTANA_CERRADA =
   "Esta persona no te ha escrito en las últimas 24 horas, y WhatsApp solo deja " +
@@ -108,7 +112,10 @@ function lastInboundOf(conv) {
 }
 function windowState(conv, ahora = Date.now()) {
   const ultimo = lastInboundOf(conv);
-  if (!ultimo) return "unknown";
+  if (!ultimo) {
+    const escribio = conv && (conv.history || []).some((h) => h.role === "user");
+    return escribio ? "unknown" : "closed";
+  }
   return ahora - ultimo < VENTANA_MS ? "open" : "closed";
 }
 
@@ -136,6 +143,15 @@ async function setMessageStatus(phone, waId, status, error) {
   });
 }
 
+// Un fallo cuyo número no coincide con ningún chat (WhatsApp lo reporta con
+// otro formato que el que se usó al abrirlo): se busca el mensaje por su id
+// en los chats más recientes. Devuelve el teléfono del chat, o null.
+async function findPhoneByWaId(waId) {
+  const snap = await db.collection("wa_conversations").orderBy("updatedAt", "desc").limit(40).get();
+  const doc = snap.docs.find((d) => (d.data().history || []).some((h) => h.waId === waId));
+  return doc ? doc.id : null;
+}
+
 // Registra qué brochures ya se enviaron (para no repetirlos en la conversación).
 async function addBrochuresSent(phone, tipos) {
   await db.collection("wa_conversations").doc(phone).set(
@@ -159,6 +175,19 @@ async function marcarAvisoUnico(phone, campo) {
       { [campo]: true, updatedAt: FieldValue.serverTimestamp() },
       { merge: true }
     );
+    return true;
+  });
+}
+
+// Aviso repetible pero espaciado: devuelve true (y anota la hora) solo si
+// no se avisó de lo mismo en los últimos `cadaMs`.
+async function marcarAvisoCada(phone, campo, cadaMs) {
+  const ref = db.collection("wa_conversations").doc(phone);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const ultimo = snap.exists ? snap.data()[campo] : null;
+    if (ultimo && Date.now() - ultimo < cadaMs) return false;
+    tx.set(ref, { [campo]: Date.now() }, { merge: true });
     return true;
   });
 }
@@ -201,11 +230,13 @@ module.exports = {
   appendMessages,
   lastInboundOf,
   windowState,
+  findPhoneByWaId,
   VENTANA_CERRADA,
   setMessageStatus,
   isHumanTakeover,
   setHumanTakeover,
   marcarAvisoUnico,
+  marcarAvisoCada,
   addBrochuresSent,
   upsertLead,
   saveMedia,

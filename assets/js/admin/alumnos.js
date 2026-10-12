@@ -7,7 +7,7 @@
 import { db, dbPath, generateStudentCode } from '../firebase.js';
 import { toYmd, fmtDate, nextMonday, billingSchedule, billingSummary, daysLabel } from '../billing.js';
 import { collection, addDoc, doc, setDoc, updateDoc, deleteDoc, onSnapshot, getDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { esc, showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmModal, confirmDelete, viewImage, DAY_LABELS, registerSection, unsubscribeListeners, setNavBadge } from './core.js';
+import { esc, showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmModal, confirmDelete, viewImage, DAY_LABELS, registerSection, unsubscribeListeners, setNavBadge, gmailCompose, waPanelLink, waNumber, COMPANY_WA } from './core.js';
 import { openProgressModal } from './campus.js';
 
 // ── EMAILJS — notificaciones automáticas al aprobar inscripciones ──
@@ -455,6 +455,23 @@ document.getElementById('closeStudentModalBtn').addEventListener('click', () =>
 );
 
 // ── Tabla ─────────────────────────────────────────────────
+// Correo al alumno desde la cuenta de la empresa. A quien sigue pendiente
+// (se registró pero no ha escrito) se le invita a escribir AL WHATSAPP de
+// la empresa: así abre la conversación y se le puede atender gratis.
+const studentMail = (s) => {
+    const name = s.fullName || '';
+    const wa   = `https://wa.me/${COMPANY_WA}?text=${encodeURIComponent(
+        `Hola DealerClub, soy ${name}. Me registré en el campus y quiero información para inscribirme.`)}`;
+    const body = statusOf(s) === 'pending'
+        ? `Hola ${name},\n\n¡Gracias por registrarte en el campus de DealerClub! ` +
+          `Para darte la bienvenida, enviarte el catálogo con programas, horarios y precios ` +
+          `y ayudarte a completar tu inscripción, escríbenos por WhatsApp con un clic:\n\n${wa}\n\n` +
+          `Saludos cordiales,\nEquipo DealerClub`
+        : `Hola ${name},\n\n[Escribe aquí tu mensaje]\n\n` +
+          `Si prefieres conversarlo por WhatsApp, escríbenos aquí:\n${wa}\n\nSaludos cordiales,\nEquipo DealerClub`;
+    return gmailCompose({ to: s.email, subject: 'DealerClub — Tu registro en el campus', body });
+};
+
 const renderStudentRow = (s) => {
     const tr     = document.getElementById('students-table-body').insertRow();
     const st     = statusOf(s);
@@ -480,6 +497,8 @@ const renderStudentRow = (s) => {
     if (st === 'active')    btns.push(`<button class="btn btn-secondary btn-sm btn-stu-progress" title="Asistencia, nivel y notas"><i class="fas fa-chart-line"></i> Progreso</button>`);
     if (st !== 'pending')   btns.push(`<button class="btn btn-secondary btn-sm btn-stu-pay" title="Pagos"><i class="fas fa-coins"></i> Pagos</button>`);
     btns.push(`<button class="btn btn-secondary btn-sm btn-stu-edit" title="Ficha"><i class="fas fa-id-card"></i></button>`);
+    btns.push(`<button class="btn btn-secondary btn-sm btn-stu-mail" title="Escribirle por correo" ${s.email ? '' : 'disabled'}><i class="fas fa-envelope"></i></button>`);
+    btns.push(`<button class="btn btn-secondary btn-sm btn-stu-wa" title="${waNumber(s.phone) ? 'Escribirle por WhatsApp' : 'Sin celular en su ficha'}" ${waNumber(s.phone) ? '' : 'disabled'}><i class="fab fa-whatsapp"></i></button>`);
     if (st === 'active')    btns.push(`<button class="btn btn-secondary btn-sm btn-stu-suspend" title="Suspender"><i class="fas fa-pause"></i> Suspender</button>`);
     if (st !== 'active')    btns.push(`<button class="btn btn-danger btn-sm btn-stu-delete" title="Eliminar definitivamente"><i class="fas fa-trash"></i></button>`);
 
@@ -510,6 +529,9 @@ const renderStudentRow = (s) => {
         if (confirm(`¿Reactivar el campus de ${s.fullName || 'este alumno'}? Conserva todo su progreso.`)) setStudentStatus(s, 'active');
     });
     tr.querySelector('.btn-stu-edit').addEventListener('click', () => openStudentModal(s));
+    tr.querySelector('.btn-stu-mail').addEventListener('click', () => window.open(studentMail(s), '_blank'));
+    tr.querySelector('.btn-stu-wa').addEventListener('click', () => window.open(waPanelLink(s.phone,
+        `Hola ${s.fullName || ''}, te escribo de DealerClub 👋 sobre tu registro en el campus.`), '_blank'));
     tr.querySelector('.btn-stu-suspend')?.addEventListener('click', () => {
         const reason = prompt(`Motivo de la suspensión de ${s.fullName || 'este alumno'} (el alumno lo verá):`, 'Inasistencia');
         if (reason !== null) setStudentStatus(s, 'suspended', reason.trim());

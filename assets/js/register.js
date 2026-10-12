@@ -7,7 +7,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const fullNameInput   = document.getElementById('registerFullName');
     const emailInput      = document.getElementById('registerEmail');
     const passwordInput   = document.getElementById('registerPassword');
+    const phoneInput      = document.getElementById('registerPhone');
     const registerMessage = document.getElementById('register-message');
+    // Mientras se crea la cuenta, la sesión nueva no debe disparar la redirección
+    // de abajo: tras registrarse, el alumno se queda en el "último paso".
+    let registering = false;
+
+    // Número de WhatsApp de la empresa (editable en el admin, Configuración)
+    let waNumber = '51929610747';
+    getDoc(doc(db, dbPath('config/announceBar')))
+        .then(snap => { const n = (snap.data()?.whatsapp || '').replace(/\D/g, ''); if (n) waNumber = n; })
+        .catch(() => { /* se queda el número por defecto */ });
 
     const showMessage = (msg, type) => {
         registerMessage.textContent = msg;
@@ -16,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Redirige si ya hay sesión activa
     onAuthStateChanged(auth, async (user) => {
+        if (registering) return;
         if (user && !user.isAnonymous) {
             showMessage('Sesión activa. Redirigiendo…', 'loading');
             try {
@@ -37,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const fullName = fullNameInput.value.trim();
         const email    = emailInput.value.trim();
         const password = passwordInput.value;
+        const phone    = phoneInput.value.replace(/\D/g, '');
 
         if (password.length < 6) {
             showMessage('La contraseña debe tener al menos 6 caracteres.', 'error');
@@ -44,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         showMessage('Creando cuenta…', 'loading');
+        registering = true;
 
         try {
             const { user } = await createUserWithEmailAndPassword(auth, email, password);
@@ -53,16 +66,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 status:      'pending',
                 email:       user.email,
                 fullName,
+                ...(phone ? { phone } : {}),
                 createdAt:   new Date()
             });
 
             // Enviar correo de verificación (no bloquea el registro si falla)
             try { await sendEmailVerification(user); } catch (err) { console.warn('No se pudo enviar la verificación:', err); }
 
-            showMessage('¡Cuenta creada! Te enviamos un correo de verificación: revísalo (y la carpeta de spam) para confirmar tu cuenta. Redirigiendo…', 'success');
-            setTimeout(() => window.location.href = '/panel-estudiante', 2500);
+            // Último paso: que el alumno nos escriba por WhatsApp. Al abrir él la
+            // conversación, el bot lo atiende y podemos responderle sin costo.
+            const text = `Hola DealerClub, soy ${fullName}. Me registré en el campus y quiero información para inscribirme.`;
+            document.getElementById('register-wa-btn').href = `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`;
+            document.getElementById('register-done-name').textContent = fullName.split(' ')[0];
+            registerForm.style.display = 'none';
+            document.getElementById('register-done').style.display = 'flex';
 
         } catch (error) {
+            registering = false;
             const msgs = {
                 'auth/email-already-in-use': 'Este correo ya está registrado. Inicia sesión.',
                 'auth/invalid-email':        'El formato del correo es inválido.',

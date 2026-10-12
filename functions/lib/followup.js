@@ -29,10 +29,12 @@ El cliente recibió nuestra información y no ha vuelto a escribir. Tu mensaje N
 Estructura (en este orden, 5 líneas como máximo):
 1. Su nombre, si lo sabes. Mantén el trato que venías usando (tú en Escuela, usted en eventos).
 2. Nuestros TRES puntos más fuertes PARA LO QUE ESA PERSONA BUSCA, uno por línea y muy cortos (máximo 8 palabras cada uno). Elígelos según lo que dijo: su meta, su evento, su duda. Si no dijo nada, usa los tres más fuertes de ese servicio. Si el punto está en el catálogo, dilo ("lo ve en el catálogo"; en Escuela puedes citar la página).
-3. La pregunta activadora, que lo hace decidir y te abre la puerta: de lo que vio, qué es lo que más se acerca a lo que busca y qué le genera dudas, para poder avanzar.
+3. La pregunta que lo hace decidir. En ESCUELA es siempre la cita: ofrece su Pase VIP con dos horarios concretos y reales (mira el Contexto temporal y los horarios de visita), ej.: "¿Te espero mañana a las 10 a. m. o a las 4 p. m.?". En EVENTOS: de lo que vio, qué es lo que más se acerca a lo que busca y qué le genera dudas, para poder avanzar.
+
+Hazlo PERSONAL: usa lo que ESA persona contó (su juego, el programa que le recomendaste, su problema de horario, lo que preguntó de la ubicación). Un mensaje que podría mandarse a cualquiera no sirve. En Escuela solo cites páginas del catálogo si en la conversación consta que ya se le envió.
 
 Puntos fuertes de donde elegir:
-- Escuela: todo incluido con certificación · bolsa de trabajo para egresados · sueldos en cruceros desde US$ 1,500 · se empieza desde cero, sin experiencia · Pase VIP: 30 minutos en una clase real sin costo.
+- Escuela: todo incluido con certificación · bolsa de trabajo · se empieza desde cero, sin experiencia · clases que arrancan todos los lunes · horario personalizado si trabajas o estudias · Pase VIP: 30 minutos en una clase real sin costo. No uses cruceros como gancho.
 - Eventos: dealers profesionales formados en nuestra escuela · traslado, montaje y desmontaje incluidos · la dirección de DealerClub presente en su evento · 3 h de evento con hasta 3 mesas a la vez · empresa formal con contrato · reserva incluso con 48 h de anticipación. En eventos NUNCA des precios.
 
 Tono: seguro y directo, de quien ofrece algo bueno y no necesita insistir.
@@ -40,7 +42,7 @@ PROHIBIDO: mencionar que no respondió ("no me respondiste", "¿sigue ahí?", "q
 
 Ejemplos del tono (no los copies literal; adapta los tres puntos a la persona):
 - Eventos: "Sra. Torres, para un cumpleaños como el suyo, esto es lo que más valoran nuestros clientes:\n• Dealers profesionales que enseñan a jugar a sus invitados\n• Traslado, montaje y desmontaje a nuestro cargo\n• Hasta 3 mesas funcionando a la vez\nDe lo que vio en el catálogo, ¿qué es lo que más se acerca a lo que busca y qué le genera dudas? Indíqueme para poder avanzar."
-- Escuela: "Carlos, para trabajar en cruceros esto es lo que más te sirve de nosotros:\n• Sueldos desde US$ 1,500 al mes (página 5 del catálogo)\n• Certificación y bolsa de trabajo incluidas\n• Empiezas desde cero, sin experiencia\nDe lo que viste, ¿qué programa se acerca más a lo que buscas y qué te genera dudas? Dime y avanzamos."
+- Escuela: "Carlos, para lo que buscas (Blackjack y empezar desde cero), esto es lo que más te sirve:\n• Practicas en mesa real desde la primera semana\n• Certificación y bolsa de trabajo incluidas\n• Arrancas cualquier lunes\nVen a verlo con tu Pase VIP, 30 minutos en una clase real: ¿te espero mañana a las 10 a. m. o a las 4 p. m.?"
 
 Si la conversación ya se cerró de forma natural (se despidió, ya agendó su Pase VIP, ya tiene su cotización en manos de un asesor, o pidió que no le escriban), NO hay nada que activar: responde únicamente con la palabra NO.
 `;
@@ -70,6 +72,7 @@ function enHorario(followUp, { hora, dia } = ahoraLima()) {
 // último mensaje del lead (para no repetir en el mismo silencio) o null.
 function tocaSeguimiento(conv, ahora, horasSilencio) {
   if (!conv || conv.humanTakeover) return null;
+  if (conv.vipAt && conv.vipAt > ahora) return null; // ya tiene cita: de eso se ocupa la confirmación
   const history = conv.history || [];
   const ultimo = history[history.length - 1];
   if (!ultimo || ultimo.role !== "assistant") return null; // el lead tiene la palabra
@@ -82,15 +85,110 @@ function tocaSeguimiento(conv, ahora, horasSilencio) {
   return ultimoLead.ts;
 }
 
-async function run() {
-  const { followUp } = await getBotSettings();
-  if (!followUp.enabled) return { enviados: 0, motivo: "desactivado" };
+// --- Rescate de chats en pausa ------------------------------
+// Con el bot en pausa responde una persona. Si el lead escribió y nadie le
+// contestó en RESCATE_HORAS, el bot retoma el chat (una vez por silencio)
+// antes de que se cierre la ventana gratuita de 24 h.
+const RESCATE_HORAS = 2;
+const RESCATE = `
+## MODO RELEVO (solo para este mensaje)
+Un asesor humano estaba atendiendo este chat y no ha podido responder el último mensaje del cliente. Retomas tú.
+- Responde lo último que escribió, con datos reales. No contradigas nada de lo que el asesor ya dijo en la conversación (precios, horarios acordados, condiciones): eso manda.
+- Si lo que pide solo puede decidirlo el asesor (una cotización, el adicional de un horario personalizado, un caso especial), dilo con claridad, sin inventar el dato, y avanza con lo que sí puedes: en Escuela, la cita del Pase VIP con dos horarios; en eventos, el dato que falte para cotizar.
+- No pongas etiquetas [[...]].
+Si su último mensaje no necesita respuesta (agradece, se despide, solo confirma), responde únicamente con la palabra NO.
+`;
+function tocaRescate(conv, ahora) {
+  if (!conv || !conv.humanTakeover) return null;
+  const history = conv.history || [];
+  const ultimo = history[history.length - 1];
+  if (!ultimo || ultimo.role !== "user" || !ultimo.ts) return null; // ya le respondieron
+  if (/^\[reacción/.test(ultimo.text || "")) return null;
+  if (ahora - ultimo.ts < RESCATE_HORAS * HORA) return null; // el asesor aún tiene tiempo
+  if (ahora - ultimo.ts > VENTANA_MS) return null; // ventana gratuita cerrada
+  if (conv.rescueForTs === ultimo.ts) return null;
+  return ultimo.ts;
+}
+async function rescatar(snap, ahora) {
+  const notify = require("./notify");
+  const cfg = require("./config");
+  let rescatados = 0;
+  for (const doc of snap.docs) {
+    if (rescatados >= MAX_POR_EJECUCION) break;
+    const conv = doc.data();
+    const ts = tocaRescate(conv, ahora);
+    if (!ts) continue;
+    const phone = doc.id;
+    const ref = store.db.collection("wa_conversations").doc(phone);
+    try {
+      const history = (conv.history || []).slice(-40).map((h) => ({ role: h.role, text: h.text }));
+      const reply = await brain.generateReply(history, { extra: RESCATE });
+      const texto = (reply || "").replace(/\[\[[^\]]*\]\]/g, "").replace(/\*\*(.+?)\*\*/gs, "*$1*").trim();
+      await ref.set({ rescueForTs: ts }, { merge: true });
+      if (!texto || /^NO\b[.!]?$/i.test(texto)) continue;
+      const r = await wa.sendText(phone, texto);
+      if (r && r.error) throw new Error(JSON.stringify(r.error));
+      await store.appendMessages(phone, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null }]);
+      await store.setHumanTakeover(phone, false);
+      rescatados++;
+      await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
+        title: "El bot retomo un chat en pausa",
+        message: `${conv.name || "Un lead"} (+${phone}) llevaba ${RESCATE_HORAS} h sin respuesta. El bot le contestó y quedó activo en ese chat.`,
+        click: "https://dealerclubpe.web.app/?to=" + phone,
+        priority: "default",
+        tags: "robot",
+      });
+      logger.info("Chat en pausa retomado por el bot", { phone });
+    } catch (err) {
+      logger.error("No se pudo retomar el chat en pausa", { phone, error: err.message });
+    }
+  }
+  return rescatados;
+}
 
-  if (!enHorario(followUp)) return { enviados: 0, motivo: "fuera de horario" };
+// --- Confirmación de citas (Pase VIP) -----------------------
+// No podemos escribirle a nadie pasadas 24 h de su último mensaje, así que
+// la confirmación se pide ANTES de que ese plazo se cierre; su respuesta lo
+// renueva y permite el recordatorio del mismo día. Ver lib/citas.js.
+async function confirmarCitas(snap, ahora) {
+  const citas = require("./citas");
+  let enviados = 0;
+  for (const doc of snap.docs) {
+    const conv = doc.data();
+    const tipo = citas.tocaRecordatorio(conv, ahora, ahoraLima().hora, store.lastInboundOf(conv));
+    if (!tipo) continue;
+    const phone = doc.id;
+    try {
+      const texto = citas.textoRecordatorio(tipo, conv);
+      const r = await wa.sendText(phone, texto);
+      if (r && r.error) throw new Error(JSON.stringify(r.error));
+      await store.appendMessages(phone, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null }]);
+      await store.db.collection("wa_conversations").doc(phone).set({ [citas.MARCA[tipo]]: conv.vipAt }, { merge: true });
+      enviados++;
+      logger.info("Recordatorio de cita enviado", { phone, tipo });
+    } catch (err) {
+      logger.error("No se pudo enviar el recordatorio de cita", { phone, error: err.message });
+    }
+  }
+  return enviados;
+}
+
+async function run() {
+  const ahora0 = Date.now();
+  const recientes = await store.db
+    .collection("wa_conversations")
+    .where("updatedAt", ">=", new Date(ahora0 - 24 * HORA))
+    .get();
+  const citasConfirmadas = await confirmarCitas(recientes, ahora0);
+  const rescatados = await rescatar(recientes, ahora0);
+
+  const { followUp } = await getBotSettings();
+  if (!followUp.enabled) return { enviados: 0, rescatados, motivo: "desactivado" };
+
+  if (!enHorario(followUp)) return { enviados: 0, rescatados, motivo: "fuera de horario" };
 
   const ahora = Date.now();
-  const desde = new Date(ahora - 24 * HORA);
-  const snap = await store.db.collection("wa_conversations").where("updatedAt", ">=", desde).get();
+  const snap = recientes;
 
   let enviados = 0;
   for (const doc of snap.docs) {
@@ -101,7 +199,7 @@ async function run() {
 
     const phone = doc.id;
     try {
-      const history = (conv.history || []).map((h) => ({ role: h.role, text: h.text }));
+      const history = (conv.history || []).slice(-40).map((h) => ({ role: h.role, text: h.text }));
       history.push({ role: "user", text: DISPARADOR });
       const reply = await brain.generateReply(history, { extra: INSTRUCCION });
       const texto = (reply || "")
@@ -132,7 +230,7 @@ async function run() {
       logger.error("No se pudo enviar el seguimiento", { phone, error: err.message });
     }
   }
-  return { enviados };
+  return { enviados, rescatados, citasConfirmadas };
 }
 
-module.exports = { run, tocaSeguimiento, enHorario, INSTRUCCION };
+module.exports = { run, tocaSeguimiento, tocaRescate, enHorario, INSTRUCCION, RESCATE_HORAS };
