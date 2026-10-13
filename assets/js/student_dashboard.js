@@ -934,6 +934,120 @@ document.addEventListener('DOMContentLoaded', () => {
         renderStuAttendance();
     });
 
+    // ════════════════════════════════════════════════════════
+    // EVOLUCIÓN — junto a la tarjeta del curso, en Mis Cursos
+    // Gráfico de la nota semanal y racha de asistencia. Salen de las
+    // notas y la lista que el admin ya registra; tocar lleva a Progreso.
+    // ════════════════════════════════════════════════════════
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const svgEl  = (tag, attrs, text) => {
+        const n = document.createElementNS(SVG_NS, tag);
+        for (const k in attrs) n.setAttribute(k, attrs[k]);
+        if (text != null) n.textContent = text;
+        return n;
+    };
+
+    const renderEvoChart = (grades) => {
+        const pts = (grades || []).filter(g => g && g.score != null)
+            .map(g => ({ week: g.week, score: +g.score }))
+            .sort((a, b) => (a.week || 0) - (b.week || 0));
+        const box   = document.getElementById('evo-chart');
+        const tip   = document.getElementById('evo-tip');
+        const empty = document.getElementById('evo-chart-empty');
+        const last  = pts.at(-1), prev = pts.at(-2);
+
+        // Cifra principal: la última nota y cuánto subió o bajó.
+        document.getElementById('evo-score').textContent = last ? last.score : '—';
+        const delta = document.getElementById('evo-delta');
+        const diff  = last && prev ? +(last.score - prev.score).toFixed(1) : null;
+        delta.textContent = diff == null ? ''
+            : diff === 0 ? '= igual que la semana anterior'
+            : `${diff > 0 ? '▲ +' : '▼ '}${diff} vs. la semana anterior`;
+        delta.className = `evo-delta ${diff > 0 ? 'up' : diff < 0 ? 'down' : ''}`;
+        document.getElementById('evo-avg').textContent = pts.length
+            ? `Promedio: ${+(pts.reduce((s, p) => s + p.score, 0) / pts.length).toFixed(1)}` : '';
+
+        box.querySelector('svg')?.remove();
+        tip.style.display   = 'none';
+        empty.style.display = pts.length < 2 ? '' : 'none';
+        if (pts.length < 2) return;
+
+        // Una sola serie y un solo eje: de la decena o quincena inferior a 20.
+        const W = 640, H = 190, L = 30, R = 40, T = 12, B = 26, MAX = 20;
+        const MIN = Math.min(15, Math.floor(Math.min(...pts.map(p => p.score)) / 5) * 5);
+        const x = (i) => L + i * (W - L - R) / (pts.length - 1);
+        const y = (v) => T + (MAX - v) / (MAX - MIN) * (H - T - B);
+
+        const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img',
+            'aria-label': `Nota semanal: de ${pts[0].score} en la semana ${pts[0].week} a ${last.score} en la semana ${last.week}` });
+        for (let v = MIN; v <= MAX; v += 5) {
+            svg.append(svgEl('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: '#262320', 'stroke-width': 1 }));
+            svg.append(svgEl('text', { x: L - 8, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: '#a8a39a' }, v));
+        }
+        // Con muchas semanas no caben todas las etiquetas: se salta de a pocas.
+        const step = Math.ceil(pts.length / 10);
+        pts.forEach((p, i) => {
+            if (i % step === 0 || i === pts.length - 1)
+                svg.append(svgEl('text', { x: x(i), y: H - 6, 'text-anchor': 'middle', 'font-size': 11, fill: '#a8a39a' }, `S${p.week ?? i + 1}`));
+        });
+        const line = pts.map((p, i) => `${x(i)},${y(p.score)}`).join(' ');
+        svg.append(svgEl('polygon', { points: `${x(0)},${y(MIN)} ${line} ${x(pts.length - 1)},${y(MIN)}`, fill: '#ffc107', 'fill-opacity': 0.08 }));
+        svg.append(svgEl('polyline', { points: line, fill: 'none', stroke: '#ffc107', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+
+        pts.forEach((p, i) => {
+            const isLast = i === pts.length - 1;
+            svg.append(svgEl('circle', { cx: x(i), cy: y(p.score), r: isLast ? 5.5 : 4, fill: '#ffc107', stroke: '#161616', 'stroke-width': 2 }));
+            const hit  = svgEl('circle', { cx: x(i), cy: y(p.score), r: 16, fill: 'transparent' });
+            const show = () => {
+                const d = i ? +(p.score - pts[i - 1].score).toFixed(1) : null;
+                tip.textContent   = `Semana ${p.week ?? i + 1}: ${p.score}/20${d == null ? '' : ` (${d >= 0 ? '+' : ''}${d})`}`;
+                tip.style.left    = `${x(i) / W * 100}%`;
+                tip.style.top     = `${y(p.score) / H * 100}%`;
+                tip.style.display = 'block';
+            };
+            hit.addEventListener('mouseenter', show);
+            hit.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+            svg.append(hit);
+        });
+        svg.append(svgEl('text', { x: x(pts.length - 1) + 10, y: y(last.score) + 4, 'font-size': 13, 'font-weight': 700, fill: '#f0f0f0' }, last.score));
+        box.prepend(svg);
+    };
+
+    const renderEvoStreak = (log) => {
+        const days = Object.keys(log || {}).sort();          // 'YYYY-MM-DD'
+        let current = 0;
+        for (let i = days.length - 1; i >= 0 && log[days[i]] === 'present'; i--) current++;
+        let best = 0, run = 0;
+        days.forEach(k => { run = log[k] === 'present' ? run + 1 : 0; best = Math.max(best, run); });
+
+        document.getElementById('evo-streak-n').textContent = current;
+        document.getElementById('evo-streak-label').textContent = current === 1 ? 'clase seguida' : 'clases seguidas';
+        document.getElementById('evo-streak-note').textContent =
+            !days.length          ? 'Tu racha empieza con tu primera clase.'
+            : current === 0       ? 'Tu última clase figura como falta. La próxima empieza una racha nueva.'
+            : current >= best     ? '¡Es tu mejor racha! No la rompas.'
+            : `Tu mejor racha: ${best}. Vas por ${current}.`;
+
+        const DOW = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        document.getElementById('evo-days').replaceChildren(...days.slice(-7).map(k => {
+            const dt   = new Date(`${k}T00:00:00`);
+            const cell = document.createElement('div');
+            cell.className = log[k] === 'present' ? 'yes' : 'no';
+            cell.title     = log[k] === 'present' ? 'Asististe' : 'Faltaste';
+            cell.innerHTML = '<i></i>';
+            cell.append(`${DOW[dt.getDay()]} ${dt.getDate()}`);
+            return cell;
+        }));
+    };
+
+    const renderEvolution = (d) => {
+        renderEvoChart(d.weeklyGrades);
+        renderEvoStreak(d.attendanceLog);
+        document.getElementById('course-evo').style.display = '';
+        document.getElementById('courses-layout').classList.add('has-evo');
+    };
+    document.getElementById('course-evo').addEventListener('click', () => goTo('progress'));
+
     const listenProgress = (uid) => {
         onSnapshot(doc(db, dbPath(`user_roles/${uid}`)), (snap) => {
             if (!snap.exists()) return;
@@ -958,6 +1072,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Inicio y Mis Pagos: solo con acceso activo (el pendiente ve el candado)
             if (isAdminUser || d.status === 'active') {
                 renderActiveHome(d);
+                renderEvolution(d);
                 renderPayments(d.billing);
             }
 

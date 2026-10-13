@@ -231,8 +231,32 @@
                 <div class="panel-header">
                     <h2><i class="fas fa-graduation-cap"></i> Mis Cursos</h2>
                 </div>
-                <div id="courses-panel-content" class="courses-list panel-loading">
-                    <div class="spinner-large"></div>
+                <div id="courses-layout" class="courses-layout">
+                    <div id="courses-panel-content" class="courses-list panel-loading">
+                        <div class="spinner-large"></div>
+                    </div>
+
+                    <!-- Evolución del alumno activo: tocarla lleva a su Progreso -->
+                    <div id="course-evo" class="course-evo" style="display:none;" title="Ver mi progreso completo">
+                        <div class="evo-box">
+                            <h4><i class="fas fa-chart-line"></i> Tu evolución · nota semanal</h4>
+                            <div class="evo-hero">
+                                <strong><span id="evo-score">—</span><small>/20</small></strong>
+                                <span id="evo-delta" class="evo-delta"></span>
+                                <span id="evo-avg" class="evo-avg"></span>
+                            </div>
+                            <div id="evo-chart" class="evo-chart"><div id="evo-tip" class="evo-tip" style="display:none;"></div></div>
+                            <p id="evo-chart-empty" class="evo-note">Tu gráfico aparece cuando tengas dos notas semanales registradas.</p>
+                        </div>
+                        <div class="evo-box evo-streak">
+                            <div>
+                                <h4><i class="fas fa-fire"></i> Racha de asistencia</h4>
+                                <p class="evo-streak-count"><strong id="evo-streak-n">0</strong> <span id="evo-streak-label">clases seguidas</span></p>
+                                <p id="evo-streak-note" class="evo-note"></p>
+                            </div>
+                            <div id="evo-days" class="evo-days"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

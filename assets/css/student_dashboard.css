@@ -927,6 +927,40 @@ body {
 .course-card-desc { color: #bbb; font-size: 0.88em; margin: 0 0 10px; }
 .course-card-desc:empty { display: none; }
 
+/* Evolución junto al curso: gráfico de la nota semanal y racha de asistencia */
+.courses-layout.has-evo { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 25px; align-items: start; }
+.courses-layout.has-evo .courses-list { grid-template-columns: 1fr; margin-top: 20px; }
+.course-evo { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; cursor: pointer; }
+.evo-box { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 18px 20px; transition: border-color 0.2s; }
+.course-evo:hover .evo-box { border-color: rgba(255, 193, 7, 0.45); }
+.evo-box h4 { color: #a8a39a; font-size: 0.75em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
+.evo-box h4 i { color: #ffc107; margin-right: 6px; }
+.evo-hero { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 4px; }
+.evo-hero strong { color: #fff; font-size: 2.1em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.evo-hero strong small { color: #888; font-size: 0.5em; font-weight: 600; }
+.evo-delta { color: #aaa; font-weight: 700; font-size: 0.88em; }
+.evo-delta.up   { color: #2ecc71; }
+.evo-delta.down { color: #ff6b78; }
+.evo-avg { color: #888; font-size: 0.85em; }
+.evo-chart { position: relative; margin-top: 8px; }
+.evo-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.evo-tip {
+    position: absolute; transform: translate(-50%, -130%); pointer-events: none; white-space: nowrap;
+    background: #000; border: 1px solid #333; border-radius: 6px; padding: 4px 8px; color: #f0f0f0; font-size: 0.78em;
+}
+.evo-note { color: #999; font-size: 0.82em; margin: 8px 0 0; }
+.evo-streak { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; }
+.evo-streak-count { margin: 6px 0 0; color: #aaa; font-size: 0.9em; }
+.evo-streak-count strong { color: #ffc107; font-size: 2.3em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.evo-days { display: flex; gap: 6px; }
+.evo-days div { width: 46px; text-align: center; color: #888; font-size: 0.68em; }
+.evo-days i { display: block; height: 26px; border-radius: 6px; margin-bottom: 4px; background: #3a2226; border: 1px solid #dc3545; }
+.evo-days .yes i { background: #28a745; border-color: #28a745; }
+@media (max-width: 820px) {
+    .courses-layout.has-evo { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .evo-days div { width: 38px; }
+}
+
 .course-view-head { margin-bottom: 18px; }
 .course-back {
     display: inline-flex; align-items: center; gap: 8px; background: transparent; border: none; padding: 0;
