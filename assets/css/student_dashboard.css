@@ -956,6 +956,19 @@ body {
 .evo-days div { width: 46px; text-align: center; color: #888; font-size: 0.68em; }
 .evo-days i { display: block; height: 26px; border-radius: 6px; margin-bottom: 4px; background: #3a2226; border: 1px solid #dc3545; }
 .evo-days .yes i { background: #28a745; border-color: #28a745; }
+/* Camino de nivel: Rookie → Pro Dealer → Elite Crew */
+.evo-level-track { height: 8px; background: #262320; border-radius: 4px; margin: 14px 0 8px; overflow: hidden; }
+.evo-level-track b { display: block; height: 100%; width: 0; background: #ffc107; border-radius: 4px; transition: width 0.5s ease; }
+.evo-level-stops { display: flex; justify-content: space-between; color: #888; font-size: 0.78em; }
+.evo-level-stops .cur { color: #ffc107; font-weight: 700; }
+.evo-level-title { color: #fff; font-weight: 700; font-size: 0.92em; margin: 14px 0 8px; }
+.evo-level-checks { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 18px; padding: 0; margin: 0; }
+.evo-level-checks:empty { display: none; }
+.evo-level-checks li { display: flex; gap: 8px; align-items: baseline; color: #bbb; font-size: 0.85em; }
+.evo-level-checks li i { color: #555; font-size: 0.85em; }
+.evo-level-checks li.ok i { color: #2ecc71; }
+.evo-level-checks li strong { color: #eee; font-weight: 600; }
+
 @media (max-width: 820px) {
     .courses-layout.has-evo { grid-template-columns: minmax(0, 1fr); gap: 0; }
     .evo-days div { width: 38px; }

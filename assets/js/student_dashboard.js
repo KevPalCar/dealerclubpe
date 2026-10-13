@@ -10,6 +10,7 @@ import {
     fmtDate, billingSchedule, billingSummary, daysLabel,
     referralDiscount, referralsInMonth, REFERRAL_FIRST, REFERRAL_EXTRA, REFERRAL_MAX
 } from './billing.js';
+import { normLevel, levelProgress } from './level.js';
 import { chipBurst, chipCascade } from './chip-rain.js';
 import { initCopyButtons } from './copy.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -35,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let campusStarted = false;  // tareas/material solo se cargan con acceso activo
     let isAdminUser   = false;
     let onboardingCfg = {};     // {videoUrl, title, text, whatsapp}
-    const levelClass  = (level) => ({ 'Pro Dealer': 'level-pro', 'Élite VIP': 'level-elite' }[level] || 'level-rookie');
+    const levelClass  = (level) => ({ 'Pro Dealer': 'level-pro', 'Elite Crew': 'level-elite' }[level] || 'level-rookie');
 
     // Video de bienvenida propio: si existe /assets/video/bienvenida.mp4 en el
     // sitio, se usa ese; si no, el video de presentación. Se comprueba una vez.
@@ -95,8 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 roleData.studentCode ? `Código: ${roleData.studentCode}` : '';
 
             const levelEl = document.getElementById('dash-level-pill');
-            levelEl.textContent = roleData.level || 'Rookie';
-            levelEl.classList.add(levelClass(roleData.level));
+            levelEl.textContent = normLevel(roleData.level);
+            levelEl.className   = `level-pill ${levelClass(normLevel(roleData.level))}`;
 
             // ¿Con acceso? El admin siempre; el alumno solo con status 'active'
             // (lo pone el admin al aprobar). Pendiente o suspendido ve la vitrina.
@@ -484,9 +485,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const code = document.getElementById('home-card-code');
         code.textContent   = d.studentCode || '';
         code.style.display = d.studentCode ? '' : 'none';
-        const level = document.getElementById('home-card-level');
-        level.textContent = d.level || 'Rookie';
-        level.className   = `level-pill ${levelClass(d.level)}`;
         document.getElementById('home-card-start').textContent =
             d.courseStartDate ? fmtDate(d.courseStartDate) : 'Por confirmar';
         // Sin código no hay nada que compartir.
@@ -1040,6 +1038,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
     };
 
+    // ── NIVEL DE DEALER ──────────────────────────────────────
+    // Se recalcula cuando cambia su ficha o sus tareas y se muestra en la
+    // cabecera, el carné, Progreso y el camino de nivel de Mis Cursos.
+    let _role        = null;     // última ficha recibida
+    let _tasksLoaded = false;
+
+    const renderLevel = () => {
+        if (!_role) return;
+        const info = levelProgress(_role, _tasksLoaded
+            ? { total: _tasks.length, done: _tasks.filter(t => _subs[t.id]).length } : null);
+
+        [['dash-level-pill', 'level-pill'], ['home-card-level', 'level-pill'], ['prog-level-val', 'prog-val']].forEach(([id, base]) => {
+            const el = document.getElementById(id);
+            el.textContent = info.level;
+            el.className   = `${base} ${levelClass(info.level)}`;
+        });
+
+        document.getElementById('evo-level-fill').style.width = `${Math.round(info.progress * 100)}%`;
+        document.querySelectorAll('#evo-level-stops span').forEach(el =>
+            el.classList.toggle('cur', el.textContent === info.level));
+        document.getElementById('evo-level-title').textContent =
+            info.next ? `Para subir a ${info.next}:` : '¡Llegaste a Elite Crew, el nivel más alto!';
+
+        const checks = [...info.checks];
+        if (info.next === 'Elite Crew') checks.push({
+            label: 'Visto bueno de la escuela', ok: false,
+            text: info.eliteReady ? 'ya cumples todo: tu profesor lo está evaluando' : 'se evalúa cuando cumples lo demás'
+        });
+        document.getElementById('evo-level-checks').replaceChildren(...checks.map(c => {
+            const li = document.createElement('li');
+            li.className = c.ok ? 'ok' : '';
+            li.innerHTML = `<i class="fas ${c.ok ? 'fa-check-circle' : 'fa-circle'}"></i><span><strong></strong> </span>`;
+            li.querySelector('strong').textContent = `${c.label}:`;
+            li.querySelector('span').append(c.text);
+            return li;
+        }));
+        document.getElementById('evo-level-note').textContent =
+            !info.next ? 'Puedes aparecer en nuestra web como Dealer Destacado y estás en la lista para los eventos del Casino de Fantasía.'
+            : info.next === 'Elite Crew' ? 'Los Elite Crew aparecen en nuestra web como Dealers Destacados y entran a la lista para los eventos del Casino de Fantasía.'
+            : 'Tu nivel sube solo cuando cumples todo. El tiempo es un estimado según la duración de tu curso.';
+    };
+
     const renderEvolution = (d) => {
         renderEvoChart(d.weeklyGrades);
         renderEvoStreak(d.attendanceLog);
@@ -1076,12 +1116,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderPayments(d.billing);
             }
 
-            // Nivel
-            const levelEl = document.getElementById('prog-level-val');
-            if (levelEl) {
-                levelEl.textContent = d.level || 'Rookie';
-                levelEl.className = 'prog-val ' + levelClass(d.level);
-            }
+            // Nivel: sale de su tiempo, asistencia, notas y tareas (level.js)
+            _role = d;
+            renderLevel();
 
             // Asistencia: % calculado del registro diario (fallback al % legado)
             const logVals = Object.values(d.attendanceLog || {});
@@ -1409,7 +1446,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const assigneeCodes = _scode ? ['all', _scode] : ['all'];
         onSnapshot(
             query(collection(db, dbPath('tasks')), where('assignedTo', 'in', assigneeCodes)),
-            (snap) => { _tasks = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderTasks(); }
+            (snap) => {
+                _tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                _tasksLoaded = true;
+                renderTasks();
+                renderLevel();
+            }
         );
 
         // Entregas de este alumno (para estado, evidencia y calificación)
@@ -1420,6 +1462,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     _subs = {};
                     snap.docs.forEach(d => { _subs[d.data().taskId] = d.data(); });
                     renderTasks();
+                    renderLevel();
                 }
             );
         }

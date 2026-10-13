@@ -3,6 +3,7 @@
 // ============================================================
 
 import { db, dbPath } from '../firebase.js';
+import { LEVELS, normLevel } from '../level.js';
 import { toYmd, fromYmd, fmtDate, billingSummary } from '../billing.js';
 import { collection, doc, onSnapshot, query, where, writeBatch, getCountFromServer } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { esc, showToast, guessClassDays, registerSection, unsubscribeListeners, loadSection, onPendingChange, navCount } from './core.js';
@@ -16,7 +17,6 @@ import { S, coursesOf, inStudentTab, statusOf } from './alumnos.js';
 // ese día (según su curso o sus días personalizados).
 // ══════════════════════════════════════════════════════════
 const WEEKDAYS_ES = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-const LEVELS = ['Rookie', 'Pro Dealer', 'Élite VIP'];
 let _dailyDate   = toYmd(new Date());
 let _dailyMarks  = {};   // uid → 'present' | 'absent' | '' (cambios sin guardar)
 let _dailyLevels = {};   // uid → nivel (cambios sin guardar)
@@ -41,7 +41,7 @@ const absenceStreak = (log, upTo) => {
 };
 
 const dailyMarkOf  = (s) => _dailyMarks[s.uid]  ?? s.attendanceLog?.[_dailyDate] ?? '';
-const dailyLevelOf = (s) => _dailyLevels[s.uid] ?? s.level ?? 'Rookie';
+const dailyLevelOf = (s) => _dailyLevels[s.uid] ?? normLevel(s.level);
 const dailyDirty   = () => new Set([...Object.keys(_dailyMarks), ...Object.keys(_dailyLevels)]);
 
 const renderDailyAlerts = () => {
@@ -136,7 +136,7 @@ const renderDaily = () => {
                 renderDaily();
             }));
             row.querySelector('.daily-level').addEventListener('change', (e) => {
-                if (e.target.value === (s.level || 'Rookie')) delete _dailyLevels[s.uid];
+                if (e.target.value === normLevel(s.level)) delete _dailyLevels[s.uid];
                 else _dailyLevels[s.uid] = e.target.value;
                 renderDaily();
             });

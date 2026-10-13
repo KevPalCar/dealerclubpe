@@ -5,6 +5,7 @@
 // ============================================================
 
 import { db, dbPath } from '../firebase.js';
+import { normLevel, levelProgress } from '../level.js';
 import { collection, addDoc, doc, updateDoc, onSnapshot, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { esc, showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmDelete, deleteItem, viewImage, registerSection, unsubscribeListeners } from './core.js';
 
@@ -293,7 +294,50 @@ document.getElementById('closeTaskModalBtn').addEventListener('click', () =>
 // ══════════════════════════════════════════════════════════
 // CAMPUS VIRTUAL — PROGRESO DE ALUMNOS
 // ══════════════════════════════════════════════════════════
-const LEVEL_COLORS = { 'Rookie': '#888', 'Pro Dealer': '#007bff', 'Élite VIP': '#ffc107' };
+const LEVEL_COLORS = { 'Rookie': '#888', 'Pro Dealer': '#007bff', 'Elite Crew': '#ffc107' };
+
+// ── Nivel automático (reglas en level.js) ────────────────
+// Para saber cuántas tareas entregó cada alumno se leen las tareas y
+// las entregas mientras la sección está abierta.
+let _lvTasks = null, _lvSubs = null;   // null = aún cargando
+
+const taskStatsOf = (s) => {
+    if (!_lvTasks || !_lvSubs) return null;
+    const mine = _lvTasks.filter(t => t.assignedTo === 'all' || t.assignedTo === s.studentCode);
+    const done = new Set(_lvSubs.filter(x => x.studentCode === s.studentCode).map(x => x.taskId));
+    return { total: mine.length, done: mine.filter(t => done.has(t.id)).length };
+};
+
+// Graba el nivel ya ganado para que quede como piso y no se pierda si
+// después baja alguna cifra. También pasa "Élite VIP" a su nombre nuevo.
+const persistLevels = () => {
+    if (!_lvTasks || !_lvSubs) return;
+    pState.progress.data.forEach(s => {
+        const { level } = levelProgress(s, taskStatsOf(s));
+        if ((s.level || 'Rookie') !== level)
+            updateDoc(doc(db, dbPath(`user_roles/${s.uid}`)), { level }).catch(() => { /* se reintenta al volver a abrir */ });
+    });
+};
+
+// Visto bueno de Elite Crew y, si el admin quiere, su tarjeta de Dealer
+// Destacado lista para revisar (se publica recién al guardarla).
+const confirmElite = async (s) => {
+    const name = s.fullName || s.email || 'Este alumno';
+    if (!confirm(`${name} cumple los requisitos de Elite Crew. ¿Le das tu visto bueno?`)) return;
+    try {
+        await updateDoc(doc(db, dbPath(`user_roles/${s.uid}`)), { level: 'Elite Crew', eliteAt: new Date() });
+        showToast(`${esc(name)} ahora es Elite Crew.`, 'success');
+    } catch (err) { showToast(`Error: ${esc(err.message)}`, 'error'); return; }
+
+    if (!confirm('¿Preparar su tarjeta de Dealer Destacado para la web? La revisas antes de guardar. Publica su nombre y su foto solo con su autorización.')) return;
+    document.getElementById('dealerForm').reset();
+    document.getElementById('dealerId').value        = '';
+    document.getElementById('dealerName').value      = s.fullName || '';
+    document.getElementById('dealerSpecialty').value = 'Elite Crew DealerClub';
+    document.getElementById('dealerImageUrl').value  = s.photoUrl || '';
+    document.getElementById('dealer-modal-title-action').textContent = 'Añadir';
+    openModal(document.getElementById('dealerModal'));
+};
 
 // ── Helpers de asistencia / notas ────────────────────────
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -386,7 +430,7 @@ document.getElementById('addGradeWeekBtn').addEventListener('click', () => {
 const renderProgressRow = (s) => {
     const tbody = document.getElementById('progress-table-body');
     const tr = tbody.insertRow();
-    const levelColor = LEVEL_COLORS[s.level] || '#888';
+    const info = levelProgress(s, taskStatsOf(s));
     const aPct  = s.attendanceLog ? attPct(s.attendanceLog) : (s.attendance ?? null);
     const grade = (s.weeklyGrades && s.weeklyGrades.length) ? gradesAvg(s.weeklyGrades) : (s.grades ?? null);
 
@@ -394,7 +438,8 @@ const renderProgressRow = (s) => {
         <td><code style="color:#ffc107;">${esc(s.studentCode) || '-'}</code></td>
         <td>${esc(s.fullName) || '-'}</td>
         <td>${esc(s.email) || '-'}</td>
-        <td><span style="color:${levelColor}; font-weight:bold;">${s.level || 'Rookie'}</span></td>
+        <td><span style="color:${LEVEL_COLORS[info.level]}; font-weight:bold;">${info.level}</span>${info.eliteReady
+            ? `<br><button class="btn btn-primary btn-sm btn-elite" title="Cumple todos los requisitos de Elite Crew"><i class="fas fa-crown"></i> Confirmar Elite Crew</button>` : ''}</td>
         <td>${aPct  != null ? `${aPct}%`   : '--'}</td>
         <td>${grade != null ? `${grade}/20` : '--'}</td>
         <td class="action-buttons">
@@ -404,6 +449,7 @@ const renderProgressRow = (s) => {
         </td>
     `;
     tr.querySelector('.btn-edit').addEventListener('click', () => openProgressModal(s));
+    tr.querySelector('.btn-elite')?.addEventListener('click', () => confirmElite(s));
 };
 
 // Ficha de progreso de un alumno (nivel, calendario de asistencia y notas).
@@ -411,7 +457,7 @@ const renderProgressRow = (s) => {
 const openProgressModal = (s) => {
     document.getElementById('progressStudentUid').value = s.uid;
     document.getElementById('progressStudentName').textContent = s.fullName || s.email || 'Alumno';
-    document.getElementById('progressLevel').value     = s.level || 'Rookie';
+    document.getElementById('progressLevel').value     = normLevel(s.level);
     document.getElementById('progressStartDate').value = s.courseStartDate || '';
 
     // Asistencia: carga el registro y posiciona el calendario en el mes actual
@@ -428,6 +474,11 @@ const openProgressModal = (s) => {
     openModal(document.getElementById('progressModal'));
 };
 
+const refreshProgress = () => {
+    renderPaged('progress', renderProgressRow, 'No hay alumnos matriculados todavía.');
+    persistLevels();
+};
+
 const loadProgress = () => {
     document.getElementById('progress-table-body').innerHTML =
         `<tr><td colspan="7" class="spinner-cell"><div class="spinner"></div></td></tr>`;
@@ -439,9 +490,18 @@ const loadProgress = () => {
                 .filter(s => s.status === 'active')
                 .sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
             pState.progress.data = data;
-            renderPaged('progress', renderProgressRow, 'No hay alumnos matriculados todavía.');
+            refreshProgress();
         }
     );
+    _lvTasks = _lvSubs = null;
+    unsubscribeListeners.progressTasks = onSnapshot(collection(db, dbPath('tasks')), (snap) => {
+        _lvTasks = snap.docs.map(d => ({ id: d.id, assignedTo: d.data().assignedTo }));
+        refreshProgress();
+    });
+    unsubscribeListeners.progressSubs = onSnapshot(collection(db, dbPath('task_submissions')), (snap) => {
+        _lvSubs = snap.docs.map(d => ({ taskId: d.data().taskId, studentCode: d.data().studentCode }));
+        refreshProgress();
+    });
 };
 
 document.getElementById('progressForm').addEventListener('submit', async (e) => {

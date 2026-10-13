@@ -493,7 +493,7 @@
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Código</th><th>Alumno</th><th>Email</th><th>Nivel</th>
+                                <th>Código</th><th>Alumno</th><th>Email</th><th>Nivel <span class="info-tip" data-tip="Se calcula solo. Pro Dealer: mitad del plazo del curso, 85% de asistencia, promedio 14 y 80% de tareas. Elite Crew: plazo completo, 90%, promedio 17 y 90% de tareas, más tu visto bueno con el botón Confirmar. Un nivel ganado no se pierde.">i</span></th>
                                 <th>Asistencia %</th><th>Nota</th><th>Acciones</th>
                             </tr>
                         </thead>
@@ -1169,11 +1169,11 @@
                     <!-- Columna izquierda: datos + notas semanales -->
                     <div>
                         <div class="form-group">
-                            <label>Nivel Actual (Gamificación):</label>
+                            <label>Nivel mínimo fijado a mano: <span class="info-tip" data-tip="El nivel sube solo según el tiempo en el curso, la asistencia, el promedio y las tareas entregadas. Lo que elijas aquí es un piso: el alumno nunca queda por debajo. Úsalo para subir a alguien por lo que ves en clase o para dar el visto bueno de Elite Crew.">i</span></label>
                             <select id="progressLevel" required>
                                 <option value="Rookie">Rookie — Principiante</option>
                                 <option value="Pro Dealer">Pro Dealer — Intermedio</option>
-                                <option value="Élite VIP">Élite VIP — Avanzado</option>
+                                <option value="Elite Crew">Elite Crew — Avanzado</option>
                             </select>
                         </div>
                         <div class="form-group">
