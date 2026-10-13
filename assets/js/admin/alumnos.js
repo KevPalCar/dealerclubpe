@@ -486,6 +486,22 @@ ${wa}
     return gmailCompose({ to: s.email, subject, body });
 };
 
+// Invitación con diseño (plantilla de bienvenida de EmailJS): logo, botón de
+// WhatsApp y firma. Se anota la fecha en la ficha para no repetirla sin querer.
+const sendInvite = async (s) => {
+    const first = (s.fullName || '').trim().split(' ')[0];
+    const again = s.invitedAt ? ` Ya se le envió una el ${new Date(s.invitedAt.seconds * 1000).toLocaleDateString('es-PE')}.` : '';
+    if (!confirm(`¿Enviar a ${s.fullName || s.email} el correo de invitación con el botón de WhatsApp?${again}`)) return;
+    const waLink = `https://dealerclubpe.com/wa?${new URLSearchParams({ r: (s.fullName || '').trim() })}`;
+    try {
+        await sendMail('welcome', { to_name: first, to_email: s.email, wa_link: waLink });
+        await updateDoc(doc(db, dbPath(`user_roles/${s.uid}`)), { invitedAt: new Date() });
+        showToast(`Invitación enviada a ${esc(s.email)}`, 'success');
+    } catch {
+        showToast('No se pudo enviar la invitación. Revisa EmailJS.', 'error');
+    }
+};
+
 const renderStudentRow = (s) => {
     const tr     = document.getElementById('students-table-body').insertRow();
     const st     = statusOf(s);
@@ -511,7 +527,8 @@ const renderStudentRow = (s) => {
     if (st === 'active')    btns.push(`<button class="btn btn-secondary btn-sm btn-stu-progress" title="Asistencia, nivel y notas"><i class="fas fa-chart-line"></i> Progreso</button>`);
     if (st !== 'pending')   btns.push(`<button class="btn btn-secondary btn-sm btn-stu-pay" title="Pagos"><i class="fas fa-coins"></i> Pagos</button>`);
     btns.push(`<button class="btn btn-secondary btn-sm btn-stu-edit" title="Ficha"><i class="fas fa-id-card"></i></button>`);
-    btns.push(`<button class="btn btn-secondary btn-sm btn-stu-mail" title="Escribirle por correo" ${s.email ? '' : 'disabled'}><i class="fas fa-envelope"></i></button>`);
+    if (st === 'pending')   btns.push(`<button class="btn btn-secondary btn-sm btn-stu-invite" title="Enviar invitación con diseño (logo, botón de WhatsApp y firma)" ${s.email ? '' : 'disabled'}><i class="fas fa-paper-plane"></i></button>`);
+    btns.push(`<button class="btn btn-secondary btn-sm btn-stu-mail" title="Escribirle un correo libre desde Gmail" ${s.email ? '' : 'disabled'}><i class="fas fa-envelope"></i></button>`);
     btns.push(`<button class="btn btn-secondary btn-sm btn-stu-wa" title="${waNumber(s.phone) ? 'Escribirle por WhatsApp' : 'Sin celular en su ficha'}" ${waNumber(s.phone) ? '' : 'disabled'}><i class="fab fa-whatsapp"></i></button>`);
     if (st === 'active')    btns.push(`<button class="btn btn-secondary btn-sm btn-stu-suspend" title="Suspender"><i class="fas fa-pause"></i> Suspender</button>`);
     if (st !== 'active')    btns.push(`<button class="btn btn-danger btn-sm btn-stu-delete" title="Eliminar definitivamente"><i class="fas fa-trash"></i></button>`);
@@ -524,7 +541,8 @@ const renderStudentRow = (s) => {
         <td>${s.courses.length ? s.courses.map(esc).join('<br>')
             : s.waitlist.length ? `${s.waitlist.map(esc).join('<br>')}<span class="student-sub" style="color:#17a2b8;">Lista de espera</span>`
             : '<span style="color:#888;">Sin inscripción</span>'}
-            ${s.registeredAt ? `<span class="student-sub">Registrado el ${new Date(s.registeredAt * 1000).toLocaleDateString('es-PE')}</span>` : ''}</td>
+            ${s.registeredAt ? `<span class="student-sub">Registrado el ${new Date(s.registeredAt * 1000).toLocaleDateString('es-PE')}</span>` : ''}
+            ${s.invitedAt ? `<span class="student-sub">Invitación enviada el ${new Date(s.invitedAt.seconds * 1000).toLocaleDateString('es-PE')}</span>` : ''}</td>
         <td>${custom
             ? `<span class="badge badge-info">Personalizado</span>${days ? `<span class="student-sub">${days}</span>` : ''}`
             : 'Regular'}</td>
@@ -543,6 +561,7 @@ const renderStudentRow = (s) => {
         if (confirm(`¿Reactivar el campus de ${s.fullName || 'este alumno'}? Conserva todo su progreso.`)) setStudentStatus(s, 'active');
     });
     tr.querySelector('.btn-stu-edit').addEventListener('click', () => openStudentModal(s));
+    tr.querySelector('.btn-stu-invite')?.addEventListener('click', () => sendInvite(s));
     tr.querySelector('.btn-stu-mail').addEventListener('click', () => window.open(studentMail(s), '_blank'));
     tr.querySelector('.btn-stu-wa').addEventListener('click', () => window.open(waPanelLink(s.phone,
         `Hola ${s.fullName || ''}, te escribo de DealerClub 👋 sobre tu registro en el campus.`), '_blank'));
