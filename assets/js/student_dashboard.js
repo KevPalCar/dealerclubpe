@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if ((m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/)))
             return { kind: 'iframe', src: `https://player.vimeo.com/video/${m[1]}` };
         if ((m = url.match(/instagram\.com\/(?:[\w.]+\/)?(reels?|p|tv)\/([\w-]+)/)))
-            return { kind: 'iframe', src: `https://www.instagram.com/${m[1] === 'reels' ? 'reel' : m[1]}/${m[2]}/embed`, vertical: true };
+            return { kind: 'iframe', src: `https://www.instagram.com/${m[1] === 'reels' ? 'reel' : m[1]}/${m[2]}/embed`, vertical: true, insta: true };
         if ((m = url.match(/tiktok\.com\/.*\/video\/(\d+)/)))
             return { kind: 'iframe', src: `https://www.tiktok.com/embed/v2/${m[1]}`, vertical: true };
         if (/facebook\.com|fb\.watch/i.test(url))
@@ -332,6 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     setVideoShape(wide ? 'wide' : 'tall');
                 };
                 box.classList.toggle('is-link', video.kind === 'link');
+                box.classList.toggle('is-insta', !!video.insta);
                 if (video.kind === 'link') setVideoShape('link');
                 else if (video.kind === 'iframe') setWide(!video.vertical);
                 else {
@@ -619,7 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
         _refCode = code;
         const site = window.location.origin || '';
         const msg  = `¡Hola! Estudio en DealerClub, la escuela de dealers/croupiers en Lima. ` +
-                     `Inscríbete con mi código ${code} y ambos ganamos beneficios. ${site}`.trim();
+                     `Inscríbete con mi código ${code}: ${site}/cursos?ref=${code}`;
         document.querySelectorAll('[data-ref="code"]').forEach(el => { el.textContent = code; });
         document.querySelectorAll('[data-ref="copy"]').forEach(el => { el.dataset.copy = code; });
         document.querySelectorAll('[data-ref="share"]').forEach(el => {

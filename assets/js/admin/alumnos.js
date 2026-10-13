@@ -151,6 +151,12 @@ const recordInstallment = async (s, billing, { n, amount, paidAt, voucher }) => 
     return { ...billing, paid };
 };
 
+// Quién recomendó a un alumno: vale solo el código que indicó al registrarse,
+// si es de OTRO alumno activo (ni él mismo ni alguien con su mismo documento).
+const referrerOf = (s) => (s.referredBy && S.students.find(x =>
+    x.studentCode === s.referredBy && x.status === 'active' && x.uid !== s.uid
+    && !(x.dni && x.dni === s.dni))) || null;
+
 // Aprobar a un alumno abre el modal de activación: ahí se confirma su
 // primer pago y se define su plan (inicio de clases, mensualidad, cuotas).
 let activateCtx = null;
@@ -163,9 +169,12 @@ const approveStudent = async (s, payment = null) => {
     activateCtx = { s, payment, code, fromWaitlist };
 
     const defaults = courseDefaults(s);
+    const referrer = referrerOf(s);
     document.getElementById('activateSummary').textContent =
-        `${s.fullName || s.email || 'El alumno'} se activará con el código ${code}.`;
+        `${s.fullName || s.email || 'El alumno'} se activará con el código ${code}.` +
+        (referrer ? ` Lo recomendó ${referrer.fullName || referrer.email} (${s.referredBy}): al activarlo se anota el referido y cuenta para su descuento.` : '');
     const warnings = [];
+    if (s.referredBy && !referrer) warnings.push(`Indicó el código de referido ${s.referredBy}, que no es de otro alumno activo: no se anotará ningún referido.`);
     if (!payment)     warnings.push('No hay constancia de pago subida: activa solo si verificaste el pago por otro medio.');
     if (fromWaitlist) warnings.push('Está en lista de espera: al activarlo pasa a matriculado.');
     const warnEl = document.getElementById('activateWarning');
@@ -207,6 +216,15 @@ document.getElementById('activateForm').addEventListener('submit', async (e) => 
             status: 'active', studentCode: code, statusReason: '', statusChangedAt: new Date(),
             billing, courseStartDate: startDate
         });
+        // El referido cuenta desde hoy, que es cuando pagó. El id impide
+        // anotar dos veces al mismo alumno nuevo.
+        const referrer = referrerOf(s);
+        if (referrer) {
+            await setDoc(doc(db, dbPath(`referrals/ref_${s.uid}`)), {
+                referrerCode: s.referredBy, newStudentName: name, newStudentUid: s.uid,
+                amount: 0, date: new Date(), source: 'registro'
+            });
+        }
         activateCtx = null;
         closeModal(document.getElementById('activateModal'));
         showToast(`${esc(name)} quedó activo. Código: ${code}`, 'success');
@@ -411,6 +429,7 @@ const openStudentModal = (s) => {
     document.getElementById('studentPhone').value    = s.phone || '';
     document.getElementById('studentModality').value = s.modality === 'personalizado' ? 'personalizado' : 'regular';
     const comments = enrollmentsOf(s).map(e => (e.comments || '').trim()).filter(Boolean);
+    if (s.referredBy) comments.push(`Código de quien lo recomendó: ${s.referredBy}`);
     document.getElementById('studentComments').textContent = comments.join(' · ');
     document.getElementById('studentCommentsGroup').style.display = comments.length ? 'block' : 'none';
     _studentDays = new Set(s.customDays || []);

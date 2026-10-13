@@ -849,6 +849,11 @@ body {
 .pending-video iframe,
 .pending-video video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .pending-video video { object-fit: cover; }
+/* Instagram: la caja mide la cabecera del perfil más el video, y recorta
+   lo que el incrustado trae debajo (me gusta, comentarios, enlaces). */
+/* El incrustado muestra el video dentro de un recuadro 4:5, bajo una cabecera de 54px. */
+.pending-video.is-insta { aspect-ratio: auto; padding-top: calc(125% + 54px); background: #fff; }
+.pending-video.is-insta iframe { height: calc(100% + 700px); }
 /* Respaldo como enlace (sitios que no permiten incrustarse) */
 .pending-video.is-link { aspect-ratio: auto; background: none; box-shadow: none; overflow: visible; }
 .pending-video-link {

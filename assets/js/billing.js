@@ -80,8 +80,9 @@ export const billingSummary = (billing, today = new Date()) => {
 };
 
 // ── DESCUENTO POR REFERIDOS ─────────────────────────────────
-// Cuenta cada persona que se inscribe con el código del alumno Y paga
-// su primera cuota (el admin la registra en Referidos al cobrarle).
+// Cuenta cada persona que indica el código del alumno al registrarse Y
+// paga su primera cuota: el referido se anota solo al activarla en
+// Alumnos (o a mano en Referidos, para casos anteriores).
 // Por los referidos de un mes calendario: 10% por el primero y 5% más
 // por cada uno adicional, hasta el tope. Ese descuento se aplica a la
 // cuota del mes SIGUIENTE y ahí se agota: no se acumula de mes a mes.
@@ -100,6 +101,14 @@ export const referralsInMonth = (referrals, monthsAgo = 0, today = new Date()) =
         const d = r.date?.seconds ? new Date(r.date.seconds * 1000) : null;
         return d && d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
     });
+};
+
+// Código de quien recomendó al alumno, tal como lo escribe al registrarse.
+// Devuelve '' si no escribió nada y null si lo escrito no es un código.
+export const parseReferralCode = (raw) => {
+    const code = (raw || '').trim().toUpperCase();
+    if (!code) return '';
+    return /^DC-[A-Z0-9]{7}$/.test(code) ? code : null;
 };
 
 // Texto corto de los días que faltan o que lleva vencida una cuota.

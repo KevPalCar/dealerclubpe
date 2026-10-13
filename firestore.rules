@@ -62,7 +62,10 @@ service cloud.firestore {
                       && request.resource.data.role == 'student'
                       && request.resource.data.status == 'pending'
                       && request.resource.data.keys().hasOnly(
-                           ['role', 'status', 'fullName', 'email', 'dni', 'phone', 'createdAt']);
+                           ['role', 'status', 'fullName', 'email', 'dni', 'phone', 'referredBy', 'createdAt'])
+                      // Quién lo recomendó: solo al crear la cuenta y con forma de código.
+                      && (!('referredBy' in request.resource.data)
+                          || request.resource.data.referredBy.matches('^DC-[A-Z0-9]{7}$'));
         // Lo único que el alumno cambia de su cuenta es la foto de su carné.
         allow update: if isAuth() && request.auth.uid == uid
                       && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photoUrl'])

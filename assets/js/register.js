@@ -2,6 +2,7 @@ import { auth, db, dbPath } from './firebase.js';
 import { onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { sendMail } from './mail.js';
+import { parseReferralCode } from './billing.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const registerForm    = document.getElementById('register-form');
@@ -10,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordInput   = document.getElementById('registerPassword');
     const phoneInput      = document.getElementById('registerPhone');
     const registerMessage = document.getElementById('register-message');
+    // Quien llega por el enlace de un alumno ya trae su código de referido.
+    const referralInput   = document.getElementById('registerReferral');
+    referralInput.value   = new URLSearchParams(location.search).get('ref') || '';
     // Mientras se crea la cuenta, la sesión nueva no debe disparar la redirección
     // de abajo: tras registrarse, el alumno se queda en el "último paso".
     let registering = false;
@@ -56,6 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const referredBy = parseReferralCode(referralInput.value);
+        if (referredBy === null) {
+            showMessage('El código de quien te recomendó no es válido. Debe verse así: DC-26ABCDE. Si no tienes uno, deja ese campo vacío.', 'error');
+            return;
+        }
+
         showMessage('Creando cuenta…', 'loading');
         registering = true;
 
@@ -68,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 email:       user.email,
                 fullName,
                 ...(phone ? { phone } : {}),
+                ...(referredBy ? { referredBy } : {}),
                 createdAt:   new Date()
             });
 

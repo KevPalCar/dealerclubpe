@@ -1,11 +1,15 @@
 import { auth, db, dbPath } from './firebase.js';
 import { compressImage } from './image.js';
 import { initCopyButtons } from './copy.js';
+import { parseReferralCode } from './billing.js';
 import { onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { collection, addDoc, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     initCopyButtons();
+    // Quien llega por el enlace de un alumno ya trae su código de referido.
+    const enrollReferral = document.getElementById('enrollReferral');
+    enrollReferral.value = new URLSearchParams(location.search).get('ref') || '';
     const studentAccessLink       = document.getElementById('student-access-link');
     const coursesGridContainer    = document.getElementById('courses-grid-container');
     const loadingCoursesMessage   = document.getElementById('loading-courses');
@@ -214,6 +218,11 @@ document.addEventListener('DOMContentLoaded', () => {
             showFormMessage(enrollFormMessage, 'La contraseña debe tener al menos 6 caracteres.', 'error');
             return;
         }
+        const referredBy = parseReferralCode(enrollReferral.value);
+        if (referredBy === null) {
+            showFormMessage(enrollFormMessage, 'El código de quien te recomendó no es válido. Debe verse así: DC-26ABCDE. Si no tienes uno, deja ese campo vacío.', 'error');
+            return;
+        }
 
         if (submitBtn) submitBtn.disabled = true;
         showFormMessage(enrollFormMessage, 'Creando tu cuenta…', 'loading');
@@ -244,6 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 email:       enrollmentData.email,
                 dni:         enrollmentData.dni,
                 phone:       enrollmentData.phone,
+                ...(referredBy ? { referredBy } : {}),
                 createdAt:   new Date()
             });
 
