@@ -187,7 +187,6 @@ export const numOrNull = (v) => (v === '' || v == null || Number.isNaN(+v) ? nul
 
 // ── CONTACTAR DESDE EL ADMIN (correo y WhatsApp de la empresa) ──
 const COMPANY_EMAIL  = 'dealerclubpe@gmail.com';
-export const COMPANY_WA = '51929610747';
 const WA_PANEL_URL   = 'https://dealerclubpe.web.app/';
 
 // Número con código de país: uno peruano de 9 dígitos recibe el 51.

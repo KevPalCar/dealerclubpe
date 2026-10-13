@@ -7,7 +7,7 @@
 import { db, dbPath, generateStudentCode } from '../firebase.js';
 import { toYmd, fmtDate, nextMonday, billingSchedule, billingSummary, daysLabel } from '../billing.js';
 import { collection, addDoc, doc, setDoc, updateDoc, deleteDoc, onSnapshot, getDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { esc, showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmModal, confirmDelete, viewImage, DAY_LABELS, registerSection, unsubscribeListeners, setNavBadge, gmailCompose, waPanelLink, waNumber, COMPANY_WA } from './core.js';
+import { esc, showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmModal, confirmDelete, viewImage, DAY_LABELS, registerSection, unsubscribeListeners, setNavBadge, gmailCompose, waPanelLink, waNumber } from './core.js';
 import { openProgressModal } from './campus.js';
 import { sendMail } from '../mail.js';
 
@@ -446,21 +446,44 @@ document.getElementById('closeStudentModalBtn').addEventListener('click', () =>
 );
 
 // ── Tabla ─────────────────────────────────────────────────
-// Correo al alumno desde la cuenta de la empresa. A quien sigue pendiente
-// (se registró pero no ha escrito) se le invita a escribir AL WHATSAPP de
-// la empresa: así abre la conversación y se le puede atender gratis.
+// Correo al alumno desde la cuenta de la empresa (Gmail añade la firma). A quien
+// sigue pendiente (se registró pero no ha escrito) se le invita a escribir AL
+// WHATSAPP de la empresa: así abre la conversación y se le puede atender gratis.
+// El enlace es el corto de la web (/wa), que arma el mensaje con su nombre.
 const studentMail = (s) => {
-    const name = s.fullName || '';
-    const wa   = `https://wa.me/${COMPANY_WA}?text=${encodeURIComponent(
-        `Hola DealerClub, soy ${name}. Me registré en el campus y quiero información para inscribirme.`)}`;
-    const body = statusOf(s) === 'pending'
-        ? `Hola ${name},\n\n¡Gracias por registrarte en el campus de DealerClub! ` +
-          `Para darte la bienvenida, enviarte el catálogo con programas, horarios y precios ` +
-          `y ayudarte a completar tu inscripción, escríbenos por WhatsApp con un clic:\n\n${wa}\n\n` +
-          `Saludos cordiales,\nEquipo DealerClub`
-        : `Hola ${name},\n\n[Escribe aquí tu mensaje]\n\n` +
-          `Si prefieres conversarlo por WhatsApp, escríbenos aquí:\n${wa}\n\nSaludos cordiales,\nEquipo DealerClub`;
-    return gmailCompose({ to: s.email, subject: 'DealerClub — Tu registro en el campus', body });
+    const name  = (s.fullName || '').trim();
+    const first = name.split(' ')[0];
+    const wa    = `https://dealerclubpe.com/wa${name ? `?${new URLSearchParams({ r: name })}` : ''}`;
+    const pending = statusOf(s) === 'pending';
+    const body = pending
+        ? `Hola ${first},
+
+` +
+          `Vi que creaste tu cuenta en el campus de DealerClub: qué bueno tenerte por aquí.
+
+` +
+          `Quiero ayudarte con el siguiente paso: elegir el programa que mejor te calza y dejar lista tu inscripción. ` +
+          `Las clases arrancan todos los lunes, en grupos reducidos.
+
+` +
+          `Escríbeme por WhatsApp y lo vemos en un par de minutos:
+${wa}
+
+` +
+          `Si prefieres conocernos primero, te invito a tu Pase VIP: 30 minutos en una clase real, sin costo.
+
+`
+        : `Hola ${first},
+
+[Escribe aquí tu mensaje]
+
+` +
+          `Si prefieres conversarlo por WhatsApp, escríbeme aquí:
+${wa}
+
+`;
+    const subject = pending ? `${first}, tu lugar en DealerClub te espera` : 'DealerClub — Campus';
+    return gmailCompose({ to: s.email, subject, body });
 };
 
 const renderStudentRow = (s) => {

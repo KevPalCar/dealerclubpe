@@ -21,6 +21,7 @@ Dónde está cada cosa y qué archivo tocar para cada cambio. Web estática (HTM
 | `/nosotros` | `nosotros.html` | `nosotros.css` | `nosotros.js` |
 | `/iniciar-sesion` | `iniciar-sesion.html` | `auth.css` | `login.js`, `chip-rain.js` |
 | `/registro` | `registro.html` | `auth.css` | `register.js` |
+| `/wa` | `wa.html` | — | — (enlace corto al WhatsApp de la empresa; `?r=Nombre` para quien ya se registró) |
 | `/panel-estudiante` | `panel-estudiante.html` | `student_dashboard.css` | `student_dashboard.js` |
 | `/admin` | `admin.html` | `admin.css` | `admin.js` |
 | `/cotizacion?id=…` | `cotizacion.html` | `cotizacion.css` | `cotizacion.js` (hoja que ve el cliente) |

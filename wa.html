@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>WhatsApp - DealerClub</title>
+    <link rel="icon" href="/assets/images/favicon_pokerchips.png" type="image/png">
+    <style>
+        body { background-color: #0c0c0c; color: #ddd; margin: 0; font-family: sans-serif; display: flex; min-height: 100vh; align-items: center; justify-content: center; text-align: center; }
+        a { display: inline-block; margin-top: 14px; padding: 12px 22px; border-radius: 6px; background: #25d366; color: #fff; font-weight: bold; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <!-- Enlace corto al WhatsApp de la empresa (para correos, Instagram, etc.):
+         /wa            -> pide información de la Escuela
+         /wa?r=Nombre   -> quien ya se registró en el campus -->
+    <div>
+        <p>Abriendo WhatsApp…</p>
+        <a id="wa-link" href="https://wa.me/51929610747">Continuar por WhatsApp</a>
+    </div>
+    <script>
+        const name = (new URLSearchParams(location.search).get('r') || '').trim();
+        const text = name
+            ? `Hola DealerClub, soy ${name}. Me registré en el campus y quiero información para inscribirme.`
+            : 'Hola DealerClub, quiero información de la Escuela de Dealers.';
+        const url = `https://wa.me/51929610747?text=${encodeURIComponent(text)}`;
+        document.getElementById('wa-link').href = url;
+        location.replace(url);
+    </script>
+</body>
+</html>
