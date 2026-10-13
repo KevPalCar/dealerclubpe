@@ -3,6 +3,7 @@
 // ============================================================
 
 import { db, dbPath } from '../firebase.js';
+import { referralDiscount, referralsInMonth } from '../billing.js';
 import { collection, addDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showToast, showMsg, confirmDelete, deleteItem, registerSection, unsubscribeListeners } from './core.js';
 
@@ -21,6 +22,12 @@ const renderReferralsSummary = () => {
         groups[k].count++;
         groups[k].total += (+r.amount || 0);
     });
+    // Los del mes pasado se descuentan en la cuota de este mes; los de este
+    // mes, en la del siguiente.
+    const countBy = (rows) => rows.reduce((acc, r) => { const k = r.referrerCode || '—'; acc[k] = (acc[k] || 0) + 1; return acc; }, {});
+    const last  = countBy(referralsInMonth(_refRows, 1));
+    const month = countBy(referralsInMonth(_refRows, 0));
+    const cell  = (n, color) => n ? `<strong style="color:${color};">${referralDiscount(n)}%</strong> <small>(${n})</small>` : '—';
     const keys = Object.keys(groups).sort((a, b) => groups[b].count - groups[a].count);
     tbody.innerHTML = keys.length
         ? keys.map(k => `
@@ -29,8 +36,10 @@ const renderReferralsSummary = () => {
                 <td>${_refNames[k] || '—'}</td>
                 <td>${groups[k].count}</td>
                 <td>S/ ${groups[k].total.toFixed(2)}</td>
+                <td>${cell(last[k], '#2ecc71')}</td>
+                <td>${cell(month[k], '#ffc107')}</td>
             </tr>`).join('')
-        : `<tr><td colspan="4" class="empty-msg">Aún no hay referidos registrados.</td></tr>`;
+        : `<tr><td colspan="6" class="empty-msg">Aún no hay referidos registrados.</td></tr>`;
 };
 
 const renderReferralsList = () => {

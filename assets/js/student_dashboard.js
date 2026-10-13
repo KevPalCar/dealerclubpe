@@ -6,7 +6,12 @@
 
 import { auth, db, dbPath } from './firebase.js';
 import { compressImage } from './image.js';
-import { fmtDate, billingSchedule, billingSummary, daysLabel } from './billing.js';
+import {
+    fmtDate, billingSchedule, billingSummary, daysLabel,
+    referralDiscount, referralsInMonth, REFERRAL_FIRST, REFERRAL_EXTRA, REFERRAL_MAX
+} from './billing.js';
+import { chipBurst, chipCascade } from './chip-rain.js';
+import { initCopyButtons } from './copy.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import {
     doc, getDoc, setDoc, addDoc, deleteDoc, collection, query, where, onSnapshot
@@ -19,6 +24,7 @@ window.addEventListener('pageshow', (e) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    initCopyButtons();
 
     // ── OVERLAY DE AUTENTICACIÓN ─────────────────────────────
     const overlay   = document.getElementById('auth-overlay');
@@ -29,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let campusStarted = false;  // tareas/material solo se cargan con acceso activo
     let isAdminUser   = false;
     let onboardingCfg = {};     // {videoUrl, title, text, whatsapp}
+    const levelClass  = (level) => ({ 'Pro Dealer': 'level-pro', 'Élite VIP': 'level-elite' }[level] || 'level-rookie');
 
     // Video de bienvenida propio: si existe /assets/video/bienvenida.mp4 en el
     // sitio, se usa ese; si no, el video de presentación. Se comprueba una vez.
@@ -89,8 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const levelEl = document.getElementById('dash-level-pill');
             levelEl.textContent = roleData.level || 'Rookie';
-            const levelColors = { 'Pro Dealer': 'level-pro', 'Élite VIP': 'level-elite' };
-            levelEl.classList.add(levelColors[roleData.level] || 'level-rookie');
+            levelEl.classList.add(levelClass(roleData.level));
 
             // ¿Con acceso? El admin siempre; el alumno solo con status 'active'
             // (lo pone el admin al aprobar). Pendiente o suspendido ve la vitrina.
@@ -106,9 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     reason:      roleData.statusReason || ''
                 };
                 document.getElementById('dash-body').classList.add('dash-pending');
-                document.getElementById('preview-notice').style.display = 'block';
                 renderPendingHero();
                 if (!pendingInfo.suspended) initVoucherUpload(user, roleData);
+            } else {
+                renderActiveHome(roleData);
             }
 
             hideOverlay();
@@ -120,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isApproved) startCampus(roleData, user);
             else            lockCampusPanels();
 
-            switchTab('courses');
+            switchTab('home');
 
         } catch {
             await signOut(auth);
@@ -136,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         listenMaterials();
         initPayReport(user, roleData);
         // Promoción de referidos: solo alumnos aprobados con código.
-        if (roleData.studentCode) renderReferral(roleData.studentCode, roleData.fullName);
+        if (roleData.studentCode) { renderReferral(roleData.studentCode); listenReferrals(roleData.studentCode); }
     };
 
     const lockCampusPanels = () => {
@@ -154,10 +161,20 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         document.querySelector(`.tab-btn[data-tab="${tabName}"]`)?.classList.add('active');
         document.getElementById(`panel-${tabName}`)?.classList.add('active');
+
+        // El aviso de vista previa acompaña a las pestañas bloqueadas, no al inicio.
+        document.getElementById('preview-notice').style.display =
+            pendingInfo && tabName !== 'home' ? 'block' : 'none';
+        // El video de bienvenida no sigue sonando en otra pestaña.
+        if (tabName === 'home') renderPendingHero();
+        else stopWelcomeVideo();
     };
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        btn.addEventListener('click', () => {
+            if (btn.dataset.tab === 'courses') closeCourse();   // la pestaña siempre abre la lista
+            switchTab(btn.dataset.tab);
+        });
     });
 
     // ── LOGOUT ───────────────────────────────────────────────
@@ -237,9 +254,47 @@ document.addEventListener('DOMContentLoaded', () => {
         return el;
     };
 
+    // ── INICIO: qué piezas se ven en cada momento del alumno ──
+    // La estructura es una sola (columna fija + columna de lectura);
+    // cambian las piezas que la llenan.
+    const homeHero = document.getElementById('home-hero');
+    const HOME_PARTS = {
+        pending:   ['home-media', 'pending-video-wrap', 'pending-steps', 'home-pay', 'pending-pay-area', 'pending-perks', 'pending-voucher-btn'],
+        suspended: ['home-pay', 'pending-voucher-btn'],
+        active:    ['home-media', 'home-card', 'home-invite', 'home-stats', 'home-alerts']
+    };
+    const HOME_ALL = [...new Set(Object.values(HOME_PARTS).flat())];
+    let homeMode   = '';
+    let videoShape = 'tall';    // 'tall' | 'wide' | 'link'
+
+    // El video vertical llena la columna fija. Uno horizontal comparte su
+    // columna con el curso, y un simple enlace deja todo en una columna.
+    const applyHomeLayout = () => {
+        const pending = homeMode === 'pending';
+        homeHero.classList.toggle('is-wide', pending && videoShape === 'wide');
+        homeHero.classList.toggle('is-stacked', homeMode === 'suspended' || (pending && videoShape === 'link'));
+    };
+    const setHomeMode = (mode) => {
+        homeMode = mode;
+        HOME_ALL.forEach(id => {
+            document.getElementById(id).style.display = HOME_PARTS[mode].includes(id) ? '' : 'none';
+        });
+        // "Vas a dominar" es parte de la bienvenida y aparece cuando llega el curso.
+        document.getElementById('home-course').style.display = mode === 'pending' && homeCourseLoaded ? '' : 'none';
+        applyHomeLayout();
+    };
+    const setVideoShape = (shape) => { videoShape = shape; applyHomeLayout(); };
+
+    const stopWelcomeVideo = () => {
+        const box = document.getElementById('pending-video');
+        box.querySelector('video')?.pause();
+        // Un video incrustado no se puede pausar desde fuera: se retira y vuelve al regresar.
+        if (box.querySelector('iframe')) { box.replaceChildren(); delete box.dataset.src; }
+    };
+
     const renderPendingHero = () => {
         if (!pendingInfo) return;                       // solo aplica a no aprobados
-        document.getElementById('pending-hero').style.display = 'block';
+        setHomeMode(pendingInfo.suspended ? 'suspended' : 'pending');
 
         if (pendingInfo.suspended) {
             document.getElementById('pending-tag').innerHTML = '<i class="fas fa-pause-circle"></i> Acceso suspendido';
@@ -247,10 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('pending-text').textContent =
                 (pendingInfo.reason ? `Motivo: ${pendingInfo.reason}. ` : '') +
                 'Tu progreso sigue guardado. Escríbenos para reactivar tu acceso y retomar donde te quedaste.';
-            // La bienvenida, los pasos de alta y la activación no aplican a un suspendido.
-            ['pending-video-wrap', 'pending-course', 'pending-activate'].forEach(id =>
-                document.getElementById(id).style.display = 'none');
-            document.querySelector('.pending-steps').style.display = 'none';
             document.getElementById('pending-wa-text').textContent = 'Reactivar mi acceso por WhatsApp';
         } else {
             document.getElementById('pending-title').textContent =
@@ -271,9 +322,22 @@ document.addEventListener('DOMContentLoaded', () => {
             // Espera a saber si hay archivo propio para no cargar dos videos.
             if (welcomeFile !== null && box.dataset.src !== video.src) {   // evita recargar el reproductor
                 box.dataset.src = video.src;
-                box.className = `pending-video${video.vertical ? ' is-vertical' : ''}${video.kind === 'link' ? ' is-link' : ''}`;
                 const el = buildVideoEl(video);
                 box.replaceChildren(el);
+
+                // Forma del video: un enlace la trae en su dirección; un archivo
+                // la dice al cargar (mientras tanto se asume vertical).
+                const setWide = (wide) => {
+                    box.classList.toggle('is-vertical', !wide);
+                    setVideoShape(wide ? 'wide' : 'tall');
+                };
+                box.classList.toggle('is-link', video.kind === 'link');
+                if (video.kind === 'link') setVideoShape('link');
+                else if (video.kind === 'iframe') setWide(!video.vertical);
+                else {
+                    setWide(false);
+                    el.addEventListener('loadedmetadata', () => setWide(el.videoWidth > el.videoHeight));
+                }
 
                 // Sonido: botón propio para un archivo de video; aviso para los incrustados.
                 const soundBtn  = document.getElementById('pending-sound-btn');
@@ -304,18 +368,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Alumnos y el campus se abre solo. Si la rechaza, puede subir otra.
     const initVoucherUpload = (user, roleData) => {
         const box       = document.getElementById('pending-activate');
-        const payBox    = document.getElementById('pending-pay');
-        const openBtn   = document.getElementById('pending-activate-btn');
-        const review    = document.getElementById('pending-review');
+        const review   = document.getElementById('pending-review');
         const rejected  = document.getElementById('pending-rejected');
         const fileInput = document.getElementById('pending-file');
         const nameEl    = document.getElementById('pending-file-name');
         const btn       = document.getElementById('pending-upload-btn');
         const msg       = document.getElementById('pending-upload-msg');
         const stepLabel = document.querySelector('.pending-steps .step.current .step-label');
-
-        const openPay = () => { payBox.style.display = 'block'; openBtn.style.display = 'none'; };
-        openBtn.addEventListener('click', openPay);
 
         fileInput.addEventListener('change', () => {
             if (fileInput.files[0]) nameEl.textContent = fileInput.files[0].name;
@@ -354,202 +413,405 @@ document.addEventListener('DOMContentLoaded', () => {
             if (last?.status === 'rejected') {
                 rejected.textContent = `Tu constancia anterior no fue aceptada${last.rejectReason ? `: ${last.rejectReason}` : ''}. Sube una nueva.`;
                 rejected.style.display = 'block';
-                openPay();
             } else {
                 rejected.style.display = 'none';
             }
         });
     };
 
-    // ── LO QUE LE ESPERA EN SU CURSO (alumno pendiente) ──────
-    // Juegos y horario reales del curso al que se inscribió.
-    let pendingCourseId = null;
-    const renderPendingCourse = async (enrollment) => {
-        if (!enrollment?.courseId || enrollment.courseId === pendingCourseId) return;
-        pendingCourseId = enrollment.courseId;
-        try {
-            const cs = await getDoc(doc(db, dbPath(`courses/${enrollment.courseId}`)));
-            if (!cs.exists()) return;
-            const c     = cs.data();
-            const games = (Array.isArray(c.gamesIncluded) ? c.gamesIncluded : [c.gamesIncluded]).filter(Boolean);
-            if (!games.length) return;
-
-            document.getElementById('pending-course-name').textContent = c.name || enrollment.courseName || 'tu curso';
-            const list = document.getElementById('pending-games');
-            list.innerHTML = '';
-            games.forEach(g => { const li = document.createElement('li'); li.textContent = g; list.appendChild(li); });
-            const sched = document.getElementById('pending-schedule');
-            sched.textContent = '';
-            if (c.schedule) {
-                sched.innerHTML = '<i class="fas fa-clock"></i> ';
-                sched.append(c.schedule);
-            }
-            document.getElementById('pending-course').style.display = 'block';
-        } catch { /* sin el bloque del curso, el resto de la bienvenida sigue igual */ }
+    // ── DATOS DE UN CURSO (se piden una sola vez por curso) ──
+    // Juegos, descripción, horario y duración: lo que el admin edita en Cursos.
+    const _courseCache = {};
+    const courseInfo = (courseId) => _courseCache[courseId] ||=
+        getDoc(doc(db, dbPath(`courses/${courseId}`)))
+            .then(s => (s.exists() ? s.data() : null))
+            .catch(() => null);
+    const courseGames = (c) =>
+        (Array.isArray(c.gamesIncluded) ? c.gamesIncluded : [c.gamesIncluded]).filter(Boolean);
+    const fillGames = (list, games) => {
+        list.innerHTML = '';
+        games.forEach(g => { const li = document.createElement('li'); li.textContent = g; list.appendChild(li); });
+    };
+    const metaLine = (el, icon, text) => {
+        el.textContent = '';
+        if (!text) return;
+        el.innerHTML = `<i class="fas ${icon}"></i> `;
+        el.append(text);
     };
 
-    // Quita el modo vitrina y oculta el hero (se llama al detectar aprobación,
-    // incluso en vivo cuando el admin valida el pago).
+    // ── SU CURSO EN LA BIENVENIDA (alumno pendiente) ─────────
+    // Lo que va a dominar en el curso al que se inscribió. Al alumno
+    // activo ese detalle le aparece en Mis Cursos; aquí solo su carné.
+    let homeCourseId     = null;
+    let homeCourseLoaded = false;
+
+    const renderHomeCourse = async (enrollment) => {
+        if (enrollment?.courseName) document.getElementById('home-card-course').textContent = enrollment.courseName;
+        if (!enrollment?.courseId || enrollment.courseId === homeCourseId) return;
+        homeCourseId = enrollment.courseId;
+        const c = await courseInfo(enrollment.courseId);
+        if (!c) return;
+        const name = c.name || enrollment.courseName || 'tu curso';
+        document.getElementById('home-course-name').textContent = name;
+        document.getElementById('home-card-course').textContent = name;
+        fillGames(document.getElementById('home-course-games'), courseGames(c));
+        document.getElementById('home-course-desc').textContent = c.description || '';
+        metaLine(document.getElementById('home-course-schedule'), 'fa-clock', c.schedule);
+        metaLine(document.getElementById('home-course-duration'), 'fa-calendar-alt', c.duration ? `Duración: ${c.duration}` : '');
+        // El precio del curso acompaña a las cuentas donde se deposita.
+        document.getElementById('pending-price').textContent = c.price ? ` (${c.price})` : '';
+        homeCourseLoaded = true;
+        if (homeMode) setHomeMode(homeMode);
+    };
+
+    // ── INICIO DEL ALUMNO ACTIVO ─────────────────────────────
+    // Misma estructura que la bienvenida: el carné ocupa el lugar del
+    // video y, a su lado, el avance y los pendientes que llevan a cada sección.
+    const DEFAULT_PHOTO = '/assets/images/isotipo_principal.png';
+
+    const renderActiveHome = (d) => {
+        setHomeMode('active');
+        const first = (d.fullName || '').split(' ')[0];
+        document.getElementById('pending-tag').innerHTML = '<i class="fas fa-check-circle"></i> Alumno activo';
+        document.getElementById('pending-title').textContent = `¡Hola de nuevo${first ? `, ${first}` : ''}!`;
+        document.getElementById('pending-text').textContent = 'Esto es lo que tienes pendiente. Toca cualquier aviso para ir a su sección.';
+
+        const photo = document.getElementById('home-card-photo');
+        photo.src = d.photoUrl || DEFAULT_PHOTO;
+        photo.parentElement.classList.toggle('has-photo', !!d.photoUrl);
+        document.getElementById('home-card-name').textContent = d.fullName || 'Alumno DealerClub';
+        const code = document.getElementById('home-card-code');
+        code.textContent   = d.studentCode || '';
+        code.style.display = d.studentCode ? '' : 'none';
+        const level = document.getElementById('home-card-level');
+        level.textContent = d.level || 'Rookie';
+        level.className   = `level-pill ${levelClass(d.level)}`;
+        document.getElementById('home-card-start').textContent =
+            d.courseStartDate ? fmtDate(d.courseStartDate) : 'Por confirmar';
+        // Sin código no hay nada que compartir.
+        if (!d.studentCode) document.getElementById('home-invite').style.display = 'none';
+        renderHomeAlerts();
+    };
+
+    // Foto del carné: el alumno la cambia tocándola. Se guarda reducida
+    // en su propia ficha (las reglas solo le dejan tocar ese campo).
+    document.getElementById('home-card-file').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        const msg  = document.getElementById('home-card-msg');
+        if (!file || !auth.currentUser) return;
+        msg.textContent = 'Guardando tu foto…';
+        try {
+            await setDoc(doc(db, dbPath(`user_roles/${auth.currentUser.uid}`)),
+                { photoUrl: await compressImage(file, 320) }, { merge: true });
+            msg.textContent = '';
+        } catch { msg.textContent = 'No se pudo guardar la foto. Inténtalo de nuevo.'; }
+        e.target.value = '';
+    });
+
+    // ── PENDIENTES DEL INICIO ────────────────────────────────
+    // Cada sección anota aquí su parte (pagos, tareas, notas) y el inicio
+    // la convierte en avisos que llevan a donde se resuelven.
+    const homeState = { billing: null, tasksDue: 0, tasksOverdue: 0, lastGrade: null, referral: null };
+    const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+    // Para avisar solo de lo nuevo (tareas calificadas, material) se recuerda
+    // en este dispositivo cuándo abrió el alumno cada sección por última vez.
+    const seenKey  = () => `dc-seen-${auth.currentUser?.uid || ''}`;
+    const getSeen  = () => { try { return JSON.parse(localStorage.getItem(seenKey())) || {}; } catch { return {}; } };
+    const markSeen = (section) => {
+        try { localStorage.setItem(seenKey(), JSON.stringify({ ...getSeen(), [section]: Date.now() / 1000 })); }
+        catch { /* navegador sin almacenamiento: el aviso simplemente no se apaga */ }
+        renderHomeAlerts();
+    };
+
+    const renderHomeAlerts = () => {
+        const alerts = [];   // { tone: 'danger' | 'warn' | 'info', icon, title, sub, go }
+        const seen   = getSeen();
+        const graded = Object.values(_subs).filter(x =>
+            x.status === 'reviewed' && (x.reviewedAt?.seconds ?? 0) > (seen.tasks ?? 0));
+        const fresh  = _materials.filter(m => (m.createdAt?.seconds ?? 0) > (seen.materials ?? 0));
+        const { billing, tasksDue, tasksOverdue, lastGrade, referral } = homeState;
+
+        if (billing && billing.state !== 'complete') {
+            alerts.push({
+                tone: billing.state === 'overdue' ? 'danger' : billing.state === 'soon' ? 'warn' : 'info',
+                icon: 'fa-wallet', title: billing.title, sub: billing.sub, go: 'payments'
+            });
+        }
+        if (tasksOverdue) alerts.push({
+            tone: 'danger', icon: 'fa-tasks', go: 'tasks',
+            title: `Tienes ${plural(tasksOverdue, 'tarea vencida', 'tareas vencidas')}`,
+            sub: 'Ya pasó la fecha límite: entrega cuanto antes.'
+        });
+        if (tasksDue) alerts.push({
+            tone: 'warn', icon: 'fa-tasks', go: 'tasks',
+            title: `Tienes ${plural(tasksDue, 'tarea por entregar', 'tareas por entregar')}`,
+            sub: 'Revisa la fecha límite en Tareas.'
+        });
+        if (lastGrade) alerts.push({
+            tone: 'info', icon: 'fa-star', go: 'progress',
+            title: `Tu última evaluación: ${lastGrade.score}/20`,
+            sub: `Semana ${lastGrade.week ?? '—'}${lastGrade.note ? ` · "${lastGrade.note}"` : ''}`
+        });
+
+        if (graded.length) alerts.push({
+            tone: 'info', icon: 'fa-clipboard-check', go: 'tasks',
+            title: graded.length > 1 ? `Te calificaron ${graded.length} tareas`
+                 : `Te calificaron "${graded[0].taskTitle || 'tu tarea'}"${graded[0].grade != null ? `: ${graded[0].grade}/20` : ''}`,
+            sub: 'Mira la nota y el comentario de tu profesor.'
+        });
+        if (fresh.length) alerts.push({
+            tone: 'info', icon: 'fa-book-open', go: 'materials',
+            title: `Hay ${plural(fresh.length, 'material nuevo', 'materiales nuevos')}`,
+            sub: fresh.slice(0, 2).map(m => m.title).filter(Boolean).join(' · ')
+        });
+        if (referral) alerts.push({
+            tone: 'info', icon: 'fa-gift', go: 'payments',
+            title: `Tienes ${referral.pct}% de descuento en tu cuota de este mes`,
+            sub: `Por ${plural(referral.count, 'referido que pagó', 'referidos que pagaron')} el mes pasado con tu código.`
+        });
+
+        const order = { danger: 0, warn: 1, info: 2 };
+        alerts.sort((a, b) => order[a.tone] - order[b.tone]);
+
+        const list = document.getElementById('home-alerts-list');
+        list.replaceChildren(...alerts.map(a => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `home-alert tone-${a.tone}`;
+            btn.dataset.go = a.go;
+            btn.innerHTML = `<i class="fas ${a.icon}"></i><span><strong></strong><small></small></span><i class="fas fa-chevron-right"></i>`;
+            btn.querySelector('strong').textContent = a.title;
+            btn.querySelector('small').textContent  = a.sub;
+            return btn;
+        }));
+        // "Estás al día" cuando nada pide una acción (los avisos informativos no cuentan).
+        document.getElementById('home-alerts-ok').style.display =
+            alerts.some(a => a.tone !== 'info') ? 'none' : '';
+    };
+
+    // Quita el modo vitrina y pasa el inicio a su versión de alumno activo
+    // (se llama al detectar la aprobación en vivo, cuando el admin valida el pago).
     const unlockDashboard = () => {
         pendingInfo = null;
         document.getElementById('dash-body').classList.remove('dash-pending');
-        document.getElementById('pending-hero').style.display = 'none';
-        document.getElementById('pending-video').replaceChildren();   // detiene el video de bienvenida
+        const box = document.getElementById('pending-video');
+        box.replaceChildren();                                        // detiene el video de bienvenida
+        delete box.dataset.src;
         document.getElementById('preview-notice').style.display = 'none';
+        chipCascade();
     };
 
-    // ── REFERIDOS: promueve el código del alumno (marketing) ──
-    const renderReferral = (code, name) => {
-        const card = document.getElementById('referral-card');
-        if (!card || !code) return;
-        card.style.display = 'flex';
-        document.getElementById('referral-code').textContent = code;
+    // Clics del inicio: fichas al pulsar y atajos a cada sección.
+    homeHero.addEventListener('click', (e) => {
+        if (e.target.matches('input')) return;      // el clic que la etiqueta le pasa a su archivo
+        const el = e.target.closest('button, a, .pending-file');
+        if (!el) return;
+        chipBurst(el);
+        if (el.dataset.go) goTo(el.dataset.go);
+    });
 
+    // ── REFERIDOS: promueve el código del alumno (marketing) ──
+    // El código aparece bajo el carné y en Pagos; ambos se llenan aquí.
+    let _refCode = '';
+    const renderReferral = (code) => {
+        if (!code) return;
+        _refCode = code;
         const site = window.location.origin || '';
         const msg  = `¡Hola! Estudio en DealerClub, la escuela de dealers/croupiers en Lima. ` +
                      `Inscríbete con mi código ${code} y ambos ganamos beneficios. ${site}`.trim();
-        document.getElementById('referral-share').href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-
-        const copyBtn = document.getElementById('referral-copy');
-        copyBtn.onclick = async () => {
-            try {
-                await navigator.clipboard.writeText(code);
-                const i = copyBtn.querySelector('i');
-                i.className = 'fas fa-check';
-                setTimeout(() => { i.className = 'fas fa-copy'; }, 1500);
-            } catch { /* navegador sin clipboard API */ }
-        };
+        document.querySelectorAll('[data-ref="code"]').forEach(el => { el.textContent = code; });
+        document.querySelectorAll('[data-ref="copy"]').forEach(el => { el.dataset.copy = code; });
+        document.querySelectorAll('[data-ref="share"]').forEach(el => {
+            el.href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+        });
+        document.getElementById('referral-card').style.display = 'flex';
+        renderReferralDiscount();
     };
 
-    // ── AULA DEL CURSO (vista enfocada al entrar a un curso) ──
-    let _materials = [];   // poblado por listenMaterials()
+    // Descuento del mes por referidos (la regla vive en billing.js).
+    let _myReferrals = [];
+    let _billing     = null;
 
-    const openAula = async (enrollment) => {
-        const modal = document.getElementById('aula-modal');
-        const cid   = enrollment.courseId;
-        const cname = enrollment.courseName;
+    const monthName = (offset) => {
+        const now = new Date();
+        return new Date(now.getFullYear(), now.getMonth() + offset, 1).toLocaleDateString('es-PE', { month: 'long' });
+    };
+    const feeAfter = (pct) => {
+        const fee = +_billing?.amount || 0;
+        return fee ? `Tu cuota de S/ ${fee} queda en S/ ${+(fee * (1 - pct / 100)).toFixed(2)}. ` : '';
+    };
 
-        document.getElementById('aula-course-name').textContent = cname || 'Curso DealerClub';
-        const firstName = _sname ? _sname.split(' ')[0] : '';
-        document.getElementById('aula-welcome').textContent =
-            `¡Bienvenido de nuevo${firstName ? ', ' + firstName : ''}! Continúa donde lo dejaste.`;
+    const renderReferralDiscount = () => {
+        if (!_refCode) return;                 // sin código no hay referidos que contar
 
-        // Avance de tareas (entregadas / total) y pendientes
-        const total = _tasks.length;
-        const done  = _tasks.filter(t => _subs[t.id]).length;
-        const pct   = total ? Math.round(done / total * 100) : 0;
-        document.getElementById('aula-pending').textContent = total - done;
-        document.getElementById('aula-progress-pct').textContent = `${pct}%`;
-        document.getElementById('aula-progress-fill').style.width = `${pct}%`;
+        // Lo que ganó el mes pasado: se descuenta en la cuota de este mes.
+        const last    = referralsInMonth(_myReferrals, 1);
+        const pctNow  = referralDiscount(last.length);
+        const applied = document.getElementById('referral-applied');
+        applied.style.display = pctNow ? 'flex' : 'none';
+        document.getElementById('referral-applied-pct').textContent   = `${pctNow}%`;
+        document.getElementById('referral-applied-title').textContent = `Tienes ${pctNow}% de descuento en tu cuota de ${monthName(0)}`;
+        document.getElementById('referral-applied-sub').textContent   =
+            `${feeAfter(pctNow)}Lo ganaste por ${plural(last.length, 'referido que pagó', 'referidos que pagaron')} en ${monthName(-1)}.`;
 
-        // Material de este curso (filtra por courseId o courseName)
-        const mats = _materials.filter(m =>
-            (cid && m.courseId === cid) || (cname && m.courseName === cname));
-        const box  = document.getElementById('aula-materials');
-        if (!mats.length) {
-            box.innerHTML = `<p class="aula-empty">Aún no hay material para este curso. Pronto se irá cargando.</p>`;
+        // Lo que va ganando este mes: se descontará en la cuota del mes siguiente.
+        const month = referralsInMonth(_myReferrals, 0);
+        const pct   = referralDiscount(month.length);
+        const next  = referralDiscount(month.length + 1);
+        let title, sub;
+        if (!pct) {
+            title = `Gana ${REFERRAL_FIRST}% de descuento en tu cuota de ${monthName(1)}`;
+            sub   = `${REFERRAL_FIRST}% por tu primer referido del mes y ${REFERRAL_EXTRA}% más por cada uno adicional (hasta ${REFERRAL_MAX}%). ` +
+                    'Tu referido cuenta cuando paga su primera cuota. Lo que ganas en un mes se descuenta en tu cuota del mes siguiente y no se acumula.';
         } else {
-            const icons = { Video: 'fa-play-circle', Documento: 'fa-file-alt', Enlace: 'fa-link' };
-            box.innerHTML = mats.map(m => `
-                <a href="${m.url}" target="_blank" rel="noopener" class="aula-mat">
-                    <i class="fas ${icons[m.type] || 'fa-file'}"></i>
-                    <span>${m.title}</span>
-                </a>`).join('');
+            title = `En ${monthName(0)} llevas ${plural(month.length, 'referido', 'referidos')}: ${pct}% de descuento para tu cuota de ${monthName(1)}`;
+            sub   = feeAfter(pct) + (next > pct ? `Un referido más este mes y subes a ${next}%.` : 'Llegaste al descuento máximo.');
         }
+        document.getElementById('referral-discount-pct').textContent   = `${pct || REFERRAL_FIRST}%`;
+        document.getElementById('referral-discount-title').textContent = title;
+        document.getElementById('referral-discount-sub').textContent   = sub;
+        document.getElementById('referral-discount-names').textContent =
+            month.length ? `Pagaron con tu código: ${month.map(r => r.newStudentName).filter(Boolean).join(', ')}` : '';
+        document.getElementById('referral-discount').classList.toggle('is-earned', pct > 0);
+        document.getElementById('referral-discount').style.display = 'flex';
 
-        // Horario (de la colección courses, si la inscripción trae courseId)
-        const schedBox = document.getElementById('aula-schedule-box');
-        schedBox.style.display = 'none';
-        if (cid) {
-            try {
-                const cs = await getDoc(doc(db, dbPath(`courses/${cid}`)));
-                if (cs.exists() && cs.data().schedule) {
-                    document.getElementById('aula-schedule').textContent = cs.data().schedule;
-                    schedBox.style.display = 'flex';
-                }
-            } catch { /* ignora */ }
-        }
-
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    };
-    const closeAula = () => {
-        document.getElementById('aula-modal').style.display = 'none';
-        document.body.style.overflow = 'auto';
+        homeState.referral = pctNow ? { pct: pctNow, count: last.length } : null;
+        renderHomeAlerts();
     };
 
-    document.getElementById('aula-close').addEventListener('click', closeAula);
-    document.getElementById('aula-modal').addEventListener('click', (e) => {
-        if (e.target.id === 'aula-modal') closeAula();
+    const listenReferrals = (code) => {
+        onSnapshot(query(collection(db, dbPath('referrals')), where('referrerCode', '==', code)), (snap) => {
+            _myReferrals = snap.docs.map(d => d.data());
+            renderReferralDiscount();
+        }, () => { /* sin permiso de lectura aún: se queda la invitación */ });
+    };
+
+    // ════════════════════════════════════════════════════════
+    // TAB — MIS CURSOS (lista) y AULA (Progreso / Tareas / Material)
+    // ════════════════════════════════════════════════════════
+    let _enrollments  = [];
+    let currentCourse = null;   // inscripción abierta en el aula
+    let _materials    = [];     // poblado por listenMaterials()
+
+    const isEnrolled = (e) => ['active', 'activo', 'aprobado'].includes((e?.status || '').toLowerCase());
+
+    const switchSub = (name) => {
+        document.querySelectorAll('.sub-btn').forEach(b => b.classList.toggle('active', b.dataset.sub === name));
+        document.querySelectorAll('.sub-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${name}`));
+        if (name !== 'progress') markSeen(name);    // apaga el aviso de novedades de esa sección
+    };
+
+    // Entra al aula de un curso, en la subpestaña pedida.
+    const openCourse = async (enrollment, sub = 'progress') => {
+        currentCourse = enrollment || null;
+        const meta = document.getElementById('course-view-meta');
+        document.getElementById('course-view-name').textContent = enrollment?.courseName || 'Mi curso';
+        meta.textContent = '';
+        document.getElementById('courses-list-view').style.display = 'none';
+        document.getElementById('course-view').style.display = 'block';
+        renderMaterials();
+        switchSub(sub);
+
+        const c = enrollment?.courseId ? await courseInfo(enrollment.courseId) : null;
+        if (c && currentCourse === enrollment) {
+            meta.textContent = [c.schedule, c.duration && `Duración: ${c.duration}`].filter(Boolean).join(' · ');
+        }
+    };
+    const closeCourse = () => {
+        currentCourse = null;
+        document.getElementById('course-view').style.display = 'none';
+        document.getElementById('courses-list-view').style.display = 'block';
+    };
+
+    document.getElementById('course-back').addEventListener('click', closeCourse);
+    document.querySelectorAll('.sub-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchSub(btn.dataset.sub));
     });
-    document.getElementById('aula-go-materials').addEventListener('click', () => { closeAula(); switchTab('materials'); });
-    document.getElementById('aula-go-tasks').addEventListener('click', () => { closeAula(); switchTab('tasks'); });
 
-    // ════════════════════════════════════════════════════════
-    // TAB 1 — MIS CURSOS
-    // ════════════════════════════════════════════════════════
+    // Lleva a una pestaña o, si es una sección del aula, entra al curso
+    // activo del alumno y la abre.
+    const goTo = (target) => {
+        if (!['progress', 'tasks', 'materials'].includes(target)) { switchTab(target); return; }
+        switchTab('courses');
+        openCourse(_enrollments.find(isEnrolled) || null, target);
+    };
+
     const listenCourses = (email) => {
         const container = document.getElementById('courses-panel-content');
         const q = query(collection(db, dbPath('course_enrollments')), where('email', '==', email));
 
         onSnapshot(q, (snap) => {
-            if (pendingInfo && !pendingInfo.suspended) {
-                renderPendingCourse(snap.docs.map(d => d.data())
-                    .filter(e => e.type !== 'Lista de Espera')
-                    .sort((a, b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0))[0]);
+            _enrollments = snap.docs
+                .map(d => d.data())
+                .sort((a, b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0));
+
+            if (!pendingInfo?.suspended) {
+                renderHomeCourse(_enrollments.find(e => e.type !== 'Lista de Espera'));
             }
 
+            container.classList.remove('panel-loading');
             container.innerHTML = '';
-            if (snap.empty) {
+            if (!_enrollments.length) {
                 container.innerHTML = emptyState('No tienes cursos inscritos aún.', 'fa-graduation-cap');
                 return;
             }
-            snap.docs
-                .map(d => d.data())
-                .sort((a, b) => (b.timestamp?.seconds ?? 0) - (a.timestamp?.seconds ?? 0))
-                .forEach(enrollment => {
-                    const rawStatus = (enrollment.status || '').toLowerCase();
-                    let cardClass = 'card-pending';
-                    let badgeText = '<i class="fas fa-lock"></i> Validando Pago';
-                    let btnHtml = `<button class="card-action-btn btn-locked" disabled>
-                                       <i class="fas fa-clock"></i> Esperando Verificación
-                                   </button>`;
+            _enrollments.forEach(enrollment => {
+                const rawStatus = (enrollment.status || '').toLowerCase();
+                let cardClass = 'card-pending';
+                let badgeText = '<i class="fas fa-lock"></i> Validando Pago';
+                let btnHtml = `<button class="card-action-btn btn-locked" disabled>
+                                   <i class="fas fa-clock"></i> Esperando Verificación
+                               </button>`;
 
-                    if (['waitlist', 'lista_espera'].includes(rawStatus)) {
-                        cardClass = 'card-waitlist';
-                        badgeText = '<i class="fas fa-hourglass-half"></i> Lista de Espera';
-                        btnHtml = `<button class="card-action-btn btn-locked" disabled>
-                                       <i class="fas fa-lock"></i> Cupos Cerrados
-                                   </button>`;
-                    } else if (['active', 'activo', 'aprobado'].includes(rawStatus)) {
-                        cardClass = 'card-active';
-                        badgeText = '<i class="fas fa-check-circle"></i> Curso Activo';
-                        btnHtml = `<button class="card-action-btn btn-enter">
-                                       <i class="fas fa-play"></i> Entrar al Curso
-                                   </button>`;
-                    }
+                if (['waitlist', 'lista_espera'].includes(rawStatus)) {
+                    cardClass = 'card-waitlist';
+                    badgeText = '<i class="fas fa-hourglass-half"></i> Lista de Espera';
+                    btnHtml = `<button class="card-action-btn btn-locked" disabled>
+                                   <i class="fas fa-lock"></i> Cupos Cerrados
+                               </button>`;
+                } else if (isEnrolled(enrollment)) {
+                    cardClass = 'card-active';
+                    badgeText = '<i class="fas fa-check-circle"></i> Curso Activo';
+                    btnHtml = `<button class="card-action-btn btn-enter">
+                                   <i class="fas fa-door-open"></i> Entrar al curso
+                               </button>`;
+                }
 
-                    const dateStr = enrollment.timestamp
-                        ? new Date(enrollment.timestamp.seconds * 1000).toLocaleDateString('es-PE')
-                        : 'N/A';
+                const dateStr = enrollment.timestamp
+                    ? new Date(enrollment.timestamp.seconds * 1000).toLocaleDateString('es-PE')
+                    : 'N/A';
 
-                    const card = document.createElement('div');
-                    card.className = `course-card ${cardClass}`;
-                    card.innerHTML = `
-                        <div class="status-badge">${badgeText}</div>
-                        <h4>${enrollment.courseName || 'Curso DealerClub'}</h4>
-                        <p class="date">Inscrito el: ${dateStr}</p>
-                        ${enrollment.studentCode
-                            ? `<p class="enroll-code"><i class="fas fa-id-badge"></i> ${enrollment.studentCode}</p>`
-                            : ''}
-                        ${btnHtml}
-                    `;
-                    container.appendChild(card);
+                const card = document.createElement('div');
+                card.className = `course-card ${cardClass}`;
+                card.innerHTML = `
+                    <div class="status-badge">${badgeText}</div>
+                    <h4>${enrollment.courseName || 'Curso DealerClub'}</h4>
+                    <p class="date">Inscrito el: ${dateStr}</p>
+                    <div class="course-card-info" style="display:none;">
+                        <p class="course-card-label">Lo que vas a dominar</p>
+                        <ul class="pending-games"></ul>
+                        <p class="course-card-desc"></p>
+                        <p class="pending-course-meta"><span class="cc-schedule"></span><span class="cc-duration"></span></p>
+                    </div>
+                    ${btnHtml}
+                `;
+                container.appendChild(card);
 
-                    // "Entrar al Curso" abre el Aula enfocada de ese curso.
-                    card.querySelector('.btn-enter')
-                        ?.addEventListener('click', () => openAula(enrollment));
+                // "Entrar al curso" abre su aula: Progreso, Tareas y Material.
+                card.querySelector('.btn-enter')
+                    ?.addEventListener('click', () => openCourse(enrollment));
+
+                // Detalle real del curso (juegos, horario, duración).
+                if (enrollment.courseId) courseInfo(enrollment.courseId).then(c => {
+                    if (!c) return;
+                    fillGames(card.querySelector('.pending-games'), courseGames(c));
+                    card.querySelector('.course-card-desc').textContent = c.description || '';
+                    metaLine(card.querySelector('.cc-schedule'), 'fa-clock', c.schedule);
+                    metaLine(card.querySelector('.cc-duration'), 'fa-calendar-alt', c.duration ? `Duración: ${c.duration}` : '');
+                    card.querySelector('.course-card-info').style.display = '';
                 });
+            });
         });
     };
 
@@ -685,20 +947,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         d.studentCode ? `Código: ${d.studentCode}` : '';
                     unlockDashboard();
                     startCampus(d);
+                    switchTab('home');
                 } else if (!pendingInfo && d.status !== 'active') {
                     window.location.reload();
                     return;
                 }
             }
 
-            // Mis Pagos: solo con acceso activo (el pendiente ve el candado)
-            if (isAdminUser || d.status === 'active') renderPayments(d.billing);
+            // Inicio y Mis Pagos: solo con acceso activo (el pendiente ve el candado)
+            if (isAdminUser || d.status === 'active') {
+                renderActiveHome(d);
+                renderPayments(d.billing);
+            }
 
             // Nivel
             const levelEl = document.getElementById('prog-level-val');
             if (levelEl) {
                 levelEl.textContent = d.level || 'Rookie';
-                levelEl.className = 'prog-val ' + ({'Pro Dealer':'level-pro','Élite VIP':'level-elite'}[d.level] || 'level-rookie');
+                levelEl.className = 'prog-val ' + levelClass(d.level);
             }
 
             // Asistencia: % calculado del registro diario (fallback al % legado)
@@ -714,12 +980,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 attBar.style.width = `${pct}%`;
                 if (attPctEl) attPctEl.textContent = `${pct}%`;
                 if (attVal)   attVal.textContent   = `${pct}%`;
+                document.getElementById('home-stat-att').textContent = `${pct}%`;
             } else if (attVal) {
                 attVal.textContent = 'Sin datos';
             }
 
             // Notas: promedio de las notas semanales (fallback al promedio legado)
             const scored = (d.weeklyGrades || []).filter(g => g && g.score != null);
+            homeState.lastGrade = [...scored].sort((a, b) => (a.week || 0) - (b.week || 0)).pop() || null;
+            renderHomeAlerts();
             const avg = scored.length
                 ? +(scored.reduce((s, g) => s + (+g.score || 0), 0) / scored.length).toFixed(1)
                 : (d.grades ?? null);
@@ -731,6 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 gradeBar.style.width = `${pct}%`;
                 if (gradePctEl) gradePctEl.textContent = `${pct.toFixed(0)}%`;
                 if (gradeVal)   gradeVal.textContent   = `${avg}/20`;
+                document.getElementById('home-stat-grade').textContent = `${avg}/20`;
             } else if (gradeVal) {
                 gradeVal.textContent = 'Sin datos';
             }
@@ -752,6 +1022,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const PAY_ICON = { paid: 'fa-check', overdue: 'fa-exclamation', soon: 'fa-clock', next: 'fa-clock', future: 'fa-circle' };
 
     const renderPayments = (billing) => {
+        _billing = billing || null;
+        renderReferralDiscount();
         const box      = document.getElementById('payments-panel-content');
         const badge    = document.getElementById('payments-badge');
         const sum      = billingSummary(billing);
@@ -761,6 +1033,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sum.state === 'unset') {
             badge.style.display = 'none';
             box.innerHTML = emptyState('Aún no registramos tu plan de pagos. Aparecerá aquí en cuanto lo configuremos.', 'fa-wallet');
+            homeState.billing = null;
+            renderHomeAlerts();
             return;
         }
         badge.style.display = ['soon', 'overdue'].includes(sum.state) ? 'inline-flex' : 'none';
@@ -779,6 +1053,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 : `Tu próximo pago vence el ${fmtDate(sum.due)}`;
             sub = `Cuota ${sum.n} de ${sum.total}${billing.amount != null ? ` · S/ ${billing.amount}` : ''} · ${daysLabel(sum.days)}`;
         }
+        homeState.billing = { state: sum.state, title, sub };
+        renderHomeAlerts();
         box.innerHTML = `
             <div class="pay-summary pay-${sum.state}">
                 <div class="pay-days">${big}</div>
@@ -862,11 +1138,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let _scode = '';
     let _sname = '';
 
-    const updateTasksBadge = (n) => {
-        const badge = document.getElementById('tasks-badge');
-        if (!badge) return;
-        badge.textContent = n;
-        badge.style.display = n > 0 ? 'inline-flex' : 'none';
+    // Pendientes de entrega: insignia en Mis Cursos y en la subpestaña
+    // Tareas, cifra y avisos del inicio.
+    const updateTasksBadge = (n, overdue = 0) => {
+        ['tasks-badge', 'courses-badge'].forEach(id => {
+            const badge = document.getElementById(id);
+            badge.textContent = n;
+            badge.style.display = n > 0 ? 'inline-flex' : 'none';
+        });
+        document.getElementById('home-stat-tasks').textContent = n;
+        homeState.tasksOverdue = overdue;
+        homeState.tasksDue     = n - overdue;
+        renderHomeAlerts();
     };
 
     const subId = (taskId) => `${taskId}_${_scode}`;
@@ -963,7 +1246,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // durante todo el día límite y se venza recién al día siguiente.
         const now = new Date();
         const today = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
-        let pending = 0;
+        let pending = 0, overdue = 0;
+        container.classList.remove('panel-loading');
         container.innerHTML = '';
 
         [..._tasks].sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)).forEach(task => {
@@ -974,6 +1258,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (task.dueDate && task.dueDate < today) { key = 'overdue'; label = 'Vencida'; }
             else { key = 'pending'; label = 'Pendiente'; }
             if (key === 'pending' || key === 'overdue') pending++;
+            if (key === 'overdue') overdue++;
 
             const isForAll = task.assignedTo === 'all';
             const dueStr   = task.dueDate ? new Date(`${task.dueDate}T00:00:00`).toLocaleDateString('es-PE') : '';
@@ -997,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buildTaskActions(card.querySelector('.task-action-area'), task, sub, key);
             container.appendChild(card);
         });
-        updateTasksBadge(pending);
+        updateTasksBadge(pending, overdue);
     };
 
     const listenTasks = (studentCode, studentName) => {
@@ -1027,44 +1312,53 @@ document.addEventListener('DOMContentLoaded', () => {
     // ════════════════════════════════════════════════════════
     // TAB 4 — MATERIAL DIDÁCTICO
     // ════════════════════════════════════════════════════════
-    const listenMaterials = () => {
+    // Dentro del aula se muestra el material de ese curso y el general.
+    const renderMaterials = () => {
         const container = document.getElementById('materials-panel-content');
+        const cid   = currentCourse?.courseId;
+        const cname = currentCourse?.courseName;
+        const materials = _materials.filter(m =>
+            !currentCourse || (!m.courseId && !m.courseName) ||
+            (cid && m.courseId === cid) || (cname && m.courseName === cname));
 
+        container.classList.remove('panel-loading');
+        container.innerHTML = '';
+        if (!materials.length) {
+            container.innerHTML = emptyState('No hay material disponible por ahora.', 'fa-book-open');
+            return;
+        }
+        const typeIcons  = { Video: 'fa-play-circle', Documento: 'fa-file-alt', Enlace: 'fa-link' };
+        const typeColors = { Video: '#dc3545', Documento: '#007bff', Enlace: '#28a745' };
+
+        materials.forEach(m => {
+            const icon  = typeIcons[m.type]  || 'fa-file';
+            const color = typeColors[m.type] || '#ffc107';
+            const card  = document.createElement('div');
+            card.className = 'material-card';
+            card.innerHTML = `
+                <div class="material-icon" style="color:${color};">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="material-body">
+                    <p class="material-category">${m.courseName || 'General'}</p>
+                    <h4 class="material-title">${m.title}</h4>
+                    ${m.category ? `<span class="material-type">${m.category}</span>` : ''}
+                    <a href="${m.url}" target="_blank" rel="noopener" class="material-btn">
+                        <i class="fas ${icon}"></i> Abrir
+                    </a>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    };
+
+    const listenMaterials = () => {
         onSnapshot(collection(db, dbPath('materials')), (snap) => {
-            container.innerHTML = '';
-            if (snap.empty) {
-                _materials = [];
-                container.innerHTML = emptyState('No hay material disponible por ahora.', 'fa-book-open');
-                return;
-            }
-            const materials = snap.docs
+            _materials = snap.docs
                 .map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-            _materials = materials;   // disponible para el Aula del Curso
-
-            const typeIcons  = { Video: 'fa-play-circle', Documento: 'fa-file-alt', Enlace: 'fa-link' };
-            const typeColors = { Video: '#dc3545', Documento: '#007bff', Enlace: '#28a745' };
-
-            materials.forEach(m => {
-                const icon  = typeIcons[m.type]  || 'fa-file';
-                const color = typeColors[m.type] || '#ffc107';
-                const card  = document.createElement('div');
-                card.className = 'material-card';
-                card.innerHTML = `
-                    <div class="material-icon" style="color:${color};">
-                        <i class="fas ${icon}"></i>
-                    </div>
-                    <div class="material-body">
-                        <p class="material-category">${m.courseName || 'General'}</p>
-                        <h4 class="material-title">${m.title}</h4>
-                        ${m.category ? `<span class="material-type">${m.category}</span>` : ''}
-                        <a href="${m.url}" target="_blank" rel="noopener" class="material-btn">
-                            <i class="fas ${icon}"></i> Abrir
-                        </a>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+            renderMaterials();
+            renderHomeAlerts();
         });
     };
 

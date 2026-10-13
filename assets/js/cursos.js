@@ -1,9 +1,11 @@
 import { auth, db, dbPath } from './firebase.js';
 import { compressImage } from './image.js';
+import { initCopyButtons } from './copy.js';
 import { onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { collection, addDoc, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', () => {
+    initCopyButtons();
     const studentAccessLink       = document.getElementById('student-access-link');
     const coursesGridContainer    = document.getElementById('courses-grid-container');
     const loadingCoursesMessage   = document.getElementById('loading-courses');

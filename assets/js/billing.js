@@ -1,7 +1,8 @@
 // ============================================================
 // PAGOS MENSUALES — cálculo de cuotas y vencimientos
 // ============================================================
-// Compartido por el admin y el campus del alumno. El plan vive en
+// Compartido por el admin y el campus del alumno (también la regla del
+// descuento por referidos, al final). El plan vive en
 // user_roles/{uid}.billing:
 //   { startDate: 'YYYY-MM-DD',   // inicio de clases: fija el día de pago
 //     amount: 500,               // mensualidad en soles
@@ -76,6 +77,29 @@ export const billingSummary = (billing, today = new Date()) => {
     const current   = schedule.find(c => c.state !== 'paid' && c.state !== 'future');
     if (!current) return { state: 'complete', total: schedule.length, paidCount };
     return { ...current, total: schedule.length, paidCount };
+};
+
+// ── DESCUENTO POR REFERIDOS ─────────────────────────────────
+// Cuenta cada persona que se inscribe con el código del alumno Y paga
+// su primera cuota (el admin la registra en Referidos al cobrarle).
+// Por los referidos de un mes calendario: 10% por el primero y 5% más
+// por cada uno adicional, hasta el tope. Ese descuento se aplica a la
+// cuota del mes SIGUIENTE y ahí se agota: no se acumula de mes a mes.
+export const REFERRAL_FIRST = 10;
+export const REFERRAL_EXTRA = 5;
+export const REFERRAL_MAX   = 50;
+
+export const referralDiscount = (count) =>
+    count > 0 ? Math.min(REFERRAL_MAX, REFERRAL_FIRST + REFERRAL_EXTRA * (count - 1)) : 0;
+
+// Referidos registrados en un mes calendario: el actual (monthsAgo = 0,
+// lo que va ganando) o el anterior (1, lo que se le descuenta ahora).
+export const referralsInMonth = (referrals, monthsAgo = 0, today = new Date()) => {
+    const ref = new Date(today.getFullYear(), today.getMonth() - monthsAgo, 1);
+    return referrals.filter(r => {
+        const d = r.date?.seconds ? new Date(r.date.seconds * 1000) : null;
+        return d && d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
+    });
 };
 
 // Texto corto de los días que faltan o que lleva vencida una cuota.

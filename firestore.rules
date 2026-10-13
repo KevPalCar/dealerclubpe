@@ -63,6 +63,19 @@ service cloud.firestore {
                       && request.resource.data.status == 'pending'
                       && request.resource.data.keys().hasOnly(
                            ['role', 'status', 'fullName', 'email', 'dni', 'phone', 'createdAt']);
+        // Lo único que el alumno cambia de su cuenta es la foto de su carné.
+        allow update: if isAuth() && request.auth.uid == uid
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['photoUrl'])
+                      && request.resource.data.photoUrl is string
+                      && request.resource.data.photoUrl.size() < 200000;
+      }
+
+      // ── REFERIDOS ─────────────────────────────────────────────
+      // Los registra el admin. El alumno solo lee los hechos con su código,
+      // para ver el descuento que lleva ganado en el mes.
+      match /referrals/{id} {
+        allow read: if isAuth() && myRole().get('studentCode', '') != ''
+                    && resource.data.referrerCode == myRole().studentCode;
       }
 
       // ── CONSTANCIAS DE PAGO ───────────────────────────────────

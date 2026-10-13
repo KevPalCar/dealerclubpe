@@ -306,7 +306,7 @@
                         <p style="color:#888; font-size:0.9em; margin-bottom:15px;">Cuando un alumno nuevo se inscribe usando el código de otro, regístralo aquí para llevar la cuenta y el monto ganado.</p>
                         <form id="referralForm">
                             <div class="form-group"><label>Código del referidor:</label><input type="text" id="refReferrerCode" placeholder="DC-25ABCDE" required></div>
-                            <div class="form-group"><label>Nombre del nuevo alumno:</label><input type="text" id="refNewStudent" required></div>
+                            <div class="form-group"><label>Nombre del nuevo alumno: <span class="info-tip" data-tip="Regístralo recién cuando el nuevo alumno haya pagado su primera cuota: desde ese momento cuenta para el descuento de quien lo refirió.">i</span></label><input type="text" id="refNewStudent" required></div>
                             <div class="form-group"><label>Monto ganado (S/):</label><input type="number" id="refAmount" min="0" step="0.01" placeholder="0.00"></div>
                             <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Registrar</button>
                             <div id="referralFormMessage" class="form-message" style="display:none;"></div>
@@ -315,11 +315,11 @@
 
                     <!-- Ranking por referidor -->
                     <div class="admin-form-card">
-                        <h3><i class="fas fa-trophy"></i> Ranking de referidores</h3>
+                        <h3><i class="fas fa-trophy"></i> Ranking de referidores <span class="info-tip" data-tip="Descontar ahora es lo que le toca a cada alumno en su cuota de este mes, por los referidos que pagaron el mes pasado. Ganando es lo que lleva este mes para su cuota del siguiente. Regla: 10% por el primer referido y 5% más por cada uno adicional, hasta 50%; no se acumula. El alumno ve lo mismo en su pestaña Pagos.">i</span></h3>
                         <div class="admin-table-container">
                             <table class="admin-table">
-                                <thead><tr><th>Código</th><th>Referidor</th><th>Referidos</th><th>Total</th></tr></thead>
-                                <tbody id="referrals-summary-body"><tr><td colspan="4" class="empty-msg">Sin datos.</td></tr></tbody>
+                                <thead><tr><th>Código</th><th>Referidor</th><th>Referidos</th><th>Total</th><th>Descontar ahora</th><th>Ganando este mes</th></tr></thead>
+                                <tbody id="referrals-summary-body"><tr><td colspan="6" class="empty-msg">Sin datos.</td></tr></tbody>
                             </table>
                         </div>
                     </div>

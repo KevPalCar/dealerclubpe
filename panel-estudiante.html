@@ -53,118 +53,169 @@
 
     <!-- ── TABS DE NAVEGACIÓN ──────────────────────────────── -->
     <nav class="dash-tabs">
+        <button class="tab-btn" data-tab="home">
+            <i class="fas fa-home"></i>
+            <span>Inicio</span>
+        </button>
         <button class="tab-btn" data-tab="courses">
             <i class="fas fa-graduation-cap"></i>
             <span>Mis Cursos</span>
-        </button>
-        <button class="tab-btn" data-tab="progress">
-            <i class="fas fa-chart-line"></i>
-            <span>Mi Progreso</span>
-        </button>
-        <button class="tab-btn" data-tab="tasks">
-            <i class="fas fa-tasks"></i>
-            <span>Mis Tareas</span>
-            <span id="tasks-badge" class="tab-badge" style="display:none;">0</span>
+            <span id="courses-badge" class="tab-badge" style="display:none;">0</span>
         </button>
         <button class="tab-btn" data-tab="payments">
             <i class="fas fa-wallet"></i>
-            <span>Mis Pagos</span>
+            <span>Pagos</span>
             <span id="payments-badge" class="tab-badge" style="display:none;">!</span>
-        </button>
-        <button class="tab-btn" data-tab="materials">
-            <i class="fas fa-book-open"></i>
-            <span>Material</span>
         </button>
     </nav>
 
     <!-- ── CONTENIDO DE TABS ───────────────────────────────── -->
     <main class="dash-main">
 
-        <!-- ── HERO DE ALUMNO PENDIENTE (solo si no está aprobado) ── -->
-        <section id="pending-hero" class="pending-hero" style="display:none;">
-            <div class="pending-hero-head">
-                <span class="pending-tag" id="pending-tag"><i class="fas fa-star"></i> Tu lugar está reservado</span>
-                <h2 id="pending-title">¡Bienvenido a DealerClub!</h2>
-                <p id="pending-text">Ya eres parte del campus. Conoce dónde vas a entrenar y activa tu acceso completo cuando estés listo.</p>
-            </div>
+        <!-- TAB: INICIO — una sola estructura para los dos momentos del alumno.
+             Pendiente: video de bienvenida, activación y su curso.
+             Activo: carné con su foto, avance y los pendientes que llevan a cada sección.
+             student_dashboard.js muestra las piezas de cada momento. -->
+        <section id="panel-home" class="tab-panel">
+            <div id="home-hero" class="home-hero">
 
-            <!-- Video de bienvenida: el de YouTube configurado en el admin o,
-                 si aún no hay, el video de presentación del sitio. -->
-            <div id="pending-video-wrap" class="pending-video-wrap">
-                <div class="pending-video" id="pending-video"></div>
-                <button type="button" id="pending-sound-btn" class="pending-sound" style="display:none;"><i class="fas fa-volume-up"></i> Activar sonido</button>
-                <p id="pending-sound-hint" class="pending-sound-hint" style="display:none;">Toca el video para activar el sonido.</p>
-            </div>
+                <!-- Columna fija: video de bienvenida o carné del alumno -->
+                <div id="home-media" class="home-media">
+                    <!-- El video es el enlace configurado en el admin o, si no hay,
+                         el archivo de bienvenida / el video de presentación. -->
+                    <div id="pending-video-wrap" class="pending-video-wrap" style="display:none;">
+                        <div class="pending-video" id="pending-video"></div>
+                        <button type="button" id="pending-sound-btn" class="pending-sound" style="display:none;"><i class="fas fa-volume-up"></i> Activar sonido</button>
+                        <p id="pending-sound-hint" class="pending-sound-hint" style="display:none;">Toca el video para activar el sonido.</p>
+                    </div>
 
-            <!-- Llamado a la acción -->
-            <div class="pending-cta-box">
-                <!-- Activación: el botón despliega las cuentas y la subida de la constancia -->
-                <div id="pending-activate">
-                    <p id="pending-rejected" class="pending-rejected" style="display:none;"></p>
-                    <button type="button" id="pending-activate-btn" class="pending-cta pending-cta-gold">
-                        <i class="fas fa-unlock-alt"></i> Activar mi acceso completo
-                    </button>
-                    <div id="pending-pay" class="pending-pay" style="display:none;">
-                        <div class="pending-accounts">
-                            <h4>Deposita tu mensualidad en:</h4>
-                            <p><strong>Interbank Soles:</strong> 200-3008147025</p>
-                            <p><strong>CCI:</strong> 003-200-003008147025-31</p>
-                            <p><strong>Interbank (Plin):</strong> 929 610 747</p>
-                            <p class="pending-holder">Titular: DealerClub E.I.R.L.</p>
-                        </div>
-                        <label class="pending-file">
-                            <i class="fas fa-camera"></i> <span id="pending-file-name">Elegir foto de mi constancia</span>
-                            <input type="file" id="pending-file" accept="image/*" hidden>
+                    <div id="home-card" class="home-card" style="display:none;">
+                        <label class="home-card-photo" title="Cambiar mi foto">
+                            <img id="home-card-photo" src="/assets/images/isotipo_principal.png" alt="Mi foto">
+                            <span class="home-card-photo-edit"><i class="fas fa-camera"></i></span>
+                            <input type="file" id="home-card-file" accept="image/*" hidden>
                         </label>
-                        <button type="button" id="pending-upload-btn" class="pending-cta pending-cta-gold">
-                            <i class="fas fa-upload"></i> Enviar constancia
-                        </button>
-                        <p id="pending-upload-msg" class="pending-cta-hint">Tu campus se abre completo apenas la validemos.</p>
+                        <p id="home-card-msg" class="home-card-msg"></p>
+                        <span class="home-card-kicker">Carné de alumno</span>
+                        <strong id="home-card-name"></strong>
+                        <code id="home-card-code"></code>
+                        <span id="home-card-level" class="level-pill level-rookie">Rookie</span>
+                        <dl>
+                            <div><dt>Curso</dt><dd id="home-card-course">—</dd></div>
+                            <div><dt>Inicio de clases</dt><dd id="home-card-start">—</dd></div>
+                        </dl>
+                    </div>
+
+                    <!-- Activo: su código de referido, listo para compartir -->
+                    <div id="home-invite" class="home-invite" style="display:none;">
+                        <p><i class="fas fa-gift"></i> <strong>Invita y gana.</strong> 10% de descuento en tu próxima cuota por tu primer referido del mes que pague su curso.</p>
+                        <div class="home-invite-row">
+                            <code data-ref="code">—</code>
+                            <button type="button" class="copy-btn" data-ref="copy" data-copy="" title="Copiar código" aria-label="Copiar código"><i class="fas fa-copy"></i></button>
+                            <a class="home-invite-share" data-ref="share" href="#" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> Compartir</a>
+                        </div>
                     </div>
                 </div>
-                <div id="pending-review" class="pending-review" style="display:none;">
-                    <i class="fas fa-hourglass-half"></i>
-                    <div>
-                        <strong>Constancia recibida</strong>
-                        <span>La estamos validando. Tu campus se abrirá solo, sin recargar la página.</span>
+
+                <!-- Columna de lectura: saludo, avance, pago y curso -->
+                <div class="home-side">
+                    <div class="home-head">
+                        <span class="pending-tag" id="pending-tag"><i class="fas fa-star"></i> Tu lugar está reservado</span>
+                        <h2 id="pending-title">¡Bienvenido a DealerClub!</h2>
+                        <p id="pending-text">Ya eres parte del campus. Conoce dónde vas a entrenar y activa tu acceso completo cuando estés listo.</p>
                     </div>
+
+                    <!-- Pendiente: pasos del alta -->
+                    <ol id="pending-steps" class="pending-steps" style="display:none;">
+                        <li class="step done">
+                            <span class="step-ico"><i class="fas fa-check"></i></span>
+                            <span class="step-label">Registro creado</span>
+                        </li>
+                        <li class="step current">
+                            <span class="step-ico"><i class="fas fa-unlock-alt"></i></span>
+                            <span class="step-label">Activa tu acceso</span>
+                        </li>
+                        <li class="step locked">
+                            <span class="step-ico"><i class="fas fa-lock"></i></span>
+                            <span class="step-label">Campus completo</span>
+                        </li>
+                    </ol>
+
+                    <!-- Activo: su avance de un vistazo -->
+                    <ul id="home-stats" class="home-stats" style="display:none;">
+                        <li><button type="button" data-go="progress"><strong id="home-stat-att">—</strong><span>Asistencia</span></button></li>
+                        <li><button type="button" data-go="progress"><strong id="home-stat-grade">—</strong><span>Nota promedio</span></button></li>
+                        <li><button type="button" data-go="tasks"><strong id="home-stat-tasks">0</strong><span>Tareas pendientes</span></button></li>
+                    </ul>
+
+                    <!-- Activo: lo que tiene pendiente; cada aviso lleva a su sección -->
+                    <div id="home-alerts" class="home-box home-alerts" style="display:none;">
+                        <h3><i class="fas fa-bell"></i> Tus pendientes</h3>
+                        <p id="home-alerts-ok" class="home-alerts-ok"><i class="fas fa-check-circle"></i> Estás al día: no tienes nada por resolver.</p>
+                        <div id="home-alerts-list" class="home-alerts-list"></div>
+                    </div>
+
+                    <div id="home-pay" class="home-box home-pay" style="display:none;">
+                        <!-- Pendiente: cuentas y subida de la constancia -->
+                        <div id="pending-pay-area" style="display:none;">
+                            <div id="pending-activate">
+                                <h3><i class="fas fa-unlock-alt"></i> Activa tu acceso completo</h3>
+                                <p id="pending-rejected" class="pending-rejected" style="display:none;"></p>
+                                <div class="pending-pay">
+                                    <div class="pending-accounts">
+                                        <h4>Deposita tu mensualidad<span id="pending-price"></span> en:</h4>
+                                        <p><strong>Interbank Soles:</strong> 200-3008147025 <button type="button" class="copy-btn" data-copy="2003008147025" title="Copiar la cuenta" aria-label="Copiar la cuenta"><i class="fas fa-copy"></i></button></p>
+                                        <p><strong>CCI:</strong> 003-200-003008147025-31 <button type="button" class="copy-btn" data-copy="00320000300814702531" title="Copiar el CCI" aria-label="Copiar el CCI"><i class="fas fa-copy"></i></button></p>
+                                        <p class="pending-holder">Titular: DealerClub E.I.R.L.</p>
+                                        <p><strong>Plin:</strong> 936 437 502 <button type="button" class="copy-btn" data-copy="936437502" title="Copiar el Plin" aria-label="Copiar el Plin"><i class="fas fa-copy"></i></button></p>
+                                        <p class="pending-holder">Titular: Kevin Palacios</p>
+                                    </div>
+                                    <div class="pending-upload">
+                                        <label class="pending-file">
+                                            <i class="fas fa-camera"></i> <span id="pending-file-name">Elegir foto de mi constancia</span>
+                                            <input type="file" id="pending-file" accept="image/*" hidden>
+                                        </label>
+                                        <button type="button" id="pending-upload-btn" class="pending-cta pending-cta-gold">
+                                            <i class="fas fa-upload"></i> Enviar constancia
+                                        </button>
+                                        <p id="pending-upload-msg" class="pending-cta-hint">Tu campus se abre completo apenas la validemos.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="pending-review" class="pending-review" style="display:none;">
+                                <i class="fas fa-hourglass-half"></i>
+                                <div>
+                                    <strong>Constancia recibida</strong>
+                                    <span>La estamos validando. Tu campus se abrirá solo, sin recargar la página.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <a href="#" id="pending-voucher-btn" class="pending-wa-link" style="display:none;">
+                            <i class="fab fa-whatsapp"></i> <span id="pending-wa-text">¿Dudas? Escríbenos por WhatsApp</span>
+                        </a>
+                    </div>
+
+                    <!-- Pendiente: lo que va a dominar, con los datos del curso al que se inscribió -->
+                    <div id="home-course" class="home-box home-course" style="display:none;">
+                        <h3>En <span id="home-course-name"></span> vas a dominar</h3>
+                        <ul id="home-course-games" class="pending-games"></ul>
+                        <p id="home-course-desc" class="home-course-desc"></p>
+                        <p class="pending-course-meta">
+                            <span id="home-course-schedule"></span>
+                            <span id="home-course-duration"></span>
+                            <span><i class="fas fa-flag-checkered"></i> Empiezas en la siguiente clase tras activar tu acceso</span>
+                        </p>
+                    </div>
+
+                    <!-- Pendiente: ventajas (confirmadas por la escuela) -->
+                    <ul id="pending-perks" class="pending-perks" style="display:none;">
+                        <li><i class="fas fa-briefcase"></i> Bolsa de empleo y eventos reales</li>
+                        <li><i class="fas fa-photo-video"></i> Material didáctico y audiovisual</li>
+                        <li><i class="fas fa-user-friends"></i> Cupos limitados</li>
+                    </ul>
                 </div>
-                <a href="#" id="pending-voucher-btn" class="pending-wa-link">
-                    <i class="fab fa-whatsapp"></i> <span id="pending-wa-text">Escríbenos por WhatsApp y te ayudamos a inscribirte</span>
-                </a>
             </div>
-            <!-- Lo que le espera en su curso (se llena con su inscripción) -->
-            <div id="pending-course" class="pending-course" style="display:none;">
-                <h3>En <span id="pending-course-name"></span> vas a dominar</h3>
-                <ul id="pending-games" class="pending-games"></ul>
-                <p class="pending-course-meta">
-                    <span id="pending-schedule"></span>
-                    <span><i class="fas fa-flag-checkered"></i> Empiezas en la siguiente clase tras activar tu acceso</span>
-                </p>
-            </div>
-
-            <!-- Pasos del onboarding -->
-            <ol class="pending-steps">
-                <li class="step done">
-                    <span class="step-ico"><i class="fas fa-check"></i></span>
-                    <span class="step-label">Registro creado</span>
-                </li>
-                <li class="step current">
-                    <span class="step-ico"><i class="fas fa-unlock-alt"></i></span>
-                    <span class="step-label">Activa tu acceso</span>
-                </li>
-                <li class="step locked">
-                    <span class="step-ico"><i class="fas fa-lock"></i></span>
-                    <span class="step-label">Campus completo</span>
-                </li>
-            </ol>
-
-            <!-- Ventajas (confirmadas por la escuela) -->
-            <ul class="pending-perks">
-                <li><i class="fas fa-briefcase"></i> Bolsa de empleo y eventos reales</li>
-                <li><i class="fas fa-photo-video"></i> Material didáctico y audiovisual</li>
-                <li><i class="fas fa-user-friends"></i> Cupos limitados</li>
-            </ul>
         </section>
 
         <!-- Aviso de modo vitrina -->
@@ -172,137 +223,134 @@
             <i class="fas fa-eye"></i> Estás explorando en <strong>modo vista previa</strong>. Todo se desbloquea al activar tu acceso.
         </div>
 
-        <!-- TAB: MIS CURSOS -->
+        <!-- TAB: MIS CURSOS — la lista de cursos y, al entrar a uno, su aula
+             con las subpestañas Progreso / Tareas / Material. -->
         <section id="panel-courses" class="tab-panel">
-            <div class="panel-header">
-                <h2><i class="fas fa-graduation-cap"></i> Mis Cursos</h2>
-            </div>
-            <div id="courses-panel-content" class="courses-list panel-loading">
-                <div class="spinner-large"></div>
-            </div>
 
-            <!-- Tarjeta de referidos (promoción sutil del código de alumno) -->
-            <div id="referral-card" class="referral-card" style="display:none;">
-                <div class="referral-info">
-                    <i class="fas fa-gift"></i>
-                    <div>
-                        <p class="referral-title">Invita y gana con DealerClub</p>
-                        <p class="referral-sub">Comparte tu código. Cuando alguien se inscribe con él, sumas beneficios.</p>
-                    </div>
+            <div id="courses-list-view">
+                <div class="panel-header">
+                    <h2><i class="fas fa-graduation-cap"></i> Mis Cursos</h2>
                 </div>
-                <div class="referral-code-box">
-                    <span class="referral-code-label">Tu código</span>
-                    <code id="referral-code">—</code>
-                    <button type="button" id="referral-copy" class="referral-btn-copy" title="Copiar código">
-                        <i class="fas fa-copy"></i>
-                    </button>
+                <div id="courses-panel-content" class="courses-list panel-loading">
+                    <div class="spinner-large"></div>
                 </div>
-                <a id="referral-share" class="referral-share" href="#" target="_blank" rel="noopener">
-                    <i class="fab fa-whatsapp"></i> Compartir
-                </a>
-            </div>
-        </section>
-
-        <!-- TAB: MI PROGRESO -->
-        <section id="panel-progress" class="tab-panel">
-            <div class="panel-header">
-                <h2><i class="fas fa-chart-line"></i> Mi Progreso</h2>
             </div>
 
-            <div class="progress-cards-grid">
-
-                <!-- Nivel actual -->
-                <div class="prog-card">
-                    <div class="prog-card-icon"><i class="fas fa-medal"></i></div>
-                    <div class="prog-card-body">
-                        <p class="prog-label">Nivel actual</p>
-                        <span id="prog-level-val" class="prog-val level-rookie">Rookie</span>
-                        <p class="prog-hint">Los niveles son: Rookie → Pro Dealer → Élite VIP</p>
-                    </div>
+            <!-- AULA DEL CURSO -->
+            <div id="course-view" class="course-view" style="display:none;">
+                <div class="course-view-head">
+                    <button type="button" id="course-back" class="course-back"><i class="fas fa-arrow-left"></i> Mis cursos</button>
+                    <h2 id="course-view-name">Mi curso</h2>
+                    <p id="course-view-meta" class="course-view-meta"></p>
                 </div>
 
-                <!-- Asistencia -->
-                <div class="prog-card">
-                    <div class="prog-card-icon"><i class="fas fa-calendar-check"></i></div>
-                    <div class="prog-card-body">
-                        <p class="prog-label">Asistencia</p>
-                        <span id="prog-att-val" class="prog-val">--</span>
-                        <div class="prog-bar-wrap">
-                            <div class="prog-bar-track">
-                                <div id="prog-att-bar" class="prog-bar-fill" style="width:0%"></div>
+                <nav class="sub-tabs">
+                    <button type="button" class="sub-btn" data-sub="progress"><i class="fas fa-chart-line"></i> Progreso</button>
+                    <button type="button" class="sub-btn" data-sub="tasks"><i class="fas fa-tasks"></i> Tareas
+                        <span id="tasks-badge" class="tab-badge" style="display:none;">0</span></button>
+                    <button type="button" class="sub-btn" data-sub="materials"><i class="fas fa-book-open"></i> Material</button>
+                </nav>
+
+                <section id="panel-progress" class="sub-panel">
+
+                    <div class="progress-cards-grid">
+
+                        <!-- Nivel actual -->
+                        <div class="prog-card">
+                            <div class="prog-card-icon"><i class="fas fa-medal"></i></div>
+                            <div class="prog-card-body">
+                                <p class="prog-label">Nivel actual</p>
+                                <span id="prog-level-val" class="prog-val level-rookie">Rookie</span>
+                                <p class="prog-hint">Los niveles son: Rookie → Pro Dealer → Élite VIP</p>
                             </div>
-                            <span id="prog-att-pct" class="prog-bar-pct">0%</span>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Nota -->
-                <div class="prog-card">
-                    <div class="prog-card-icon"><i class="fas fa-star"></i></div>
-                    <div class="prog-card-body">
-                        <p class="prog-label">Nota promedio</p>
-                        <span id="prog-grade-val" class="prog-val">--</span>
-                        <div class="prog-bar-wrap">
-                            <div class="prog-bar-track">
-                                <div id="prog-grade-bar" class="prog-bar-fill prog-bar-gold" style="width:0%"></div>
+                        <!-- Asistencia -->
+                        <div class="prog-card">
+                            <div class="prog-card-icon"><i class="fas fa-calendar-check"></i></div>
+                            <div class="prog-card-body">
+                                <p class="prog-label">Asistencia</p>
+                                <span id="prog-att-val" class="prog-val">--</span>
+                                <div class="prog-bar-wrap">
+                                    <div class="prog-bar-track">
+                                        <div id="prog-att-bar" class="prog-bar-fill" style="width:0%"></div>
+                                    </div>
+                                    <span id="prog-att-pct" class="prog-bar-pct">0%</span>
+                                </div>
                             </div>
-                            <span id="prog-grade-pct" class="prog-bar-pct">0%</span>
                         </div>
+
+                        <!-- Nota -->
+                        <div class="prog-card">
+                            <div class="prog-card-icon"><i class="fas fa-star"></i></div>
+                            <div class="prog-card-body">
+                                <p class="prog-label">Nota promedio</p>
+                                <span id="prog-grade-val" class="prog-val">--</span>
+                                <div class="prog-bar-wrap">
+                                    <div class="prog-bar-track">
+                                        <div id="prog-grade-bar" class="prog-bar-fill prog-bar-gold" style="width:0%"></div>
+                                    </div>
+                                    <span id="prog-grade-pct" class="prog-bar-pct">0%</span>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
-                </div>
 
-            </div>
-
-            <!-- Calendario de asistencia -->
-            <div class="prog-section">
-                <div class="prog-section-head">
-                    <h3><i class="fas fa-calendar-check"></i> Mi Asistencia</h3>
-                    <div class="prog-section-tools">
-                        <div class="att-view-toggle">
-                            <button type="button" class="att-view-btn active" data-view="month">Mes</button>
-                            <button type="button" class="att-view-btn" data-view="week">Semana</button>
+                    <!-- Calendario de asistencia -->
+                    <div class="prog-section">
+                        <div class="prog-section-head">
+                            <h3><i class="fas fa-calendar-check"></i> Mi Asistencia</h3>
+                            <div class="prog-section-tools">
+                                <div class="att-view-toggle">
+                                    <button type="button" class="att-view-btn active" data-view="month">Mes</button>
+                                    <button type="button" class="att-view-btn" data-view="week">Semana</button>
+                                </div>
+                                <div class="att-cal-head">
+                                    <button type="button" class="btn-cal-nav" id="stu-att-prev"><i class="fas fa-chevron-left"></i></button>
+                                    <span id="stu-att-label">—</span>
+                                    <button type="button" class="btn-cal-nav" id="stu-att-next"><i class="fas fa-chevron-right"></i></button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="att-cal-head">
-                            <button type="button" class="btn-cal-nav" id="stu-att-prev"><i class="fas fa-chevron-left"></i></button>
-                            <span id="stu-att-label">—</span>
-                            <button type="button" class="btn-cal-nav" id="stu-att-next"><i class="fas fa-chevron-right"></i></button>
-                        </div>
+                        <div id="stu-att-grid" class="att-cal-grid"></div>
+                        <p class="att-legend">
+                            <span class="att-dot present"></span> Asististe
+                            <span class="att-dot absent"></span> Faltaste
+                            <span id="stu-att-summary" class="att-summary-inline"></span>
+                        </p>
                     </div>
-                </div>
-                <div id="stu-att-grid" class="att-cal-grid"></div>
-                <p class="att-legend">
-                    <span class="att-dot present"></span> Asististe
-                    <span class="att-dot absent"></span> Faltaste
-                    <span id="stu-att-summary" class="att-summary-inline"></span>
-                </p>
-            </div>
 
-            <!-- Notas semanales -->
-            <div class="prog-section">
-                <div class="prog-section-head">
-                    <h3><i class="fas fa-star"></i> Mis Notas Semanales</h3>
-                    <select id="stu-grade-filter" class="week-filter">
-                        <option value="all">Todas las semanas</option>
-                    </select>
-                </div>
-                <div id="stu-grades-list" class="grades-view"></div>
+                    <!-- Notas semanales -->
+                    <div class="prog-section">
+                        <div class="prog-section-head">
+                            <h3><i class="fas fa-star"></i> Mis Notas Semanales</h3>
+                            <select id="stu-grade-filter" class="week-filter">
+                                <option value="all">Todas las semanas</option>
+                            </select>
+                        </div>
+                        <div id="stu-grades-list" class="grades-view"></div>
+                    </div>
+                </section>
+
+                <section id="panel-tasks" class="sub-panel">
+                    <div id="tasks-panel-content" class="tasks-list panel-loading">
+                        <div class="spinner-large"></div>
+                    </div>
+                </section>
+
+                <section id="panel-materials" class="sub-panel">
+                    <div id="materials-panel-content" class="materials-grid panel-loading">
+                        <div class="spinner-large"></div>
+                    </div>
+                </section>
             </div>
         </section>
 
-        <!-- TAB: MIS TAREAS -->
-        <section id="panel-tasks" class="tab-panel">
-            <div class="panel-header">
-                <h2><i class="fas fa-tasks"></i> Mis Tareas</h2>
-            </div>
-            <div id="tasks-panel-content" class="tasks-list panel-loading">
-                <div class="spinner-large"></div>
-            </div>
-        </section>
-
-        <!-- TAB: MATERIAL DIDÁCTICO -->
+        <!-- TAB: PAGOS — cuotas mes a mes, reporte de pago y referidos -->
         <section id="panel-payments" class="tab-panel">
             <div class="panel-header">
-                <h2><i class="fas fa-wallet"></i> Mis Pagos</h2>
+                <h2><i class="fas fa-wallet"></i> Pagos</h2>
             </div>
             <div id="payments-panel-content" class="payments-panel panel-loading">
                 <div class="spinner-large"></div>
@@ -327,14 +375,44 @@
                     </div>
                 </div>
             </div>
-        </section>
 
-        <section id="panel-materials" class="tab-panel">
-            <div class="panel-header">
-                <h2><i class="fas fa-book-open"></i> Material Didáctico</h2>
+            <!-- Referidos: el código del alumno, también bajo su carné en Inicio -->
+            <div id="referral-card" class="referral-card" style="display:none;">
+                <div class="referral-info">
+                    <i class="fas fa-gift"></i>
+                    <div>
+                        <p class="referral-title">Invita y gana con DealerClub</p>
+                        <p class="referral-sub">Comparte tu código. Cada persona que se inscribe con él y paga su curso te da descuento en tu cuota del mes siguiente.</p>
+                    </div>
+                </div>
+                <div class="referral-code-box">
+                    <span class="referral-code-label">Tu código</span>
+                    <code id="referral-code" data-ref="code">—</code>
+                    <button type="button" class="referral-btn-copy" data-ref="copy" data-copy="" title="Copiar código">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                <a class="referral-share" data-ref="share" href="#" target="_blank" rel="noopener">
+                    <i class="fab fa-whatsapp"></i> Compartir
+                </a>
             </div>
-            <div id="materials-panel-content" class="materials-grid panel-loading">
-                <div class="spinner-large"></div>
+
+            <!-- Descuento por referidos: el que ya se aplica a la cuota de este mes
+                 (ganado el mes pasado) y el que va ganando para la del siguiente -->
+            <div id="referral-applied" class="referral-discount is-earned" style="display:none;">
+                <strong id="referral-applied-pct">0%</strong>
+                <div>
+                    <p id="referral-applied-title" class="referral-title"></p>
+                    <p id="referral-applied-sub" class="referral-sub"></p>
+                </div>
+            </div>
+            <div id="referral-discount" class="referral-discount" style="display:none;">
+                <strong id="referral-discount-pct">10%</strong>
+                <div>
+                    <p id="referral-discount-title" class="referral-title"></p>
+                    <p id="referral-discount-sub" class="referral-sub"></p>
+                    <p id="referral-discount-names" class="referral-sub"></p>
+                </div>
             </div>
         </section>
 
@@ -345,45 +423,6 @@
     </footer>
 
 </div><!-- /#dash-body -->
-
-<!-- ── AULA DEL CURSO (modal) ──────────────────────────────── -->
-<div id="aula-modal" class="aula-modal" style="display:none;">
-    <div class="aula-content">
-        <button type="button" class="aula-close" id="aula-close">&times;</button>
-
-        <div class="aula-header">
-            <span class="aula-tag"><i class="fas fa-door-open"></i> Aula del curso</span>
-            <h2 id="aula-course-name">Curso DealerClub</h2>
-            <p id="aula-welcome">¡Bienvenido de nuevo!</p>
-        </div>
-
-        <div class="aula-meta">
-            <div class="aula-meta-item" id="aula-schedule-box" style="display:none;">
-                <i class="fas fa-clock"></i>
-                <div><span class="aula-meta-label">Horario</span><span id="aula-schedule">—</span></div>
-            </div>
-            <div class="aula-meta-item">
-                <i class="fas fa-tasks"></i>
-                <div><span class="aula-meta-label">Tareas pendientes</span><span id="aula-pending">0</span></div>
-            </div>
-        </div>
-
-        <div class="aula-progress">
-            <div class="aula-progress-top"><span>Avance de tareas</span><span id="aula-progress-pct">0%</span></div>
-            <div class="aula-progress-track"><div id="aula-progress-fill" class="aula-progress-fill"></div></div>
-        </div>
-
-        <div class="aula-section">
-            <h3><i class="fas fa-book-open"></i> Material de este curso</h3>
-            <div id="aula-materials" class="aula-materials"></div>
-        </div>
-
-        <div class="aula-actions">
-            <button type="button" class="aula-btn" id="aula-go-materials"><i class="fas fa-book-open"></i> Todo el material</button>
-            <button type="button" class="aula-btn aula-btn-alt" id="aula-go-tasks"><i class="fas fa-tasks"></i> Mis tareas</button>
-        </div>
-    </div>
-</div>
 
 <script type="module" src="/assets/js/student_dashboard.js"></script>
 </body>

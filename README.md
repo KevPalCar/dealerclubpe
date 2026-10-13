@@ -6,7 +6,7 @@ Dónde está cada cosa y qué archivo tocar para cada cambio. Web estática (HTM
 
 1. **Un archivo por página.** Cada página tiene su `.html` en la raíz, su `.css` y su `.js` con el mismo nombre.
 2. **Firebase se configura en un solo sitio:** `assets/js/firebase.js`. Ningún otro archivo vuelve a inicializarlo.
-3. **Lo que se comparte va en su módulo:** `image.js`, `billing.js`, `mail.js`, `chip-rain.js`. No se copia código entre páginas.
+3. **Lo que se comparte va en su módulo:** `image.js`, `billing.js`, `mail.js`, `copy.js`, `chip-rain.js`. No se copia código entre páginas.
 4. **Los permisos viven en `firestore.rules`.** Se publican con `firebase deploy --only firestore:rules`; nunca se editan en la consola.
 5. **Nada generado ni temporal entra al repositorio** (`node_modules`, cachés, pruebas sueltas).
 6. **Cada función nueva del admin lleva su icono de ayuda** (`<span class="info-tip" data-tip="…">i</span>`).
@@ -22,7 +22,7 @@ Dónde está cada cosa y qué archivo tocar para cada cambio. Web estática (HTM
 | `/iniciar-sesion` | `iniciar-sesion.html` | `auth.css` | `login.js`, `chip-rain.js` |
 | `/registro` | `registro.html` | `auth.css` | `register.js` |
 | `/wa` | `wa.html` | — | — (enlace corto al WhatsApp de la empresa; `?r=Nombre` para quien ya se registró) |
-| `/panel-estudiante` | `panel-estudiante.html` | `student_dashboard.css` | `student_dashboard.js` |
+| `/panel-estudiante` | `panel-estudiante.html` | `student_dashboard.css` | `student_dashboard.js` (tres pestañas: Inicio con la bienvenida del pendiente o el carné y los pendientes del activo; Mis Cursos, que al entrar a un curso abre su aula con Progreso, Tareas y Material; Pagos, con cuotas y referidos) |
 | `/admin` | `admin.html` | `admin.css` | `admin.js` |
 | `/cotizacion?id=…` | `cotizacion.html` | `cotizacion.css` | `cotizacion.js` (hoja que ve el cliente) |
 | `/brochure-eventos`, `/brochure-escuela` | `brochure-*.html` | diseño propio dentro de cada archivo + `brochure.css` | `brochure.js` |
@@ -38,7 +38,8 @@ Todos los estilos están en `assets/css/` y la lógica en `assets/js/`. `main.cs
 | `image.js` | Comprime fotos antes de guardarlas (constancias, evidencias, fotos de brochure) |
 | `billing.js` | Cuotas, vencimientos y estado de pago de un alumno |
 | `mail.js` | Correos automáticos por EmailJS: bienvenida al registrarse y aviso de alumno aprobado |
-| `chip-rain.js` | Lluvia de fichas del inicio de sesión |
+| `copy.js` | Botones de copiar (cuentas bancarias y código de referido) |
+| `chip-rain.js` | Fichas 3D: lluvia de fondo del inicio de sesión y fichas que saltan al pulsar en el inicio del campus |
 
 ## El admin (`assets/js/admin/`)
 
