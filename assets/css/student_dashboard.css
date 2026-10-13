@@ -631,7 +631,7 @@ body {
    ========================================= */
 .home-hero {
     display: grid;
-    grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
     gap: 24px;
     align-items: start;
     background: linear-gradient(160deg, #1a1a1a, #121212);
@@ -646,8 +646,8 @@ body {
 /* Video horizontal: comparte su columna con el curso y el pago sube a su lado. */
 .home-hero.is-wide {
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    grid-template-rows: auto auto auto 1fr auto;
-    grid-template-areas: "media head" "media steps" "media pay" "course pay" "perks perks";
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas: "media head" "media steps" "media pay" "course pay";
     gap: 16px 24px;
 }
 .home-hero.is-wide .home-side     { display: contents; }
@@ -656,15 +656,13 @@ body {
 .home-hero.is-wide .pending-steps { grid-area: steps; }
 .home-hero.is-wide .home-pay      { grid-area: pay; }
 .home-hero.is-wide .home-course   { grid-area: course; }
-.home-hero.is-wide .pending-perks { grid-area: perks; }
 
 /* Sin columna fija (suspendido o video que solo es un enlace). */
 .home-hero.is-stacked { display: flex; flex-direction: column; gap: 16px; align-items: stretch; }
 .home-hero.is-stacked .home-side  { display: contents; }
 .home-hero.is-stacked .home-media { order: 1; }   /* el enlace al video va tras el saludo */
 .home-hero.is-stacked .home-pay,
-.home-hero.is-stacked .home-course,
-.home-hero.is-stacked .pending-perks { order: 2; }
+.home-hero.is-stacked .home-course { order: 2; }
 
 /* Saludo */
 .pending-tag {
@@ -831,7 +829,8 @@ body {
 .pending-course-meta i { color: #ffc107; margin-right: 4px; }
 
 /* Ventajas */
-.pending-perks { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 22px; padding: 0 4px; margin: 0; }
+/* Ventajas: bajo el video, en su misma columna */
+.pending-perks { list-style: none; display: flex; flex-direction: column; gap: 8px; padding: 0 4px; margin: 16px 0 0; }
 .pending-perks li { display: flex; align-items: center; gap: 8px; color: #ddd; font-size: 0.88em; }
 .pending-perks i  { color: #ffc107; }
 
@@ -861,6 +860,24 @@ body {
     color: #ffc107; border-radius: 12px; padding: 16px 24px; font-weight: 700; text-decoration: none;
 }
 .pending-video-link i { font-size: 1.5em; }
+/* Cabecera de la escuela sobre un video propio (enlaza a su Instagram) */
+.pending-video-brand { display: none; }
+.has-brand .pending-video-brand {
+    display: flex; align-items: center; gap: 10px; text-align: left;
+    background: #161616; border: 1px solid rgba(255, 193, 7, 0.35); border-bottom: none;
+    border-radius: 12px 12px 0 0; padding: 10px 12px;
+}
+.pending-video-brand img { height: 34px; width: auto; }
+.pending-video-brand span { flex: 1; min-width: 0; line-height: 1.2; }
+.pending-video-brand strong { display: block; color: #fff; font-size: 0.92em; }
+.pending-video-brand small  { color: #999; font-size: 0.75em; }
+.pending-video-brand a {
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; text-decoration: none;
+    background: #ffc107; color: #1a1405; font-weight: 700; font-size: 0.78em; padding: 7px 12px; border-radius: 50px;
+}
+.pending-video-brand a:hover { background: #fff; }
+.has-brand .pending-video { border-radius: 0 0 12px 12px; }
+.has-brand .pending-sound { top: 68px; }
 /* El sonido va sobre el video, arriba, sin tapar sus controles */
 .pending-sound {
     position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 2;
@@ -1036,8 +1053,7 @@ body {
     .home-stats    { order: 2; }
     .home-media    { order: 3; }
     .home-pay,
-    .home-course,
-    .pending-perks { order: 4; }
+    .home-course   { order: 4; }
     .home-head h2  { font-size: 1.35em; }
     /* El video vertical no ocupa toda la pantalla: el pago queda cerca. */
     .pending-video.is-vertical { max-width: 260px; margin: 0 auto; }

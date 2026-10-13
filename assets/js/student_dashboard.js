@@ -233,6 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
             el.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
             el.allowFullscreen = true;
             el.setAttribute('frameborder', '0');
+            // Sin barra de desplazamiento propia: el recorte de Instagram depende del ancho completo.
+            if (v.insta) el.scrolling = 'no';
             el.src = withAutoplay(v.src);
         } else if (v.kind === 'video') {
             el = document.createElement('video');
@@ -334,6 +336,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 box.classList.toggle('is-link', video.kind === 'link');
                 box.classList.toggle('is-insta', !!video.insta);
+                // Un archivo de video propio lleva la cabecera de la escuela encima.
+                document.getElementById('pending-video-wrap').classList.toggle('has-brand', video.kind === 'video');
                 if (video.kind === 'link') setVideoShape('link');
                 else if (video.kind === 'iframe') setWide(!video.vertical);
                 else {

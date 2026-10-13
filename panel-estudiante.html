@@ -84,10 +84,22 @@
                     <!-- El video es el enlace configurado en el admin o, si no hay,
                          el archivo de bienvenida / el video de presentación. -->
                     <div id="pending-video-wrap" class="pending-video-wrap" style="display:none;">
+                        <div class="pending-video-brand">
+                            <img src="/assets/images/isotipo_principal.png" alt="">
+                            <span><strong>DealerClub</strong><small>Escuela de dealers</small></span>
+                            <a href="https://www.instagram.com/dealerclub.pe" target="_blank" rel="noopener"><i class="fab fa-instagram"></i> Ver perfil</a>
+                        </div>
                         <div class="pending-video" id="pending-video"></div>
                         <button type="button" id="pending-sound-btn" class="pending-sound" style="display:none;"><i class="fas fa-volume-up"></i> Activar sonido</button>
                         <p id="pending-sound-hint" class="pending-sound-hint" style="display:none;">Toca el video para activar el sonido.</p>
                     </div>
+
+                    <!-- Pendiente: ventajas (confirmadas por la escuela) -->
+                    <ul id="pending-perks" class="pending-perks" style="display:none;">
+                        <li><i class="fas fa-briefcase"></i> Bolsa de empleo y eventos reales</li>
+                        <li><i class="fas fa-photo-video"></i> Material didáctico y audiovisual</li>
+                        <li><i class="fas fa-user-friends"></i> Cupos limitados</li>
+                    </ul>
 
                     <div id="home-card" class="home-card" style="display:none;">
                         <label class="home-card-photo" title="Cambiar mi foto">
@@ -207,13 +219,6 @@
                             <span><i class="fas fa-flag-checkered"></i> Empiezas en la siguiente clase tras activar tu acceso</span>
                         </p>
                     </div>
-
-                    <!-- Pendiente: ventajas (confirmadas por la escuela) -->
-                    <ul id="pending-perks" class="pending-perks" style="display:none;">
-                        <li><i class="fas fa-briefcase"></i> Bolsa de empleo y eventos reales</li>
-                        <li><i class="fas fa-photo-video"></i> Material didáctico y audiovisual</li>
-                        <li><i class="fas fa-user-friends"></i> Cupos limitados</li>
-                    </ul>
                 </div>
             </div>
         </section>
