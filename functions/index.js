@@ -221,8 +221,38 @@ const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const ESPERA_MS = 5000; // margen para que el lead termine de escribir
 const MODEL_HISTORY = 40; // mensajes recientes que lee el modelo
 const AVISO_PAUSA_MS = 30 * 60 * 1000; // como mucho un aviso cada 30 min por chat en pausa
-const { RESCATE_HORAS } = require("./lib/followup");
+const { RESCATE_HORAS, esAcuse } = require("./lib/followup");
 const citas = require("./lib/citas");
+
+// --- Cotización de eventos -----------------------------------
+// En un chat de eventos el modelo recibe este foco en cada respuesta (en un
+// guion largo se le olvidan el "usted" y el formato). Cuando tiene los datos,
+// responde solo la etiqueta [[COTIZACION:…]] y el resumen lo arma el sistema,
+// siempre con el mismo formato que usa el asesor.
+const EVENTOS_FOCO = `
+## FOCO DE ESTA CONVERSACIÓN: COTIZACIÓN DE EVENTO (manda sobre lo anterior)
+- Trata de USTED. Una sola pregunta por mensaje, corta (máximo 3 líneas). No repitas el Instagram ni el catálogo si ya los diste.
+- Datos a reunir, revisando antes la conversación para no preguntar lo que ya dijeron: Fecha, Ubicación (distrito y local), Horario (hora de inicio o rango), Invitados, Juegos/Mesas (si no saben, recomienda con la referencia de 7 jugadores por mesa) y, si es una empresa, Empresa (razón social) y RUC. Si pediste un dato una vez y no lo dieron, sigue sin él.
+- Cuando tengas Fecha, Ubicación, Horario, Invitados y Juegos/Mesas (y Empresa y RUC si es una empresa), tu respuesta debe ser ÚNICAMENTE la etiqueta [[COTIZACION]], sola, sin ningún otro texto. El sistema arma el resumen con los datos de la conversación. No la repitas si ya se envió el resumen.`;
+const CAMPOS_COTIZACION = [
+  ["fecha", "Fecha"], ["ubicacion", "Ubicación"], ["invitados", "N.° estimado de invitados"],
+  ["juegos", "Juegos/Mesas"], ["horario", "Horario"], ["empresa", "Empresa"], ["ruc", "RUC"],
+];
+const ENCARGO_COTIZACION =
+  "Lee esta conversación de WhatsApp entre DealerClub (servicio Casino de Fantasía para eventos) y un cliente, " +
+  "y devuelve SOLO un JSON con las claves fecha, ubicacion, invitados, juegos, horario, empresa, ruc. " +
+  "Usa lo que dijo el cliente (y lo que el cliente aceptó de lo que se le propuso); si un dato no se dijo, deja \"\". No inventes nada. " +
+  "Formato: fecha como '04 de diciembre'; ubicacion con distrito, local y piso si lo dieron; invitados solo el número; " +
+  "juegos con cantidad y nombres, ej. '2 - Ruleta y Blackjack'; horario como '8:00 p. m. a 10:00 p. m.'; empresa = razón social.";
+// Resumen con el formato del asesor. `datos`: objeto con las claves de arriba.
+function resumenCotizacion(datos) {
+  const lineas = CAMPOS_COTIZACION.filter(([k]) => (datos[k] || "").toString().trim()).map(([k, etiqueta]) => `${etiqueta}: ${datos[k]}`);
+  return (
+    `Perfecto. Con ello, quedamos en:\n${lineas.join("\n")}\n\n` +
+    `Un asesor le arma su cotización en unos minutos y se la comparte por aquí. ` +
+    `Mientras tanto, puede ver cómo son nuestros eventos en Instagram: https://www.instagram.com/dealerclubpe/`
+  );
+}
 
 // ¿El mensaje `mid` sigue siendo lo último que escribió el lead?
 function esElUltimoDelLead(conv, mid) {
@@ -387,6 +417,18 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     }
     if (msg.type === "reaction") return;
 
+    // Un "ok, gracias" después de que el bot ya se despidió cierra la
+    // conversación: no se contesta (antes el bot seguía con otra despedida).
+    {
+      const previo = await store.getConversation(msg.from);
+      const hist = previo?.history || [];
+      const anterior = hist[hist.length - 2];
+      if (esAcuse(msg.text) && anterior?.role === "assistant" && !(anterior.text || "").includes("?")) {
+        logger.info("Acuse de cierre: no se responde", { from: msg.from });
+        return;
+      }
+    }
+
     // 5.5) Mensajes seguidos: la gente escribe en varios envíos cortos. Se
     //      espera un momento y responde solo el último, con todo a la vista
     //      (antes cada envío recibía su propia respuesta, a veces con PDF repetido).
@@ -399,9 +441,10 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
 
     // 6) Cerebro -> respuesta (con respaldo si el modelo falla)
     const history = (conv?.history || []).slice(-MODEL_HISTORY).map((h) => ({ role: h.role, text: h.text }));
+    const esEventos = (conv?.brochuresSent || []).includes("eventos") && !(conv?.brochuresSent || []).includes("escuela");
     let reply;
     try {
-      reply = await brain.generateReply(history);
+      reply = await brain.generateReply(history, esEventos ? { extra: EVENTOS_FOCO } : {});
     } catch (err) {
       logger.error("Cerebro falló tras reintentos; enviando respaldo", err);
       reply =
@@ -428,12 +471,17 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     //    (enviar PDF). Se quitan del texto.
     let escalar = false;
     let cita = null;
+    let cotizacion = null;
     const avisos = [];
     const pedidos = [];
     const imagenes = [];
     const sinEtiquetas = reply
       .replace(/\[\[ESCALAR\]\]/gi, () => {
         escalar = true;
+        return "";
+      })
+      .replace(/\[\[COTIZACION[^\]]*\]\]/gi, () => {
+        cotizacion = true;
         return "";
       })
       .replace(/\[\[AVISO:([^\]]+)\]\]/gi, (_m, texto) => {
@@ -457,7 +505,21 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       .replace(/\n{3,}/g, "\n\n")
       .trim();
 
-    const cleanReply = normalizarWhatsapp(sinEtiquetas);
+    // Datos completos de un evento: el resumen con el formato del asesor
+    // reemplaza lo que haya escrito el modelo, y el asesor entra a cotizar.
+    if (cotizacion) {
+      escalar = true;
+      try {
+        const transcripcion = (conv?.history || []).slice(-MODEL_HISTORY)
+          .map((h) => `${h.role === "user" ? "Cliente" : "DealerClub"}: ${h.text}`).join("\n");
+        cotizacion = resumenCotizacion(await brain.generateJson(ENCARGO_COTIZACION, transcripcion));
+      } catch (e) {
+        // Sin resumen no se pierde nada: el asesor entra igual y lee el chat.
+        logger.error("No se pudo armar el resumen de cotización", { error: e.message });
+        cotizacion = "Perfecto. Con esos datos le preparamos su cotización: un asesor se la comparte por aquí en unos minutos.";
+      }
+    }
+    const cleanReply = cotizacion || normalizarWhatsapp(sinEtiquetas);
 
     // 8) Enviar el texto (si quedó algo) y guardarlo en el historial.
     if (cleanReply) {
@@ -597,7 +659,10 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       await store.setHumanTakeover(msg.from, true);
       await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
         title: "Lead necesita atencion humana",
-        message: `${msg.profileName || "Lead"} (+${msg.from}) pidió/necesita un asesor.\nUltimo mensaje: ${msg.text}\n(El bot quedó en pausa en este chat.)`,
+        message:
+          `${msg.profileName || "Lead"} (+${msg.from}) pidió/necesita un asesor.\n` +
+          (cleanReply ? `El bot le dijo:\n${cleanReply.slice(0, 700)}\n` : `Ultimo mensaje: ${msg.text}\n`) +
+          `(El bot quedó en pausa en este chat.)`,
         click: adminReplyLink(msg.from),
       });
       logger.info("Escalado a humano + alerta enviada", { from: msg.from });
@@ -608,7 +673,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
 });
 
 // Helpers expuestos solo para pruebas locales (no afecta a producción).
-exports._test = { parseIncoming, parseStatuses, motivoFallo, isValidSignature, inferirBrochure, anunciaEntrega, esElUltimoDelLead };
+exports._test = { parseIncoming, parseStatuses, motivoFallo, isValidSignature, inferirBrochure, anunciaEntrega, esElUltimoDelLead, resumenCotizacion, EVENTOS_FOCO };
 
 // ---- Tareas programadas ------------------------------------
 // Seguimiento a leads en silencio: revisa cada 30 min, solo escribe dentro

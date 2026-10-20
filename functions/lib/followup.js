@@ -98,12 +98,28 @@ Un asesor humano estaba atendiendo este chat y no ha podido responder el último
 - No pongas etiquetas [[...]].
 Si su último mensaje no necesita respuesta (agradece, se despide, solo confirma), responde únicamente con la palabra NO.
 `;
+// ¿El mensaje solo agradece, asiente o se despide? ("ok, gracias", "listo 👍",
+// "perfecto, muchas gracias"). No pide nada: la conversación terminó bien y
+// contestarle de nuevo la estira sin necesidad.
+const PALABRAS_ACUSE = new Set(("ok okay oki okis okey vale listo perfecto genial excelente super súper entendido entiendo de acuerdo dale ya " +
+  "bueno buenisimo buenísimo gracias muchas mil muchisimas muchísimas thanks thank you igualmente a ti usted ustedes saludos bendiciones " +
+  "chévere chevere bacán bacan claro sí si y que tenga tengan buen buena día dia tarde noche").split(" "));
+function esAcuse(texto) {
+  const t = (texto || "").toLowerCase().replace(/[^\p{L}\s]/gu, " ").trim();
+  if (!t) return /\p{Extended_Pictographic}/u.test(texto || ""); // solo emojis
+  const palabras = t.split(/\s+/);
+  return palabras.length <= 8 && palabras.every((p) => PALABRAS_ACUSE.has(p));
+}
+
 function tocaRescate(conv, ahora) {
   if (!conv || !conv.humanTakeover) return null;
   const history = conv.history || [];
   const ultimo = history[history.length - 1];
   if (!ultimo || ultimo.role !== "user" || !ultimo.ts) return null; // ya le respondieron
   if (/^\[reacción/.test(ultimo.text || "")) return null;
+  // Un "ok, gracias" a un mensaje que no preguntaba nada cierra la conversación.
+  const anterior = history[history.length - 2];
+  if (esAcuse(ultimo.text) && anterior?.role === "assistant" && !(anterior.text || "").includes("?")) return null;
   if (ahora - ultimo.ts < RESCATE_HORAS * HORA) return null; // el asesor aún tiene tiempo
   if (ahora - ultimo.ts > VENTANA_MS) return null; // ventana gratuita cerrada
   if (conv.rescueForTs === ultimo.ts) return null;
@@ -233,4 +249,4 @@ async function run() {
   return { enviados, rescatados, citasConfirmadas };
 }
 
-module.exports = { run, tocaSeguimiento, tocaRescate, enHorario, INSTRUCCION, RESCATE_HORAS };
+module.exports = { run, tocaSeguimiento, tocaRescate, esAcuse, enHorario, INSTRUCCION, RESCATE_HORAS };

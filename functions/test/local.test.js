@@ -80,6 +80,15 @@ function check(name, cond) {
   const { tocaRescate } = require("../lib/followup");
   const H = 3600 * 1000, now = Date.now();
   check("retoma un chat en pausa sin respuesta hace 3 h", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "¿y el precio?", ts: now - 3 * H }] }, now) === now - 3 * H);
+  const { esAcuse } = require("../lib/followup");
+  check("'ok, gracias' es un cierre", esAcuse("ok, gracias") && esAcuse("listo, muchas gracias 🙏") && esAcuse("👍"));
+  check("una pregunta o un dato no es cierre", !esAcuse("Gracias lo revisamos, una consulta, que debe tener en cuenta el local") && !esAcuse("si, puede ser 2 juegos"));
+  check("no retoma un chat que cerró con 'ok, gracias' (caso Melanie)", tocaRescate({ humanTakeover: true, history: [
+    { role: "assistant", text: "Gracias por querer vivir la experiencia de \"Las Vegas\" y hacernos parte de tu evento ¡Deseamos estar allí!", ts: now - 3 * H },
+    { role: "user", text: "ok, gracias", ts: now - 3 * H }] }, now) === null);
+  check("sí retoma si el 'ok' responde a una pregunta", tocaRescate({ humanTakeover: true, history: [
+    { role: "assistant", text: "¿Te parece si lo vemos el jueves?", ts: now - 3 * H },
+    { role: "user", text: "ok", ts: now - 3 * H }] }, now) === now - 3 * H);
   check("no lo retoma si el asesor aún tiene tiempo", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 1 * H }] }, now) === null);
   check("no lo retoma si ya le respondieron o pasó la ventana", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 3 * H }, { role: "assistant", text: "dime", ts: now - 2 * H }] }, now) === null && tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 30 * H }] }, now) === null);
 
