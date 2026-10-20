@@ -89,6 +89,10 @@ function check(name, cond) {
   check("sí retoma si el 'ok' responde a una pregunta", tocaRescate({ humanTakeover: true, history: [
     { role: "assistant", text: "¿Te parece si lo vemos el jueves?", ts: now - 3 * H },
     { role: "user", text: "ok", ts: now - 3 * H }] }, now) === now - 3 * H);
+  const { tocaPactado } = require("../lib/followup");
+  check("el seguimiento pactado sale a su hora si la ventana sigue abierta", tocaPactado({ pactadoAt: now - 60000 }, now, now - 20 * H) === true);
+  check("el pactado no sale antes de tiempo ni dos veces ni con la ventana cerrada",
+    !tocaPactado({ pactadoAt: now + H }, now, now - H) && !tocaPactado({ pactadoAt: now - 1, pactadoDoneFor: now - 1 }, now, now - H) && !tocaPactado({ pactadoAt: now - 1 }, now, now - 30 * H));
   check("no lo retoma si el asesor aún tiene tiempo", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 1 * H }] }, now) === null);
   check("no lo retoma si ya le respondieron o pasó la ventana", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 3 * H }, { role: "assistant", text: "dime", ts: now - 2 * H }] }, now) === null && tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 30 * H }] }, now) === null);
 

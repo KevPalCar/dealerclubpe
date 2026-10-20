@@ -73,6 +73,7 @@ function enHorario(followUp, { hora, dia } = ahoraLima()) {
 function tocaSeguimiento(conv, ahora, horasSilencio) {
   if (!conv || conv.humanTakeover) return null;
   if (conv.vipAt && conv.vipAt > ahora) return null; // ya tiene cita: de eso se ocupa la confirmación
+  if (conv.pactadoAt && conv.pactadoAt > ahora) return null; // ya quedamos en escribirle a una hora
   const history = conv.history || [];
   const ultimo = history[history.length - 1];
   if (!ultimo || ultimo.role !== "assistant") return null; // el lead tiene la palabra
@@ -162,6 +163,44 @@ async function rescatar(snap, ahora) {
   return rescatados;
 }
 
+// --- Seguimiento pactado --------------------------------------
+// Cuando el cliente aceptó "mañana a las 11 le escribo", se le escribe a esa
+// hora (si la ventana de 24 h sigue abierta), esté o no encendido el activador:
+// es un compromiso que tomamos con él.
+const PACTADO = `
+## MODO SEGUIMIENTO PACTADO (solo para este mensaje)
+Quedaste con el cliente en escribirle a esta hora. Retoma como quien cumple lo que prometió: salúdalo por su nombre, recuerda en una línea lo que estaba evaluando (su cotización, su programa, su Pase VIP) y haz UNA pregunta que pida el siguiente paso concreto (en eventos: si separamos la fecha con el adelanto; en Escuela: qué día viene a su Pase VIP). Breve, máximo 3 líneas, con el mismo trato (tú o usted) que se venía usando. No pongas etiquetas [[...]].`;
+function tocaPactado(conv, ahora, ultimoDelLead) {
+  if (!conv || !conv.pactadoAt || conv.pactadoAt > ahora) return false;
+  if (conv.pactadoDoneFor === conv.pactadoAt) return false;
+  return !!ultimoDelLead && ahora - ultimoDelLead <= VENTANA_MS;
+}
+async function enviarPactados(snap, ahora) {
+  let enviados = 0;
+  for (const doc of snap.docs) {
+    const conv = doc.data();
+    if (!tocaPactado(conv, ahora, store.lastInboundOf(conv))) continue;
+    const phone = doc.id;
+    const ref = store.db.collection("wa_conversations").doc(phone);
+    try {
+      await ref.set({ pactadoDoneFor: conv.pactadoAt }, { merge: true });
+      const history = (conv.history || []).slice(-40).map((h) => ({ role: h.role, text: h.text }));
+      history.push({ role: "user", text: "[SISTEMA: es la hora que acordaste con el cliente para escribirle. Escribe ahora tu mensaje.]" });
+      const texto = ((await brain.generateReply(history, { extra: PACTADO })) || "")
+        .replace(/\[\[[^\]]*\]\]/g, "").replace(/\*\*(.+?)\*\*/gs, "*$1*").trim();
+      if (!texto) continue;
+      const r = await wa.sendText(phone, texto);
+      if (r && r.error) throw new Error(JSON.stringify(r.error));
+      await store.appendMessages(phone, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null, followUp: true }]);
+      enviados++;
+      logger.info("Seguimiento pactado enviado", { phone });
+    } catch (err) {
+      logger.error("No se pudo enviar el seguimiento pactado", { phone, error: err.message });
+    }
+  }
+  return enviados;
+}
+
 // --- Confirmación de citas (Pase VIP) -----------------------
 // No podemos escribirle a nadie pasadas 24 h de su último mensaje, así que
 // la confirmación se pide ANTES de que ese plazo se cierre; su respuesta lo
@@ -196,12 +235,13 @@ async function run() {
     .where("updatedAt", ">=", new Date(ahora0 - 24 * HORA))
     .get();
   const citasConfirmadas = await confirmarCitas(recientes, ahora0);
+  const pactados = await enviarPactados(recientes, ahora0);
   const rescatados = await rescatar(recientes, ahora0);
 
   const { followUp } = await getBotSettings();
-  if (!followUp.enabled) return { enviados: 0, rescatados, motivo: "desactivado" };
+  if (!followUp.enabled) return { enviados: 0, rescatados, citasConfirmadas, pactados, motivo: "desactivado" };
 
-  if (!enHorario(followUp)) return { enviados: 0, rescatados, motivo: "fuera de horario" };
+  if (!enHorario(followUp)) return { enviados: 0, rescatados, citasConfirmadas, pactados, motivo: "fuera de horario" };
 
   const ahora = Date.now();
   const snap = recientes;
@@ -246,7 +286,7 @@ async function run() {
       logger.error("No se pudo enviar el seguimiento", { phone, error: err.message });
     }
   }
-  return { enviados, rescatados, citasConfirmadas };
+  return { enviados, rescatados, citasConfirmadas, pactados };
 }
 
-module.exports = { run, tocaSeguimiento, tocaRescate, esAcuse, enHorario, INSTRUCCION, RESCATE_HORAS };
+module.exports = { run, tocaSeguimiento, tocaRescate, tocaPactado, esAcuse, enHorario, INSTRUCCION, RESCATE_HORAS };

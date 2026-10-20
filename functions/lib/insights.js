@@ -29,6 +29,7 @@ Responde SOLO con un JSON con esta forma exacta:
   "objeciones": ["duda u objeción que frena la compra"],
   "erroresDelBot": ["respuesta del bot equivocada, repetitiva, fuera de lugar o que no contestó lo que se preguntó"],
   "loQueHizoElAsesor": ["algo concreto que hizo el ASESOR humano y que hizo avanzar la venta (cómo resumió, cómo cerró, qué ofreció), para que el bot lo imite"],
+  "loQuePudoHacerMejor": ["momento clave en que el ASESOR humano dejó pasar una oportunidad (no pidió el siguiente paso, no pactó cuándo retomar, respondió tarde, no usó un beneficio para cerrar...) y qué debió decir, en una frase"],
   "sugerencias": [
     { "titulo": "nombre corto de la mejora", "nota": "instrucción clara y directa para el bot, en una o dos frases, lista para agregarse a sus reglas" }
   ]
@@ -39,7 +40,7 @@ Reglas:
 - Máximo 5 elementos por lista. Sé concreto: cita el tipo de situación, no generalidades.
 - No incluyas nombres, teléfonos ni datos personales de los clientes.
 - Las sugerencias deben ser cambios de comportamiento del bot (qué decir, cuándo, cómo), no tareas para el dueño.
-- Los mensajes marcados "ASESOR" los escribió el dueño en persona: son el modelo a seguir. Si el asesor resolvió algo mejor que el bot, conviértelo en una sugerencia para que el bot lo haga igual.
+- Los mensajes marcados "ASESOR" los escribió el dueño en persona. Aprende de él en las dos direcciones: si resolvió algo mejor que el bot, conviértelo en una sugerencia para que el bot lo imite; si dejó pasar una oportunidad clave, anótalo en "loQuePudoHacerMejor" (con tono constructivo) y conviértelo en una sugerencia para que el bot sí lo haga en esa situación.
 - Escribe en español.
 `;
 
@@ -99,6 +100,7 @@ async function run({ days = 7 } = {}) {
     objeciones: [],
     erroresDelBot: [],
     loQueHizoElAsesor: [],
+    loQuePudoHacerMejor: [],
     sugerencias: [],
   };
 
@@ -114,6 +116,7 @@ async function run({ days = 7 } = {}) {
       informe.objeciones = lista(analisis.objeciones).map(String);
       informe.erroresDelBot = lista(analisis.erroresDelBot).map(String);
       informe.loQueHizoElAsesor = lista(analisis.loQueHizoElAsesor).map(String);
+      informe.loQuePudoHacerMejor = lista(analisis.loQuePudoHacerMejor).map(String);
       informe.sugerencias = lista(analisis.sugerencias)
         .filter((s) => s && s.nota)
         .map((s) => ({ titulo: String(s.titulo || "Mejora"), nota: String(s.nota) }));

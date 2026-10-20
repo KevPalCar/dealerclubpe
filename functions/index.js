@@ -232,7 +232,7 @@ const citas = require("./lib/citas");
 const EVENTOS_FOCO = `
 ## FOCO DE ESTA CONVERSACIÓN: COTIZACIÓN DE EVENTO (manda sobre lo anterior)
 - Trata de USTED. Una sola pregunta por mensaje, corta (máximo 3 líneas). No repitas el Instagram ni el catálogo si ya los diste.
-- Datos a reunir, revisando antes la conversación para no preguntar lo que ya dijeron: Fecha, Ubicación (distrito y local), Horario (hora de inicio o rango), Invitados, Juegos/Mesas (si no saben, recomienda con la referencia de 7 jugadores por mesa) y, si es una empresa, Empresa (razón social) y RUC. Si pediste un dato una vez y no lo dieron, sigue sin él.
+- Datos a reunir, revisando antes la conversación para no preguntar lo que ya dijeron: Fecha, Ubicación (distrito y local), Horario (una hora fija de inicio: si dan un rango, propón la mitad del rango y confírmala), Invitados, Juegos/Mesas (si no saben, recomienda con la referencia de 7 jugadores por mesa) y, si es una empresa, Empresa (razón social) y RUC. Si pediste un dato una vez y no lo dieron, sigue sin él.
 - Cuando tengas Fecha, Ubicación, Horario, Invitados y Juegos/Mesas (y Empresa y RUC si es una empresa), tu respuesta debe ser ÚNICAMENTE la etiqueta [[COTIZACION]], sola, sin ningún otro texto. El sistema arma el resumen con los datos de la conversación. No la repitas si ya se envió el resumen.`;
 const CAMPOS_COTIZACION = [
   ["fecha", "Fecha"], ["ubicacion", "Ubicación"], ["invitados", "N.° estimado de invitados"],
@@ -243,7 +243,7 @@ const ENCARGO_COTIZACION =
   "y devuelve SOLO un JSON con las claves fecha, ubicacion, invitados, juegos, horario, empresa, ruc. " +
   "Usa lo que dijo el cliente (y lo que el cliente aceptó de lo que se le propuso); si un dato no se dijo, deja \"\". No inventes nada. " +
   "Formato: fecha como '04 de diciembre'; ubicacion con distrito, local y piso si lo dieron; invitados solo el número; " +
-  "juegos con cantidad y nombres, ej. '2 - Ruleta y Blackjack'; horario como '8:00 p. m. a 10:00 p. m.'; empresa = razón social.";
+  "juegos con cantidad y nombres, ej. '2 - Ruleta y Blackjack'; horario: la hora de inicio acordada, ej. '9:00 p. m.' (si solo hubo un rango, el rango); empresa = razón social.";
 // Resumen con el formato del asesor. `datos`: objeto con las claves de arriba.
 function resumenCotizacion(datos) {
   const lineas = CAMPOS_COTIZACION.filter(([k]) => (datos[k] || "").toString().trim()).map(([k, etiqueta]) => `${etiqueta}: ${datos[k]}`);
@@ -472,6 +472,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     let escalar = false;
     let cita = null;
     let cotizacion = null;
+    let seguimientoAt = null;
     const avisos = [];
     const pedidos = [];
     const imagenes = [];
@@ -486,6 +487,11 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       })
       .replace(/\[\[AVISO:([^\]]+)\]\]/gi, (_m, texto) => {
         avisos.push(texto.trim());
+        return "";
+      })
+      .replace(/\[\[SEGUIMIENTO:(\d{4}-\d{2}-\d{2})T(\d{1,2}):(\d{2})\]\]/gi, (_m, dia, h, min) => {
+        const at = Date.parse(`${dia}T${h.padStart(2, "0")}:${min}:00-05:00`);
+        if (at > Date.now()) seguimientoAt = at;
         return "";
       })
       .replace(/\[\[CITA:(\d{4}-\d{2}-\d{2})T(\d{1,2}):(\d{2})(:video)?\]\]/gi, (_m, dia, h, min, video) => {
@@ -638,6 +644,13 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       } catch (e) {
         logger.error("No se pudo enviar el enlace de calendario", { error: e.message });
       }
+    }
+
+    // 9.75) Seguimiento pactado con el cliente ("mañana a las 11 le escribo"):
+    //       lo envía la tarea de seguimientos a esa hora (ver lib/followup.js).
+    if (seguimientoAt) {
+      await store.db.collection("wa_conversations").doc(msg.from).set({ pactadoAt: seguimientoAt }, { merge: true });
+      logger.info("Seguimiento pactado", { from: msg.from, at: new Date(seguimientoAt).toISOString() });
     }
 
     // 9.8) Avisos al asesor que NO pausan el bot: cita agendada, horario
