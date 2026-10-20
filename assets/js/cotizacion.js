@@ -148,10 +148,22 @@ const render = (q) => {
                 (e.date ? ` para el ${fmtDate(e.date)}` : '') + '.';
     $('cz-accept').href = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
     $('cz-print').addEventListener('click', () => window.print());
+    window.addEventListener('beforeprint', fitPage);
+    window.addEventListener('afterprint', () => document.documentElement.classList.remove('cz-printing'));
 
     $('cz-status').style.display = 'none';
     $('cz-bar').style.display    = 'flex';
     $('cz-sheet').style.display  = 'block';
+};
+
+// El PDF sale en una sola página del tamaño exacto de la hoja: sin bordes
+// blancos de A4 y sin cortar ni ocultar nada de lo que se ve en pantalla.
+const fitPage = () => {
+    document.documentElement.classList.add('cz-printing');
+    const h = Math.ceil($('cz-sheet').getBoundingClientRect().height) + 2;
+    let st = $('cz-page-size');
+    if (!st) { st = document.createElement('style'); st.id = 'cz-page-size'; document.head.appendChild(st); }
+    st.textContent = `@page { size: 820px ${h}px; margin: 0; }`;
 };
 
 const fail = (text) => { $('cz-status').textContent = text; };

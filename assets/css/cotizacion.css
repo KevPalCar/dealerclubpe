@@ -128,41 +128,16 @@ body {
     .cz-two { grid-template-columns: 1fr; gap: 0; }
 }
 
-/* Impresión / PDF: una hoja A4, sin la barra de acciones.
-   Todo se compacta: letra menor, menos relleno y "Puedes agregar" en dos columnas. */
-@page { size: A4; margin: 8mm; }
+/* Impresión / PDF: la misma hoja que se ve en pantalla, en una sola página a su
+   medida (cotizacion.js fija el tamaño de @page justo antes de imprimir).
+   .cz-printing reproduce ese ancho en pantalla para medir la altura real. */
+.cz-printing body { padding: 0; }
+.cz-printing .cz-sheet { width: 820px; max-width: none; }
+@page { margin: 0; }
 @media print {
-    body { background: #fff; padding: 0; font-size: 9.5px; line-height: 1.35; }
+    html, body { background: #fff; margin: 0; padding: 0; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .cz-bar, .cz-status { display: none !important; }
-    .cz-sheet { max-width: none; box-shadow: none; padding: 0; }
-    .cz-head, .cz-foot, .cz-section, .cz-table th, .cz-totals .cz-total, .cz-data dt, .cz-incl td {
-        -webkit-print-color-adjust: exact; print-color-adjust: exact;
-    }
-    .cz-head, .cz-foot { padding: 9px 16px; }
-    .cz-brand img { height: 40px; }
-    .cz-brand strong { font-size: 16px; }
-    .cz-head-title h1 { font-size: 12px; }
-    .cz-head-title p, .cz-foot-info { font-size: 9.5px; }
-    .cz-meta { padding: 7px 2px; font-size: 8.5px; }
-    .cz-section { margin-top: 9px; padding: 4px 10px; font-size: 9.5px; }
-    .cz-data { margin-top: 5px; grid-template-columns: 110px 1fr 110px 1fr; }
-    .cz-data dt, .cz-data dd { padding: 3px 8px; }
-    .cz-data dt { font-size: 9px; }
-    .cz-table { margin-top: 5px; }
-    .cz-table th { padding: 4px 8px; font-size: 8.5px; }
-    .cz-table td { padding: 3.5px 8px; }
-    .cz-detail { font-size: 9px; }
-    .cz-totals div { padding: 3.5px 8px; }
-    .cz-totals .cz-total { font-size: 12.5px; }
-    .cz-addons { display: grid; grid-template-columns: 1fr 1fr; margin-top: 5px; }
-    .cz-addons li { grid-template-columns: 1fr auto; padding: 3px 8px; font-size: 9px; }
-    .cz-addons li:nth-child(odd) { border-right: 1px solid var(--cz-line); }
-    .cz-addons span { display: none; }
-    .cz-two { gap: 8px; }
-    .cz-notes, .cz-pay { padding: 6px 9px; margin-top: 8px; }
-    .cz-notes h3, .cz-pay h3 { font-size: 8.5px; }
-    .cz-notes p, .cz-pay p { font-size: 9px; margin: 2px 0; }
-    .cz-legal { font-size: 8px; margin: 6px 0 8px; }
-    .cz-table tr, .cz-totals, .cz-two, .cz-foot { break-inside: avoid; }
+    .cz-sheet { width: 820px; max-width: none; margin: 0; box-shadow: none; }
     .cz-legal a { text-decoration: none; }
 }
