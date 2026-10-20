@@ -72,8 +72,9 @@ async function getCatalogoTexto() {
   if (cache.texto && Date.now() - cache.ts < TTL_MS) return cache.texto;
 
   try {
-    const [cursos, brochureEventos, brochureEscuela] = await Promise.all([
+    const [cursos, mesas, brochureEventos, brochureEscuela] = await Promise.all([
       leerColeccion("courses"),
+      leerColeccion("tables"),
       leerBrochure("eventos"),
       leerBrochure("escuela"),
     ]);
@@ -81,7 +82,7 @@ async function getCatalogoTexto() {
     if (!cursos.length && !brochureEventos && !brochureEscuela) return cache.texto || null;
 
     // El catálogo en vivo (precios, horarios) va primero: manda sobre el brochure.
-    const texto = [formatear(cursos), brochureEscuela, brochureEventos].filter(Boolean).join("\n\n");
+    const texto = [formatear(cursos), formatearMesas(mesas), brochureEscuela, brochureEventos].filter(Boolean).join("\n\n");
     cache = { texto, ts: Date.now() };
     return texto;
   } catch (err) {
@@ -117,4 +118,28 @@ function formatear(cursos) {
   );
 }
 
-module.exports = { getCatalogoTexto, formatear };
+// Las mesas de Casino de Fantasía con la descripción que se ve en /servicios
+// (se editan en el admin). Sirven para orientar a quien no sabe qué juego pedir.
+function formatearMesas(mesas) {
+  const lineas = mesas
+    .filter((m) => limpio(m.name))
+    .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+    .map((m) => {
+      const desc = limpio(m.description).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      const partes = [
+        limpio(m.name),
+        limpio(m.status) || "Disponible",
+        m.maxPlayers ? `hasta ${m.maxPlayers} jugadores` : null,
+        desc || null,
+      ].filter(Boolean);
+      return `- ${partes.join(" — ")}`;
+    });
+  if (!lineas.length) return null;
+  return (
+    "### Mesas de Casino de Fantasía (descripción de la web: https://dealerclubpe.com/servicios)\n" +
+    "Úsalas para orientar a quien no sabe qué juego pedir. Sin precios.\n" +
+    lineas.join("\n")
+  );
+}
+
+module.exports = { getCatalogoTexto, formatear, formatearMesas };

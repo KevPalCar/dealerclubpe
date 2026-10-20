@@ -96,7 +96,7 @@ const adminSendReply = onCall({ secrets: cfg.ALL_SECRETS }, async (request) => {
     throw new HttpsError("internal", "No se pudo enviar el mensaje.");
   }
   await store.setHumanTakeover(phone, true);
-  await store.appendMessages(phone, [{ role: "assistant", text, ts: Date.now(), waId: waIdOf(r) }]);
+  await store.appendMessages(phone, [{ role: "assistant", text, ts: Date.now(), waId: waIdOf(r), by: "asesor" }]);
   return { ok: true };
 });
 
@@ -122,6 +122,7 @@ const adminSendMedia = onCall({ secrets: cfg.ALL_SECRETS }, async (request) => {
     text: d.caption || `[${r.waType || "archivo"} enviado]`,
     ts: Date.now(),
     waId: waIdOf(r),
+    by: "asesor",
   };
   try {
     const path = await store.saveMedia(phone, "out_" + Date.now(), buffer, d.mime);

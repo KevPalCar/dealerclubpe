@@ -307,7 +307,7 @@ async function handleAdminCommand(msg) {
     const r = await wa.sendText(lead, body);
     await store.setHumanTakeover(lead, true);
     await store.appendMessages(lead, [
-      { role: "assistant", text: body, ts: Date.now(), waId: r?.messages?.[0]?.id || null },
+      { role: "assistant", text: body, ts: Date.now(), waId: r?.messages?.[0]?.id || null, by: "asesor" },
     ]);
     await wa.sendText(
       msg.from,

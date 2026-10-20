@@ -46,7 +46,8 @@ const FUNNEL_LABELS = [
 ];
 const INSIGHT_LISTS = [
     ['dondeSePierden', 'Dónde se pierden'], ['objeciones', 'Objeciones'],
-    ['preguntasFrecuentes', 'Preguntas frecuentes'], ['erroresDelBot', 'Fallos del bot']
+    ['preguntasFrecuentes', 'Preguntas frecuentes'], ['erroresDelBot', 'Fallos del bot'],
+    ['loQueHizoElAsesor', 'Lo que hiciste tú y funcionó']
 ];
 
 const renderInsights = (list) => {
