@@ -100,7 +100,7 @@ El bot guarda sus chats aparte, en `wa_conversations`, `wa_leads` y `wa_processe
 | `brochures/` | PDF de respaldo de cada brochure |
 | `test/` | Pruebas que no envían nada a nadie |
 
-El panel de atención de WhatsApp es aparte: `panel/index.html`, publicado en `dealerclubpe.web.app`. Si la persona no escribió en las últimas 24 h (o nunca), el panel no deja escribirle desde la empresa y ofrece hacerlo gratis desde el WhatsApp del propio celular. Por eso, al registrarse, el alumno ve el botón "Continuar por WhatsApp": así es quien abre la conversación.
+El panel de atención de WhatsApp es aparte: `panel/index.html`, publicado en `dealerclubpe.web.app`. Las imágenes se abren en grande dentro del panel y se pueden grabar notas de voz con 🎤; `panel/webm2ogg.js` convierte lo que graba Chrome/Edge al formato de audio que acepta WhatsApp. Si la persona no escribió en las últimas 24 h (o nunca), el panel no deja escribirle desde la empresa y ofrece hacerlo gratis desde el WhatsApp del propio celular. Por eso, al registrarse, el alumno ve el botón "Continuar por WhatsApp": así es quien abre la conversación.
 
 ## Cómo se publica
 

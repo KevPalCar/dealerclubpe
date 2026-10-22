@@ -58,6 +58,17 @@
   .composer textarea { flex:1; resize:none; height:44px; padding:10px; background:#0e0e10; border:1px solid var(--line); border-radius:8px; color:var(--txt); }
   .ghost { background:transparent; color:var(--muted); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:12.5px; }
   .empty { color:var(--muted); margin:auto; font-size:14px; }
+  /* Visor de imágenes a pantalla completa */
+  #lightbox { display:none; position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.88); align-items:center; justify-content:center; padding:16px; }
+  #lightbox img { max-width:100%; max-height:100%; object-fit:contain; border-radius:6px; }
+  #lightbox .lbbar { position:absolute; top:12px; right:12px; display:flex; gap:8px; }
+  #lightbox .lbbar a, #lightbox .lbbar button { background:rgba(255,255,255,.12); color:#fff; border:none; border-radius:8px; padding:8px 12px; text-decoration:none; font-size:14px; }
+  /* Grabación de nota de voz */
+  #recBar { display:none; flex:1; align-items:center; gap:10px; padding:0 6px; color:var(--txt); }
+  #recBar .dot { width:10px; height:10px; border-radius:50%; background:#ff4d4d; animation:blink 1s infinite; }
+  @keyframes blink { 50% { opacity:.25; } }
+  .composer.recording #reply, .composer.recording #brochureBtn, .composer.recording #attachBtn, .composer.recording #micBtn, .composer.recording #sendBtn { display:none; }
+  .composer.recording #recBar { display:flex; }
   @media (max-width:720px){
     #app { grid-template-columns:1fr; }
     .col.hide-m { display:none; } #chat.show-m { display:flex; }
@@ -100,15 +111,28 @@
         <label class="ghost" for="fileInput" id="attachBtn" title="Adjuntar archivo" style="display:flex;align-items:center;cursor:pointer">📎</label>
         <input id="fileInput" type="file" style="display:none" accept="image/*,video/*,audio/*,application/pdf,.pdf,.doc,.docx" />
         <textarea id="reply" placeholder="Escribe como DealerClub…"></textarea>
+        <button class="ghost" id="micBtn" title="Grabar una nota de voz y enviarla al cliente como audio de WhatsApp. Pausa el bot en este chat, igual que al responder.">🎤</button>
         <button class="btn" id="sendBtn">Enviar</button>
+        <div id="recBar">
+          <span class="dot"></span><span id="recTime">0:00</span>
+          <span style="flex:1;color:var(--muted);font-size:13px">Grabando nota de voz…</span>
+          <button class="ghost" id="recCancel">✕ Cancelar</button>
+          <button class="btn" id="recSend">➤ Enviar audio</button>
+        </div>
       </div>
     </div>
+  </div>
+
+  <div id="lightbox">
+    <div class="lbbar"><a id="lbDown" href="#">⬇ Descargar</a><button id="lbClose">✕ Cerrar</button></div>
+    <img id="lbImg" alt="" />
   </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
+import { webmToOgg } from "./webm2ogg.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA3YsyUDmLeAvvgWwvCnjeJt-HbGGk--PY",
@@ -125,28 +149,56 @@ const call = (n) => httpsCallable(fns, n);
 
 const $ = (id) => document.getElementById(id);
 let current = null, listTimer = null, chatTimer = null;
-const mediaCache = {}; // storagePath -> dataUrl (evita recargar en cada poll)
+// storagePath -> promesa de blob: URL (evita recargar en cada poll). Blob y no
+// data: URL para que audio/video puedan adelantarse y abrirse en otra pestaña.
+const mediaCache = {};
+// storagePath -> elemento <img>/<audio>/<video> ya creado. El chat se repinta
+// cada 4 s; reutilizar el elemento evita que un audio en curso se corte.
+let mediaEls = {};
+let lastHistory = "";
 
-async function getMedia(path) {
-  if (mediaCache[path]) return mediaCache[path];
-  const { data } = await call("adminGetMedia")({ path });
-  mediaCache[path] = data.dataUrl;
-  return data.dataUrl;
+function getMedia(path) {
+  if (!mediaCache[path]) {
+    mediaCache[path] = call("adminGetMedia")({ path })
+      .then(({ data }) => fetch(data.dataUrl))
+      .then((r) => r.blob())
+      .then((blob) => URL.createObjectURL(blob));
+    mediaCache[path].catch(() => delete mediaCache[path]); // reintenta en el próximo poll
+  }
+  return mediaCache[path];
 }
 async function setSrc(el, path) {
-  try { el.src = await getMedia(path); } catch (e) { el.alt = "no se pudo cargar"; }
+  try { el.src = await getMedia(path); }
+  catch (e) { el.alt = "no se pudo cargar"; delete mediaEls[path]; lastHistory = ""; } // reintenta en el próximo poll
 }
-// Abre el archivo en pestaña nueva. Los navegadores bloquean data: URLs con
-// window.open, así que lo convertimos a un blob: URL (permitido).
+function mediaEl(tag, path, setup) {
+  let el = mediaEls[path];
+  if (!el || el.tagName !== tag.toUpperCase()) {
+    el = document.createElement(tag);
+    setup(el);
+    setSrc(el, path);
+    mediaEls[path] = el;
+  }
+  return el;
+}
+// Documentos: se abren en pestaña nueva.
 async function openMedia(path) {
-  try {
-    const dataUrl = await getMedia(path);
-    const blob = await (await fetch(dataUrl)).blob();
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  } catch (e) { alert("No se pudo abrir el archivo."); }
+  try { window.open(await getMedia(path), "_blank"); }
+  catch (e) { alert("No se pudo abrir el archivo."); }
 }
+// Imágenes: se ven en grande aquí mismo.
+async function showImage(path) {
+  try {
+    const url = await getMedia(path);
+    $("lbImg").src = url;
+    $("lbDown").href = url;
+    $("lbDown").download = path.split("/").pop();
+    $("lightbox").style.display = "flex";
+  } catch (e) { alert("No se pudo abrir la imagen."); }
+}
+function closeImage() { $("lightbox").style.display = "none"; $("lbImg").src = ""; }
+$("lightbox").onclick = (e) => { if (e.target.id === "lightbox" || e.target.id === "lbClose") closeImage(); };
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeImage(); });
 
 // ---- Login ----
 $("loginBtn").onclick = async () => {
@@ -216,6 +268,7 @@ async function refreshList() {
 
 // ---- Chat ----
 async function openChat(phone, name) {
+  if (current !== phone) { mediaEls = {}; lastHistory = ""; }
   current = phone;
   $("chat").classList.add("show-m"); $("listCol").classList.add("hide-m");
   $("backBtn").style.display = window.innerWidth <= 720 ? "" : "none";
@@ -233,26 +286,27 @@ async function loadChat() {
     const { data } = await call("adminGetConversation")({ phone: current });
     const box = $("msgs");
     const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
-    box.innerHTML = "";
-    for (const m of data.history) {
+    // Solo se repinta si algo cambió (mensaje nuevo o estado de entrega).
+    const sig = JSON.stringify(data.history);
+    const changed = sig !== lastHistory;
+    lastHistory = sig;
+    const rows = [];
+    for (const m of changed ? data.history : []) {
       const d = document.createElement("div");
       d.className = "b " + (m.role === "user" ? "them" : "me");
       if (m.storagePath && (m.type === "image" || m.type === "sticker")) {
-        const img = document.createElement("img");
-        img.className = "imgmsg";
-        img.onclick = () => openMedia(m.storagePath);
-        d.appendChild(img);
-        setSrc(img, m.storagePath);
+        d.appendChild(mediaEl("img", m.storagePath, (img) => {
+          img.className = "imgmsg";
+          img.onclick = () => showImage(m.storagePath);
+        }));
       } else if (m.storagePath && m.type === "audio") {
-        const a = document.createElement("audio");
-        a.controls = true; a.className = "medmsg";
-        d.appendChild(a);
-        setSrc(a, m.storagePath);
+        d.appendChild(mediaEl("audio", m.storagePath, (a) => {
+          a.controls = true; a.preload = "metadata"; a.className = "medmsg";
+        }));
       } else if (m.storagePath && m.type === "video") {
-        const v = document.createElement("video");
-        v.controls = true; v.className = "imgmsg";
-        d.appendChild(v);
-        setSrc(v, m.storagePath);
+        d.appendChild(mediaEl("video", m.storagePath, (v) => {
+          v.controls = true; v.className = "imgmsg";
+        }));
       } else if (m.storagePath && m.type === "document") {
         const link = document.createElement("a");
         link.href = "#"; link.className = "doclink";
@@ -279,9 +333,13 @@ async function loadChat() {
         else { st.classList.add("wait"); st.textContent = "✓ enviado · WhatsApp aún no confirma que llegó"; }
         d.appendChild(st);
       }
-      box.appendChild(d);
+      rows.push(d);
     }
-    if (atBottom) box.scrollTop = box.scrollHeight;
+    if (changed) {
+      // Mover un <audio> que suena y volver a insertarlo en el mismo paso no lo pausa.
+      box.replaceChildren(...rows);
+      if (atBottom) box.scrollTop = box.scrollHeight;
+    }
     // Ventana de 24 h cerrada: WhatsApp descartaría lo que se envíe.
     // Si nunca escribió, tampoco se le puede escribir primero desde la empresa.
     const closed = data.window === "closed";
@@ -293,7 +351,7 @@ async function loadChat() {
         : "Esta persona aún no ha escrito al WhatsApp de la empresa, y WhatsApp no deja escribirle primero sin plantilla de pago.") +
         " Cuando te escriba, se habilita solo.";
     }
-    for (const id of ["sendBtn", "brochureBtn"]) $(id).disabled = closed;
+    for (const id of ["sendBtn", "brochureBtn", "micBtn"]) $(id).disabled = closed;
     $("attachBtn").style.opacity = closed ? ".4" : "";
     $("attachBtn").style.pointerEvents = closed ? "none" : "";
     const tb = $("toggleBot");
@@ -363,16 +421,79 @@ $("fileInput").onchange = async () => {
   const caption = $("reply").value.trim();
   $("attachBtn").textContent = "⏳";
   try {
-    const dataUrl = await new Promise((res, rej) => {
-      const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file);
-    });
-    const dataBase64 = String(dataUrl).split(",")[1];
-    await call("adminSendMedia")({ phone: current, dataBase64, mime: file.type || "application/octet-stream", filename: file.name, caption });
+    await sendFile(current, file, file.type || "application/octet-stream", file.name, caption);
     $("reply").value = "";
     await loadChat(); refreshList();
   } catch (e) { alert("No se pudo enviar el archivo: " + (e.message || e)); }
   $("attachBtn").textContent = "📎";
   $("fileInput").value = "";
+};
+
+async function sendFile(phone, blob, mime, filename, caption) {
+  const dataUrl = await new Promise((res, rej) => {
+    const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob);
+  });
+  const dataBase64 = String(dataUrl).split(",")[1];
+  await call("adminSendMedia")({ phone, dataBase64, mime, filename, caption });
+}
+
+// ---- Nota de voz ----
+// WhatsApp acepta audio OGG/Opus en mono. Firefox lo graba directo; Chrome/Edge
+// graban WebM/Opus (se reempaqueta a OGG sin recodificar) y Safari MP4 (AAC).
+let rec = null;
+$("micBtn").onclick = async () => {
+  if (!current || rec) return;
+  if (!navigator.mediaDevices || !window.MediaRecorder) { alert("Este navegador no permite grabar audio."); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { alert("No se pudo usar el micrófono. Revisa que el navegador tenga permiso."); return; }
+  // Forzar mono pasando por un AudioContext (algunos micrófonos entregan estéreo).
+  const ctx = new AudioContext();
+  await ctx.resume();
+  const dest = ctx.createMediaStreamDestination();
+  dest.channelCount = 1;
+  ctx.createMediaStreamSource(stream).connect(dest);
+  const mime = ["audio/ogg;codecs=opus", "audio/webm;codecs=opus", "audio/mp4"].find((t) => MediaRecorder.isTypeSupported(t));
+  const mr = new MediaRecorder(dest.stream, mime ? { mimeType: mime, audioBitsPerSecond: 32000 } : undefined);
+  const chunks = [];
+  mr.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  const started = Date.now();
+  rec = { mr, phone: current, timer: setInterval(() => {
+    const s = Math.floor((Date.now() - started) / 1000);
+    $("recTime").textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  }, 500) };
+  rec.done = new Promise((res) => { mr.onstop = () => {
+    stream.getTracks().forEach((t) => t.stop());
+    ctx.close();
+    res(new Blob(chunks, { type: mr.mimeType }));
+  }; });
+  $("recTime").textContent = "0:00";
+  $("micBtn").closest(".composer").classList.add("recording");
+  mr.start();
+};
+
+async function stopRec() {
+  const r = rec;
+  rec = null;
+  clearInterval(r.timer);
+  r.mr.stop();
+  $("micBtn").closest(".composer").classList.remove("recording");
+  return { phone: r.phone, blob: await r.done };
+}
+
+$("recCancel").onclick = () => { if (rec) stopRec(); };
+$("recSend").onclick = async () => {
+  if (!rec) return;
+  const { phone, blob } = await stopRec();
+  $("micBtn").textContent = "⏳"; $("micBtn").disabled = true;
+  try {
+    let out = blob, mime = "audio/ogg", name = "nota-de-voz.ogg";
+    if (blob.type.includes("webm")) out = new Blob([webmToOgg(new Uint8Array(await blob.arrayBuffer()))], { type: mime });
+    else if (blob.type.includes("mp4")) { mime = "audio/mp4"; name = "nota-de-voz.m4a"; }
+    await sendFile(phone, out, mime, name, "");
+  } catch (e) { alert("No se pudo enviar el audio: " + (e.message || e)); }
+  $("micBtn").textContent = "🎤"; $("micBtn").disabled = false;
+  await loadChat(); refreshList();
 };
 
 function esc(s){ return (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
