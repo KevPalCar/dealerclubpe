@@ -86,6 +86,14 @@ function check(name, cond) {
   check("no retoma un chat que cerró con 'ok, gracias' (caso Melanie)", tocaRescate({ humanTakeover: true, history: [
     { role: "assistant", text: "Gracias por querer vivir la experiencia de \"Las Vegas\" y hacernos parte de tu evento ¡Deseamos estar allí!", ts: now - 3 * H },
     { role: "user", text: "ok, gracias", ts: now - 3 * H }] }, now) === null);
+  const { esCierre } = require("../lib/followup");
+  check("'lo converso y le aviso' también cierra", esCierre("Ok, muchas gracias. Lo converso con mi esposo y le aviso") &&
+    esCierre("Perfecto, lo reviso y le confirmo 🙌") && esCierre("Gracias, quedo atenta") && esCierre("Listo, estamos en contacto"));
+  check("agradecer y preguntar no es cierre", !esCierre("Gracias, lo reviso. ¿Incluye el traslado?") &&
+    !esCierre("Ok, le confirmo, pero qué pasa si son 4 horas") && !esCierre("Gracias, lo veo y una consulta: el adelanto es por transferencia"));
+  check("no retoma una cotización que el cliente dejó en 'lo converso y le aviso'", tocaRescate({ humanTakeover: true, history: [
+    { role: "assistant", text: "Le comparto la cotización. ¿Alguna consulta?", ts: now - 3 * H, by: "asesor" },
+    { role: "user", text: "Ok, gracias, lo converso y le aviso", ts: now - 3 * H }] }, now) === null);
   check("sí retoma si el 'ok' responde a una pregunta", tocaRescate({ humanTakeover: true, history: [
     { role: "assistant", text: "¿Te parece si lo vemos el jueves?", ts: now - 3 * H },
     { role: "user", text: "ok", ts: now - 3 * H }] }, now) === now - 3 * H);

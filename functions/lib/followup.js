@@ -112,15 +112,58 @@ function esAcuse(texto) {
   return palabras.length <= 8 && palabras.every((p) => PALABRAS_ACUSE.has(p));
 }
 
+// "Ok, gracias, lo converso y le aviso", "lo reviso y le confirmo", "quedo
+// atenta": deja la decisión en sus manos. Escribirle de nuevo es insistir.
+const FRASE_CIERRE = new RegExp(
+  "\\b(l[oae]s?|te)\\s+(reviso|revisamos|converso|conversamos|consulto|consultamos|coordino|coordinamos|comento|comentamos|" +
+  "pienso|pensamos|evaluo|evalúo|evaluamos|analizo|analizamos|veo|vemos|aviso|avisamos|confirmo|confirmamos|escribo|escribimos)\\b" +
+  "|\\b(estamos|quedamos)\\s+en\\s+contacto\\b|\\bquedo\\s+(atenta|atento|pendiente)\\b|\\bcualquier\\s+cosa\\s+(le|te)\\s+(escribo|aviso)\\b", "i");
+// Si pide o pregunta algo, no es un cierre aunque agradezca.
+const PIDE_ALGO = /\?|(?<!\p{L})(consulta|pregunta|duda|cu[aá]nto|c[oó]mo|qu[eé]|d[oó]nde|cu[aá]ndo|podr[ií]a|puede[ns]?|quisiera|necesito|me\s+env[ií]a|env[ií]e)(?!\p{L})/iu;
+function esCierre(texto) {
+  if (esAcuse(texto)) return true;
+  const t = texto || "";
+  return t.split(/\s+/).length <= 20 && FRASE_CIERRE.test(t) && !PIDE_ALGO.test(t);
+}
+
+// ¿La conversación terminó con el último mensaje del lead? Un "ok" suelto a
+// una pregunta nuestra puede ser un sí que pide el siguiente paso; un "lo
+// converso y le aviso" cierra siempre.
+function cerroConversacion(history) {
+  const ultimo = history[history.length - 1];
+  if (!ultimo || ultimo.role !== "user") return false;
+  if (!esAcuse(ultimo.text)) return esCierre(ultimo.text);
+  const anterior = history[history.length - 2];
+  return anterior?.role === "assistant" && !(anterior.text || "").includes("?");
+}
+
+// Para lo que la lista de frases no alcanza a ver: el modelo lee el final del
+// chat y decide si al lead le hace falta una respuesta. Ante un error, se
+// responde (es peor dejar a alguien sin respuesta que una de más).
+const ENCARGO_CIERRE =
+  "Lees el final de una conversación de WhatsApp entre DealerClub (asesor o bot) y un cliente. Decide si el ÚLTIMO mensaje del cliente necesita una respuesta nuestra. " +
+  "NO la necesita si solo agradece, asiente, se despide, confirma que recibió la información o la cotización, o dice que lo va a revisar, conversar o pensar y que avisará: " +
+  "ahí la conversación quedó en sus manos y volver a escribirle es insistir. " +
+  "SÍ la necesita si pregunta o pide algo, da un dato nuevo que hay que atender, pone una objeción, o responde a una pregunta nuestra con algo que exige el siguiente paso (por ejemplo, acepta separar la fecha). " +
+  'Devuelve SOLO un JSON: {"responder": true} o {"responder": false}.';
+async function necesitaRespuesta(history) {
+  const texto = history.slice(-12).map((h) => `${h.role === "user" ? "Cliente" : "DealerClub"}: ${h.text || ""}`).join("\n");
+  try {
+    const r = await brain.generateJson(ENCARGO_CIERRE, texto);
+    return r?.responder !== false;
+  } catch (e) {
+    logger.warn("No se pudo evaluar si el mensaje pide respuesta", { error: e.message });
+    return true;
+  }
+}
+
 function tocaRescate(conv, ahora) {
   if (!conv || !conv.humanTakeover) return null;
   const history = conv.history || [];
   const ultimo = history[history.length - 1];
   if (!ultimo || ultimo.role !== "user" || !ultimo.ts) return null; // ya le respondieron
   if (/^\[reacción/.test(ultimo.text || "")) return null;
-  // Un "ok, gracias" a un mensaje que no preguntaba nada cierra la conversación.
-  const anterior = history[history.length - 2];
-  if (esAcuse(ultimo.text) && anterior?.role === "assistant" && !(anterior.text || "").includes("?")) return null;
+  if (cerroConversacion(history)) return null;
   if (ahora - ultimo.ts < RESCATE_HORAS * HORA) return null; // el asesor aún tiene tiempo
   if (ahora - ultimo.ts > VENTANA_MS) return null; // ventana gratuita cerrada
   if (conv.rescueForTs === ultimo.ts) return null;
@@ -139,6 +182,11 @@ async function rescatar(snap, ahora) {
     const ref = store.db.collection("wa_conversations").doc(phone);
     try {
       const history = (conv.history || []).slice(-40).map((h) => ({ role: h.role, text: h.text }));
+      if (!(await necesitaRespuesta(history))) {
+        await ref.set({ rescueForTs: ts }, { merge: true });
+        logger.info("Rescate omitido: la conversación quedó cerrada", { phone });
+        continue;
+      }
       const reply = await brain.generateReply(history, { extra: RESCATE });
       const texto = (reply || "").replace(/\[\[[^\]]*\]\]/g, "").replace(/\*\*(.+?)\*\*/gs, "*$1*").trim();
       await ref.set({ rescueForTs: ts }, { merge: true });
@@ -289,4 +337,4 @@ async function run() {
   return { enviados, rescatados, citasConfirmadas, pactados };
 }
 
-module.exports = { run, tocaSeguimiento, tocaRescate, tocaPactado, esAcuse, enHorario, INSTRUCCION, RESCATE_HORAS };
+module.exports = { run, tocaSeguimiento, tocaRescate, tocaPactado, esAcuse, esCierre, cerroConversacion, necesitaRespuesta, enHorario, INSTRUCCION, RESCATE_HORAS };

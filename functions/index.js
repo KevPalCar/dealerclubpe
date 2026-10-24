@@ -221,7 +221,7 @@ const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const ESPERA_MS = 5000; // margen para que el lead termine de escribir
 const MODEL_HISTORY = 40; // mensajes recientes que lee el modelo
 const AVISO_PAUSA_MS = 30 * 60 * 1000; // como mucho un aviso cada 30 min por chat en pausa
-const { RESCATE_HORAS, esAcuse } = require("./lib/followup");
+const { RESCATE_HORAS, cerroConversacion, necesitaRespuesta } = require("./lib/followup");
 const citas = require("./lib/citas");
 
 // --- Cotización de eventos -----------------------------------
@@ -417,13 +417,16 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     }
     if (msg.type === "reaction") return;
 
-    // Un "ok, gracias" después de que el bot ya se despidió cierra la
-    // conversación: no se contesta (antes el bot seguía con otra despedida).
+    // Un "ok, gracias" o un "lo converso y le aviso" cierra la conversación:
+    // no se contesta (antes el bot seguía con otra despedida). En una
+    // cotización que ya atendió el asesor, además lo juzga el modelo con el
+    // contexto: ahí el trato es corto y lo que no pide nada, se deja estar.
     {
       const previo = await store.getConversation(msg.from);
       const hist = previo?.history || [];
-      const anterior = hist[hist.length - 2];
-      if (esAcuse(msg.text) && anterior?.role === "assistant" && !(anterior.text || "").includes("?")) {
+      const conAsesor = hist.some((h) => h.by === "asesor") && (previo?.brochuresSent || []).includes("eventos");
+      if (cerroConversacion(hist) ||
+          (conAsesor && !(msg.text || "").includes("?") && !(await necesitaRespuesta(hist)))) {
         logger.info("Acuse de cierre: no se responde", { from: msg.from });
         return;
       }
