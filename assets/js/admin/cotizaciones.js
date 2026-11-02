@@ -178,7 +178,7 @@ const DEFAULT_QUOTE_SETTINGS = {
            'Una vez abonado el adelanto no se realizan devoluciones.',
     footer: 'WhatsApp +51 929 610 747 · www.dealerclubpe.com\n' +
             'Lima Metropolitana · 09:00–18:00\n' +
-            'IG dealerclubpe · TikTok @dealerclubpe · FB dealerclubperu',
+            'IG @dealerclubpe · FB dealerclubperu',
     items: [
         { kind: 'mesa', name: 'Mesa de Ruleta Profesional', detail: 'Disco profesional premium · 7 a 10 posturas, con accesorios.', price: 1390, priceEmpresa: 1590 },
         { kind: 'mesa', name: 'Mesa en "D" Profesional',    detail: "Blackjack (7 posturas) o Ultimate Texas Hold'em (6 posturas), con accesorios.", price: 890, priceEmpresa: 1070 },
@@ -866,6 +866,8 @@ const loadQuotes = () => {
         _qs.items = _qs.items.flatMap(i => /dealer.*direcci[oó]n/i.test(i.name)
             ? DEFAULT_QUOTE_SETTINGS.items.filter(d => /^Dealers uniformados|^Dirección del propio/.test(d.name))
             : [i]);
+        // La cuenta de TikTok de la empresa está cerrada; Instagram es @dealerclubpe.
+        _qs.footer = (_qs.footer || '').replace(/\s*·\s*TikTok @dealerclubpe/i, '').replace(/\bIG dealerclubpe\b/, 'IG @dealerclubpe');
     });
 };
 

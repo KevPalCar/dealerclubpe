@@ -23,7 +23,7 @@ const DEFAULT_TEXTS = {
            'Una vez abonado el adelanto no se realizan devoluciones.',
     footer: 'WhatsApp +51 929 610 747 · www.dealerclubpe.com\n' +
             'Lima Metropolitana · 09:00–18:00\n' +
-            'IG dealerclubpe · TikTok @dealerclubpe · FB dealerclubperu'
+            'IG @dealerclubpe · FB dealerclubperu'
 };
 
 // Un párrafo por línea de texto.

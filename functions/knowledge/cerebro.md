@@ -211,7 +211,7 @@ Usa SIEMPRE estos enlaces tal cual, completos; nunca inventes ni acortes otros. 
 - Programas de la Escuela: https://dealerclubpe.com/cursos
 - Casino de Fantasía (eventos y solicitud de cotización): https://dealerclubpe.com/servicios
 - Registro en el campus: https://dealerclubpe.com/registro
-- Instagram: https://www.instagram.com/dealerclubpe/ (también TikTok @dealerclubpe y Facebook /dealerclubperu)
+- Instagram: https://www.instagram.com/dealerclubpe/ (también Facebook /dealerclubperu)
 - Mapa del local: https://maps.google.com/?q=-12.024721,-76.9839445
 - WhatsApp: +51 929 610 747 (https://wa.me/51929610747)
 - Correo: dealerclubpe@gmail.com
