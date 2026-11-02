@@ -418,7 +418,7 @@ const refreshQuote = () => {
         <div><span>IGV ${qEdit.igvRate}%</span><b>${money(t.igv)}</b></div>
         <div class="qe-total"><span>Total</span><b>${money(t.total)}</b></div>
         <div><span>Adelanto ${qEdit.depositPct}%</span><b>${money(t.deposit)}</b></div>
-        <div><span>Saldo al llegar</span><b>${money(t.balance)}</b></div>`;
+        <div><span>Saldo antes de partir</span><b>${money(t.balance)}</b></div>`;
 };
 
 const intOrNull = (v) => (v === '' ? null : parseInt(v, 10));
