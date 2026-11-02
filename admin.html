@@ -1044,8 +1044,8 @@
                         <h3 class="qe-title">Cliente</h3>
                         <div class="qe-grid qe-3">
                             <label class="qe-span2">Cliente o empresa <input type="text" id="quoteClientName" required></label>
-                            <label>Tipo
-                                <select id="quoteClientType"><option value="persona">Persona natural</option><option value="empresa">Empresa</option></select>
+                            <label>Tipo de cliente <span class="info-tip" data-tip="Define la lista de precios de las mesas y de los paquetes. Si pide factura → Empresa; boleta o sin comprobante → Particular. El cliente solo ve sus precios, sin mención de recargos ni de la tarifa empresa.">i</span>
+                                <select id="quoteClientType"><option value="persona">Particular</option><option value="empresa">Empresa</option></select>
                             </label>
                             <label>DNI o RUC <input type="text" id="quoteClientDoc"></label>
                             <label>WhatsApp <input type="text" id="quoteClientPhone"></label>
@@ -1074,6 +1074,9 @@
                         <div class="qe-line qe-line-head"><span>Cant.</span><span>Mesa</span><span>Juego</span><span>Precio c/u</span><span>Importe</span></div>
                         <div id="quoteMesas" class="qe-rows"></div>
 
+                        <h3 class="qe-title">Paquete <small>se aplica solo según la cantidad de mesas</small> <span class="info-tip" data-tip="1 mesa: Mesa Exclusiva (precio de la mesa). 2 mesas: Celebración VIP (suma menos un descuento fijo). 3 mesas: Experiencia Las Vegas (precio fijo). En la hoja sale el nombre del paquete y la línea 'Descuento paquete'. Los montos se cambian en el Tarifario.">i</span></h3>
+                        <div id="quotePackage" class="qe-pack"></div>
+
                         <h3 class="qe-title">Incluye <small>sin costo; los dealers se cuentan según las mesas</small></h3>
                         <div id="quoteIncludes" class="qe-chips"></div>
 
@@ -1083,6 +1086,9 @@
 
                         <h3 class="qe-title">Recargos y descuentos <small>escribe el monto solo en los que apliquen</small></h3>
                         <div id="quoteAdj" class="qe-adj-grid"></div>
+
+                        <h3 class="qe-title">Acceso por escaleras <small>se suma como una línea de la cotización</small> <span class="info-tip" data-tip="Si el local no tiene ascensor, elige el piso y pulsa 'Agregar a la cotización': S/ 90 por cada piso subido, sin importar cuántas mesas. Del 5.º piso en adelante escribe el monto a mano.">i</span></h3>
+                        <div id="quoteStairs"></div>
 
                         <label class="qe-check"><input type="checkbox" id="quoteShowAddons"> Mostrar en la hoja "Puedes agregar" con las mesas y extras que no llevó</label>
                     </div>
@@ -1113,11 +1119,23 @@
             <form id="tariffForm" class="qe-form">
                 <div class="qe-body qe-body-tariff">
                     <div class="qe-col">
-                        <h3 class="qe-title qe-first">Mesas, incluidos y extras</h3>
+                        <h3 class="qe-title qe-first">Mesas, incluidos y extras <small>sin IGV</small> <span class="info-tip" data-tip="Cada línea tiene dos precios: Particular (boleta o sin comprobante) y Empresa (factura). Si el de Empresa queda vacío, se usa el de Particular.">i</span></h3>
+                        <div class="qe-row cols-tariff qe-line-head"><span>Tipo</span><span>Nombre</span><span>Detalle</span><span>Particular</span><span>Empresa</span><span></span></div>
                         <div id="tariffItems" class="qe-rows"></div>
                         <div class="qe-add">
                             <button type="button" class="btn btn-secondary btn-sm" id="tariffAddItem"><i class="fas fa-plus"></i> Agregar línea</button>
                         </div>
+
+                        <h3 class="qe-title">Paquetes <small>se aplican solos según la cantidad de mesas</small> <span class="info-tip" data-tip="Mesa Exclusiva (1 mesa) cobra el precio de la mesa. Celebración VIP (2 mesas) resta un monto fijo a la suma. Experiencia Las Vegas (3 mesas) tiene precio fijo y sale marcada como ⭐ Mejor valor. Los cambios rigen para las cotizaciones nuevas.">i</span></h3>
+                        <div class="qe-grid qe-2">
+                            <label>Celebración VIP · descuento Particular (S/) <input type="number" id="tariffVipOff" min="0"></label>
+                            <label>Celebración VIP · descuento Empresa (S/) <input type="number" id="tariffVipOffEmp" min="0"></label>
+                            <label>Experiencia Las Vegas ⭐ · precio Particular (S/) <input type="number" id="tariffVegas" min="0"></label>
+                            <label>Experiencia Las Vegas ⭐ · precio Empresa (S/) <input type="number" id="tariffVegasEmp" min="0"></label>
+                        </div>
+
+                        <h3 class="qe-title">Escaleras <small>referencia; se agrega desde cada cotización</small> <span class="info-tip" data-tip="Recordatorio del cargo por subir el equipo por escaleras. En el editor de la cotización, sección 'Acceso por escaleras', cada piso tiene su botón 'Agregar a la cotización'. La cobertura fuera de Lima sigue como Extra y se cotiza a mano.">i</span></h3>
+                        <div id="tariffStairs"></div>
                     </div>
                     <div class="qe-col">
                         <h3 class="qe-title qe-first">Valores por defecto</h3>
@@ -1126,7 +1144,7 @@
                             <label>Vigencia (días hábiles) <input type="number" id="tariffValidity" min="1" max="60"></label>
                             <label>Adelanto (%) <input type="number" id="tariffDeposit" min="0" max="100"></label>
                             <label>IGV (%) <input type="number" id="tariffIgv" min="0" max="100"></label>
-                            <label>Hora extra por mesa (S/) <input type="number" id="tariffExtraHour" min="0"></label>
+                            <label>Hora extra por mesa (S/) <span class="info-tip" data-tip="Por mesa y por hora. Para Empresa se cambia a mano a S/ 200 en la línea 'Hora extra de juego' de la cotización.">i</span><input type="number" id="tariffExtraHour" min="0"></label>
                         </div>
                         <h3 class="qe-title">Textos de la hoja <small>lo que lee el cliente; una línea por renglón</small></h3>
                         <div class="qe-grid">

@@ -15,7 +15,7 @@ const WHATSAPP = '51929610747';
 // Admin → Cotizaciones → Tarifario); estos solo cubren las anteriores.
 const DEFAULT_TEXTS = {
     tagline: 'Casino de Fantasía · EL JUEGO a otro nivel',
-    balanceLabel: 'Saldo, antes de iniciar el montaje',
+    balanceLabel: 'Saldo, antes de partir hacia el local',
     payment: 'Transferencia bancaria a la cuenta de la empresa (se emite boleta o factura).\n' +
              'Interbank Soles: 200-3008147025 · CCI: 003-200-003008147025-31\n' +
              'Titular: DEALERCLUB E.I.R.L. · RUC 20615317315',
@@ -89,6 +89,14 @@ const render = (q) => {
 
     // Tu evento: líneas + ajustes
     const body = $('cz-items');
+    if (q.package) {
+        const tr = document.createElement('tr');
+        tr.className = 'cz-pack';
+        const name = cell(`Paquete ${q.package}`, 'cz-name');
+        name.colSpan = 4;
+        tr.appendChild(name);
+        body.appendChild(tr);
+    }
     (q.items || []).forEach(line => {
         const tr = document.createElement('tr');
         if (line.included) tr.className = 'cz-incl';

@@ -167,10 +167,10 @@ const TARIFF_KINDS = [['mesa', 'Mesa'], ['incluido', 'Incluido'], ['extra', 'Ext
 const DEFAULT_QUOTE_SETTINGS = {
     advisor: 'Kevin', validityDays: 4, depositPct: 30, igvRate: 18, extraHour: 150,
     notes: 'Beneficio por confirmación rápida: si confirma su reserva dentro de las 48 h siguientes a esta cotización, se incluye el trofeo "The Chip Leader" para el ganador.\n' +
-           'Si el acceso es solo por escaleras, se coordina un ajuste en "Traslado y acceso".',
+           'Si el acceso es solo por escaleras, se suma S/ 90 por cada piso subido.',
     // Textos de la hoja que ve el cliente (editables en el Tarifario).
     tagline: 'Casino de Fantasía · EL JUEGO a otro nivel',
-    balanceLabel: 'Saldo, antes de iniciar el montaje',
+    balanceLabel: 'Saldo, antes de partir hacia el local',
     payment: 'Transferencia bancaria a la cuenta de la empresa (se emite boleta o factura).\n' +
              'Interbank Soles: 200-3008147025 · CCI: 003-200-003008147025-31\n' +
              'Titular: DEALERCLUB E.I.R.L. · RUC 20615317315',
@@ -180,9 +180,9 @@ const DEFAULT_QUOTE_SETTINGS = {
             'Lima Metropolitana · 09:00–18:00\n' +
             'IG dealerclubpe · TikTok @dealerclubpe · FB dealerclubperu',
     items: [
-        { kind: 'mesa', name: 'Mesa de Ruleta Profesional', detail: 'Disco profesional premium · 7 a 10 posturas, con accesorios.', price: 1300 },
-        { kind: 'mesa', name: 'Mesa en "D" Profesional',    detail: "Blackjack (7 posturas) o Ultimate Texas Hold'em (6 posturas), con accesorios.", price: 800 },
-        { kind: 'mesa', name: 'Mesa óvalo Profesional',     detail: 'Póker (10 posturas) o Baccarat (9 posturas), con accesorios.', price: 1000 },
+        { kind: 'mesa', name: 'Mesa de Ruleta Profesional', detail: 'Disco profesional premium · 7 a 10 posturas, con accesorios.', price: 1390, priceEmpresa: 1590 },
+        { kind: 'mesa', name: 'Mesa en "D" Profesional',    detail: "Blackjack (7 posturas) o Ultimate Texas Hold'em (6 posturas), con accesorios.", price: 890, priceEmpresa: 1070 },
+        { kind: 'mesa', name: 'Mesa óvalo Profesional',     detail: 'Póker (10 posturas) o Baccarat (9 posturas), con accesorios.', price: 1090, priceEmpresa: 1230 },
         { kind: 'incluido', name: 'Dealers uniformados',             detail: 'Un dealer profesional por mesa.', price: null },
         { kind: 'incluido', name: 'Dirección del propio DealerClub', detail: 'Presente en cada evento, desde una sola mesa.', price: null },
         { kind: 'incluido', name: 'Fichas, montaje y desmontaje',             detail: 'Fichas y artefactos de casino; armado y retiro de todo el equipo.', price: null },
@@ -195,7 +195,24 @@ const DEFAULT_QUOTE_SETTINGS = {
         { kind: 'extra', name: 'Fotos y grabación',      detail: '', price: null },
         { kind: 'extra', name: 'Decoración temática',    detail: '', price: null },
         { kind: 'extra', name: 'Cobertura fuera de Lima', detail: '', price: null }
-    ]
+    ],
+    // Paquetes según la cantidad de mesas: 2 → suma − descuento; 3 → precio fijo.
+    packages: { vipOff: 150, vipOffEmpresa: 200, vegas: 3000, vegasEmpresa: 3500 },
+    tariffVersion: 2
+};
+// Tarifarios guardados antes de la lista Particular / Empresa (v2): se
+// cargan los precios nuevos de las mesas y el nuevo texto del saldo.
+const migrateTariff = (qs) => {
+    if ((qs.tariffVersion || 1) >= 2) return qs;
+    const mesas = DEFAULT_QUOTE_SETTINGS.items.filter(i => i.kind === 'mesa');
+    return {
+        ...qs, tariffVersion: 2,
+        items: qs.items.map(i => {
+            const d = i.kind === 'mesa' && mesas.find(m => mesaKind(m.name) === mesaKind(i.name));
+            return d ? { ...i, price: d.price, priceEmpresa: d.priceEmpresa } : i;
+        }),
+        balanceLabel: /antes de iniciar el montaje/i.test(qs.balanceLabel || '') ? DEFAULT_QUOTE_SETTINGS.balanceLabel : qs.balanceLabel
+    };
 };
 let _qs     = DEFAULT_QUOTE_SETTINGS;   // tarifario vigente
 let _quotes = [];
@@ -281,34 +298,81 @@ const renderRows = (boxId, rows, cols, layout, onChange, emptyMsg) => {
 // tiene su fila y solo se escribe la cantidad. Lo que queda en cero
 // pasa solo al bloque "Puedes agregar" de la hoja.
 const AUTO_DISCOUNT = 'Descuento por más de una mesa (10 %)';
+// El descuento del 10 % y la "Tarifa corporativa" solo siguen en cotizaciones
+// antiguas: ahora mandan los paquetes y la lista de precios Empresa.
 const ADJ_ROWS = [
     { name: 'Fecha de alta demanda',            sign:  1 },
     { name: 'Servicio express (menos de 48 h)', sign:  1 },
     { name: 'Traslado y acceso',                sign:  1 },
-    { name: 'Tarifa corporativa',               sign:  1 },
-    { name: AUTO_DISCOUNT,                      sign: -1 },
     { name: 'Descuento especial',               sign: -1 }
 ];
+function mesaKind(name) {
+    return /ruleta/i.test(name)       ? 'ruleta'
+         : /"d"|en d\b/i.test(name)   ? 'd'
+         : /[oó]valo/i.test(name)     ? 'ovalo'
+         : name;
+}
 // Juegos posibles de cada mesa (paños intercambiables).
-const gamesOf = (mesaName) =>
-    /ruleta/i.test(mesaName)        ? []
-    : /"d"|en d\b/i.test(mesaName)  ? ['Blackjack', "Ultimate Texas Hold'em"]
-    : /[oó]valo/i.test(mesaName)    ? ['Póker', 'Baccarat']
-    : null;   // mesa nueva del tarifario: juego en texto libre
+const gamesOf = (mesaName) => ({
+    ruleta: [], d: ['Blackjack', "Ultimate Texas Hold'em"], ovalo: ['Póker', 'Baccarat']
+})[mesaKind(mesaName)] ?? null;   // mesa nueva del tarifario: juego en texto libre
 // "Dealers" se cuenta por mesa; la dirección de DealerClub solo se incluye o no.
 const isPerMesa = (name) => /dealer/i.test(name) && !/direcci[oó]n/i.test(name);
 
-const tariffForm = () => ({
-    mesas:    _qs.items.filter(i => i.kind === 'mesa').map(i => ({ name: i.name, detail: i.detail, game: '', qty: 0, unit: i.price })),
+// Precio de una línea del tarifario según el tipo de cliente (Particular / Empresa).
+const tariffPrice = (name, type) => {
+    const i = _qs.items.find(x => x.name === name);
+    if (!i) return undefined;
+    return type === 'empresa' && i.priceEmpresa != null ? i.priceEmpresa : i.price;
+};
+
+const tariffForm = (type = 'persona') => ({
+    type,
+    mesas:    _qs.items.filter(i => i.kind === 'mesa').map(i => ({ name: i.name, detail: i.detail, game: '', qty: 0, unit: tariffPrice(i.name, type) })),
     includes: _qs.items.filter(i => i.kind === 'incluido').map(i => ({ name: i.name, detail: i.detail, on: true })),
-    extras:   _qs.items.filter(i => i.kind === 'extra').map(i => ({ name: i.name, detail: i.detail, qty: 0, unit: i.price })),
+    extras:   _qs.items.filter(i => i.kind === 'extra').map(i => ({ name: i.name, detail: i.detail, qty: 0, unit: tariffPrice(i.name, type) })),
     other:    { name: '', qty: 1, unit: null },
+    stairs:   null,
     adj:      ADJ_ROWS.map(a => ({ ...a, amount: null })),
-    autoDiscount: false,
-    showAddons:   true
+    // Copia de los paquetes vigentes: la cotización no cambia si luego se edita el tarifario.
+    packages: { ...DEFAULT_QUOTE_SETTINGS.packages, ..._qs.packages },
+    showAddons: true
 });
 
+// Cambia la lista de precios. Solo se reemplazan los precios que siguen
+// como en el tarifario; los que se escribieron a mano se respetan.
+const setClientType = (f, type) => {
+    const prev = f.type || 'persona';
+    f.type = type;
+    [...f.mesas, ...f.extras].forEach(x => {
+        if (x.unit === tariffPrice(x.name, prev)) x.unit = tariffPrice(x.name, type) ?? x.unit;
+    });
+};
+
 const totalMesas = (f) => f.mesas.reduce((s, m) => s + (m.qty || 0), 0);
+
+// Paquetes según la cantidad de mesas (solo cotizaciones con f.packages).
+// Con 4 o más mesas no hay paquete automático: se usa "Descuento especial".
+const PACKAGES = ['Mesa Exclusiva', 'Celebración VIP', 'Experiencia Las Vegas'];
+const mesasSum = (f) => f.mesas.reduce((s, m) => s + (m.qty || 0) * (m.unit || 0), 0);
+const packageOf = (f) => {
+    const n = totalMesas(f);
+    if (!f.packages || n < 1 || n > 3) return null;
+    const p = f.packages, emp = f.type === 'empresa';
+    const discount = n === 2 ? (emp ? p.vipOffEmpresa : p.vipOff)
+                   : n === 3 ? Math.max(0, mesasSum(f) - (emp ? p.vegasEmpresa : p.vegas))
+                   : 0;
+    return { name: PACKAGES[n - 1], discount };
+};
+
+// Escaleras: S/ 90 por cada piso subido; del 5.º en adelante se evalúa (monto a mano).
+const STAIRS = [
+    { label: '1.er piso o con ascensor',    amount: 0 },
+    { label: '2.º piso',                    amount: 90 },
+    { label: '3.er piso',                   amount: 180 },
+    { label: '4.º piso',                    amount: 270 },
+    { label: '5.º piso o más sin ascensor', amount: null }
+];
 // 10 % de la mesa de menor precio, cuando se llevan dos o más.
 const autoDiscountAmount = (f) => {
     const units = f.mesas.flatMap(m => Array(m.qty || 0).fill(m.unit || 0)).sort((a, b) => a - b);
@@ -327,13 +391,18 @@ const deriveQuote = (f) => {
         ...f.extras.filter(x => x.qty > 0).map(x => line(x, x.detail)),
         ...(f.other.name.trim() ? [line({ ...f.other, name: f.other.name.trim(), qty: f.other.qty || 1 }, '')] : [])
     ];
-    const adjustments = f.adj
-        .map(a => ({ name: a.name, amount: a.sign * (a.name === AUTO_DISCOUNT && f.autoDiscount ? autoDiscountAmount(f) : (a.amount || 0)) }))
-        .filter(a => a.amount);
+    if (f.stairs) items.push({ name: 'Acceso por escaleras', detail: f.stairs.label, qty: null, unit: null, price: f.stairs.amount, included: false });
+    const pk = packageOf(f);
+    const adjustments = [
+        ...(pk?.discount ? [{ name: `Descuento paquete ${pk.name}`, amount: -pk.discount }] : []),
+        ...f.adj
+            .map(a => ({ name: a.name, amount: a.sign * (a.name === AUTO_DISCOUNT && f.autoDiscount ? autoDiscountAmount(f) : (a.amount || 0)) }))
+            .filter(a => a.amount)
+    ];
     const addons = f.showAddons
         ? [...f.mesas.filter(m => !m.qty), ...f.extras.filter(x => !x.qty)].map(x => ({ name: x.name, detail: x.detail, price: x.unit }))
         : [];
-    return { items, adjustments, addons };
+    return { items, adjustments, addons, package: pk?.name || null };
 };
 
 // Lo que depende de otros campos (importes, dealers, descuento, totales)
@@ -343,6 +412,7 @@ const refreshQuote = () => {
     qRefreshers.forEach(fn => fn());
     const f = qEdit.form;
     const t = quoteTotals({ ...deriveQuote(f), igvRate: qEdit.igvRate, depositPct: qEdit.depositPct });
+    renderPackageBox(f);
     document.getElementById('quoteTotals').innerHTML = `
         <div><span>Subtotal</span><b>${money(t.subtotal)}</b></div>
         <div><span>IGV ${qEdit.igvRate}%</span><b>${money(t.igv)}</b></div>
@@ -357,6 +427,73 @@ const el = (tag, cls, text) => {
     if (cls) node.className = cls;
     if (text != null) node.textContent = text;
     return node;
+};
+
+// Paquete que se aplica y las tres opciones (Las Vegas marcada como mejor valor).
+const renderPackageBox = (f) => {
+    const box = document.getElementById('quotePackage');
+    if (!f.packages) {
+        box.innerHTML = '<p class="qe-empty">Cotización anterior a los paquetes: sus descuentos quedan como se guardaron.</p>';
+        return;
+    }
+    const pk = packageOf(f), n = totalMesas(f), p = f.packages, emp = f.type === 'empresa';
+    const rule = ['precio de la mesa',
+                  `suma de las 2 − ${money(emp ? p.vipOffEmpresa : p.vipOff)}`,
+                  `precio fijo ${money(emp ? p.vegasEmpresa : p.vegas)}`];
+    const now = pk
+        ? `Se aplica <b>${pk.name}</b>` + (pk.discount ? `: ${money(mesasSum(f))} → ${money(mesasSum(f) - pk.discount)} (descuento ${money(pk.discount)})` : '')
+        : n > 3 ? 'Con 4 o más mesas no hay paquete automático; si corresponde, usa "Descuento especial".'
+        : 'Escribe la cantidad de mesas.';
+    box.innerHTML = `
+        <div class="qe-pack-opts">${PACKAGES.map((name, i) => `
+            <span class="qe-pack-opt${n === i + 1 ? ' on' : ''}"><b>${name}${i === 2 ? ' <em>⭐ Mejor valor</em>' : ''}</b>${i + 1} mesa${i ? 's' : ''} · ${rule[i]}</span>`).join('')}
+        </div>
+        <p class="qe-pack-now">${now} · Lista ${emp ? 'Empresa' : 'Particular'}</p>`;
+};
+
+// Tabla de escaleras. Con f (editor) cada fila tiene su botón para agregarla;
+// sin f (tarifario) es solo de consulta.
+const renderStairs = (boxId, f) => {
+    const box  = document.getElementById(boxId);
+    const table = el('table', 'qe-stairs');
+    table.innerHTML = `<thead><tr><th>Piso del evento</th><th>Cargo extra</th>${f ? '<th></th>' : ''}</tr></thead>`;
+    const body = document.createElement('tbody');
+    STAIRS.forEach(s => {
+        const tr = document.createElement('tr');
+        const on = !!f && (f.stairs ? f.stairs.label === s.label : s.amount === 0);
+        tr.classList.toggle('on', on);
+        tr.appendChild(el('td', '', s.label));
+        const charge = el('td', 'qe-stairs-amt');
+        let manual = null;
+        if (s.amount === null && f) {
+            manual = intInput(f.stairs?.label === s.label ? f.stairs.amount : '', 'A evaluar');
+            manual.addEventListener('input', () => {
+                if (f.stairs?.label === s.label) { f.stairs.amount = intOrNull(manual.value); refreshQuote(); }
+            });
+            charge.appendChild(manual);
+        } else {
+            charge.textContent = s.amount === 0 ? 'Incluido' : s.amount === null ? 'A evaluar (monto manual)' : money(s.amount);
+        }
+        tr.appendChild(charge);
+        if (f) {
+            const act = el('td');
+            if (s.amount !== 0) {
+                const btn = el('button', 'btn btn-secondary btn-sm', on ? 'Quitar' : 'Agregar a la cotización');
+                btn.type = 'button';
+                btn.addEventListener('click', () => {
+                    f.stairs = on ? null : { label: s.label, amount: manual ? intOrNull(manual.value) : s.amount };
+                    renderStairs(boxId, f);
+                    refreshQuote();
+                });
+                act.appendChild(btn);
+            }
+            tr.appendChild(act);
+        }
+        body.appendChild(tr);
+    });
+    table.appendChild(body);
+    box.replaceChildren(table, el('p', 'qe-stairs-note',
+        'El precio base considera acceso a nivel de calle o por ascensor. Regla: S/ 90 por cada piso subido por escaleras, igual para cualquier cantidad de mesas.'));
 };
 
 // Fila "cantidad · nombre · [juego] · precio unitario · importe"
@@ -469,6 +606,8 @@ const renderQuoteForm = () => {
         return row;
     }));
 
+    renderStairs('quoteStairs', f);
+
     const show = document.getElementById('quoteShowAddons');
     show.checked = f.showAddons;
     show.onchange = () => { f.showAddons = show.checked; };
@@ -501,6 +640,7 @@ const quoteFromRequest = (r) => {
     const q = blankQuote();
     q.requestId = r.id;
     q.client = { name: r.fullName || '', type: /factura/i.test(r.receipt || '') ? 'empresa' : 'persona', doc: '', phone: r.phone || '', email: r.email || '' };
+    setClientType(q.form, q.client.type);
     q.event  = {
         type: r.eventType || '', date: r.eventDate || '', time: r.eventTime || '', district: r.district || '', address: '',
         floor: [r.floor, r.access].filter(Boolean).join(' · '), guests: r.guests || ''
@@ -508,11 +648,11 @@ const quoteFromRequest = (r) => {
     // Cada juego pedido marca su mesa (cantidad 1) y, si es el primero, su juego.
     (r.tables || []).forEach(game => {
         const g = String(game).toLowerCase();
-        const mesa = q.form.mesas.find(m =>
-            /ruleta/.test(g)                        ? /ruleta/i.test(m.name)
-            : /black|ultimate|texas|uth/.test(g)    ? /"d"|en d\b/i.test(m.name)
-            : /p[oó]ker|poker|baccarat|bacar/.test(g) ? /[oó]valo/i.test(m.name)
-            : false);
+        const kind = /ruleta/.test(g)                         ? 'ruleta'
+                   : /black|ultimate|texas|uth/.test(g)     ? 'd'
+                   : /p[oó]ker|poker|baccarat|bacar/.test(g) ? 'ovalo'
+                   : null;
+        const mesa = kind && q.form.mesas.find(m => mesaKind(m.name) === kind);
         if (!mesa) return;
         mesa.qty = 1;
         if (!mesa.game) mesa.game = (gamesOf(mesa.name) || []).find(x => g.includes(x.toLowerCase().slice(0, 5))) || '';
@@ -534,9 +674,12 @@ const formFromLegacy = (q) => {
         if (row) { row.qty = it.qty || 1; if (it.price != null) row.unit = Math.round(it.price / row.qty); }
     });
     f.includes.forEach(i => { i.on = (q.items || []).some(it => it.name === i.name); });
+    f.packages = null;   // se respetan los recargos y descuentos con que se emitió
+    f.type = q.client?.type || 'persona';
     (q.adjustments || []).forEach(a => {
         const row = f.adj.find(x => x.name === a.name);
         if (row) row.amount = Math.abs(a.amount);
+        else f.adj.push({ name: a.name, sign: Math.sign(a.amount), amount: Math.abs(a.amount) });
     });
     return f;
 };
@@ -544,6 +687,7 @@ const formFromLegacy = (q) => {
 const openQuoteEditor = (q) => {
     qEdit = JSON.parse(JSON.stringify(q));   // copia: cancelar no altera el historial
     if (!qEdit.form) qEdit.form = formFromLegacy(qEdit);
+    if (!qEdit.form.type) qEdit.form.type = qEdit.client.type || 'persona';
     const set = (id, v) => { document.getElementById(id).value = v ?? ''; };
     set('quoteNumber', qEdit.number);        set('quoteDate', qEdit.date);
     set('quoteValidUntil', qEdit.validUntil); set('quoteStatus', qEdit.status);
@@ -555,6 +699,7 @@ const openQuoteEditor = (q) => {
     set('quoteEventAddress', qEdit.event.address); set('quoteEventFloor', qEdit.event.floor);
     set('quoteEventGuests', qEdit.event.guests);
     set('quoteNotes', qEdit.notes);
+    document.getElementById('quoteClientType').onchange = (e) => { setClientType(qEdit.form, e.target.value); renderQuoteForm(); };
     renderQuoteForm();
     showMsg(document.getElementById('quoteFormMessage'), '', '');
     openModal(document.getElementById('quoteModal'));
@@ -710,7 +855,9 @@ const loadQuotes = () => {
         renderQuotesSummary();
     });
     unsubscribeListeners.quoteSettings = onSnapshot(doc(db, dbPath('quote_settings/main')), (snap) => {
-        _qs = snap.exists() ? { ...DEFAULT_QUOTE_SETTINGS, ...snap.data() } : DEFAULT_QUOTE_SETTINGS;
+        _qs = snap.exists()
+            ? migrateTariff({ ...DEFAULT_QUOTE_SETTINGS, tariffVersion: 1, ...snap.data() })
+            : DEFAULT_QUOTE_SETTINGS;
         // Tarifarios guardados antes de separar dealers y dirección
         _qs.items = _qs.items.flatMap(i => /dealer.*direcci[oó]n/i.test(i.name)
             ? DEFAULT_QUOTE_SETTINGS.items.filter(d => /^Dealers uniformados|^Dirección del propio/.test(d.name))
@@ -724,8 +871,10 @@ const TARIFF_COLS = [
     { key: 'kind',   type: 'select', options: TARIFF_KINDS },
     { key: 'name',   type: 'text',   placeholder: 'Nombre' },
     { key: 'detail', type: 'text',   placeholder: 'Detalle' },
-    { key: 'price',  type: 'number', placeholder: 'S/' }
+    { key: 'price',        type: 'number', placeholder: 'Particular' },
+    { key: 'priceEmpresa', type: 'number', placeholder: 'Empresa' }
 ];
+const PACK_INPUTS = [['tariffVipOff', 'vipOff'], ['tariffVipOffEmp', 'vipOffEmpresa'], ['tariffVegas', 'vegas'], ['tariffVegasEmp', 'vegasEmpresa']];
 const renderTariffRows = () =>
     renderRows('tariffItems', tEdit.items, TARIFF_COLS, 'cols-tariff', () => {}, 'El tarifario está vacío.');
 
@@ -742,6 +891,8 @@ document.getElementById('open-tariff-btn').addEventListener('click', () => {
     document.getElementById('tariffFooter').value    = tEdit.footer;
     document.getElementById('tariffTagline').value   = tEdit.tagline;
     document.getElementById('tariffBalance').value   = tEdit.balanceLabel;
+    PACK_INPUTS.forEach(([id, key]) => { document.getElementById(id).value = tEdit.packages[key]; });
+    renderStairs('tariffStairs', null);
     renderTariffRows();
     showMsg(document.getElementById('tariffFormMessage'), '', '');
     openModal(document.getElementById('tariffModal'));
@@ -768,6 +919,8 @@ document.getElementById('tariffForm').addEventListener('submit', async (e) => {
             footer:       document.getElementById('tariffFooter').value.trim(),
             tagline:      document.getElementById('tariffTagline').value.trim(),
             balanceLabel: document.getElementById('tariffBalance').value.trim(),
+            packages:     Object.fromEntries(PACK_INPUTS.map(([id, key]) => [key, num(id, DEFAULT_QUOTE_SETTINGS.packages[key])])),
+            tariffVersion: 2,
             updatedAt:    new Date()
         });
         closeModal(document.getElementById('tariffModal'));
