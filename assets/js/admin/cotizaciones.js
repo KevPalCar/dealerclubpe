@@ -352,7 +352,7 @@ const setClientType = (f, type) => {
 const totalMesas = (f) => f.mesas.reduce((s, m) => s + (m.qty || 0), 0);
 
 // Paquetes según la cantidad de mesas (solo cotizaciones con f.packages).
-// Con 4 o más mesas no hay paquete automático: se usa "Descuento especial".
+// Hay una mesa de cada tipo, así que n va de 1 a 3.
 const PACKAGES = ['Mesa Exclusiva', 'Celebración VIP', 'Experiencia Las Vegas'];
 const mesasSum = (f) => f.mesas.reduce((s, m) => s + (m.qty || 0) * (m.unit || 0), 0);
 const packageOf = (f) => {
@@ -442,8 +442,7 @@ const renderPackageBox = (f) => {
                   `precio fijo ${money(emp ? p.vegasEmpresa : p.vegas)}`];
     const now = pk
         ? `Se aplica <b>${pk.name}</b>` + (pk.discount ? `: ${money(mesasSum(f))} → ${money(mesasSum(f) - pk.discount)} (descuento ${money(pk.discount)})` : '')
-        : n > 3 ? 'Con 4 o más mesas no hay paquete automático; si corresponde, usa "Descuento especial".'
-        : 'Escribe la cantidad de mesas.';
+        : 'Marca 1 en las mesas que lleva.';
     box.innerHTML = `
         <div class="qe-pack-opts">${PACKAGES.map((name, i) => `
             <span class="qe-pack-opt${n === i + 1 ? ' on' : ''}"><b>${name}${i === 2 ? ' <em>⭐ Mejor valor</em>' : ''}</b>${i + 1} mesa${i ? 's' : ''} · ${rule[i]}</span>`).join('')}
@@ -501,7 +500,12 @@ const quoteLine = (x, { extra = false, nameInput = false } = {}) => {
     const row = el('div', `qe-line${extra ? ' qe-line-extra' : ''}`);
     const qty = intInput(x.qty || '', '0');
     qty.classList.add('qe-qty');
-    qty.addEventListener('input', () => { x.qty = intOrNull(qty.value) || 0; refreshQuote(); });
+    qty.addEventListener('input', () => {
+        x.qty = intOrNull(qty.value) || 0;
+        // Hay una sola mesa de cada tipo (los paños de la D y del óvalo se cambian de juego).
+        if (!extra && x.qty > 1) { x.qty = 1; qty.value = '1'; }
+        refreshQuote();
+    });
     row.appendChild(qty);
 
     if (nameInput) {
