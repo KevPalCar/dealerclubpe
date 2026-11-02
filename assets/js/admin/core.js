@@ -16,7 +16,7 @@ export const esc = (v) => String(v ?? '').replace(/[&<>"']/g,
 
 // ── SISTEMA DE NOTIFICACIONES TOAST ─────────────────────────
 // Reemplaza todos los alert() con mensajes no bloqueantes.
-export const showToast = (message, type = 'success') => {
+export const showToast = (message, type = 'success', duration = 4000) => {
     const container = document.getElementById('toast-container');
     if (!container) return;
     const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
@@ -25,7 +25,7 @@ export const showToast = (message, type = 'success') => {
     toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i><span>${message}</span>`;
     container.appendChild(toast);
     requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('visible')));
-    setTimeout(() => { toast.classList.remove('visible'); setTimeout(() => toast.remove(), 350); }, 4000);
+    setTimeout(() => { toast.classList.remove('visible'); setTimeout(() => toast.remove(), 350); }, duration);
 };
 
 // ── PAGINACIÓN GENÉRICA ──────────────────────────────────────

@@ -1009,3 +1009,9 @@ tr.row-new td:first-child { box-shadow: inset 3px 0 0 #dc3545; }
 }
 .info-tip:hover::after, .info-tip:focus::after { opacity: 1; visibility: visible; }
 .info-tip.tip-left::after { left: auto; right: -8px; transform: none; }
+/* Brochures: avance y resultado de la subida del PDF */
+.bro-card label.disabled { pointer-events: none; opacity: 0.5; }
+.bro-upload-msg { font-size: 0.84em; margin: 8px 0 0; min-height: 1em; }
+.bro-upload-msg.busy  { color: #17a2b8; }
+.bro-upload-msg.ok    { color: #28a745; font-weight: 600; }
+.bro-upload-msg.error { color: #dc3545; }
