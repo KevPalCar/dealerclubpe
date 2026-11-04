@@ -874,3 +874,4 @@ exports.adminSendBrochure = adminFns.adminSendBrochure;
 exports.adminStartChat = adminFns.adminStartChat;
 exports.adminAnalyzeChats = adminFns.adminAnalyzeChats;
 exports.adminCall = adminFns.adminCall;
+exports.adminFollowUp = adminFns.adminFollowUp;

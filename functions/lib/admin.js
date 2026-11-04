@@ -194,6 +194,21 @@ const adminAnalyzeChats = onCall({ secrets: cfg.ALL_SECRETS, timeoutSeconds: 120
   return { id: informe.id, conversaciones: informe.embudo.conversaciones };
 });
 
+// Interruptor del mensaje ACTIVADOR (el que el bot manda solo tras unas horas
+// de silencio). Es el mismo ajuste que Admin web → Bot y seguimiento.
+const adminFollowUp = onCall(async (request) => {
+  assertAdmin(request);
+  const { db, BASE } = require("./botsettings");
+  const ref = db.doc(`${BASE}/bot_settings/main`);
+  const d = request.data || {};
+  if (typeof d.enabled === "boolean") {
+    await ref.set({ followUp: { enabled: d.enabled } }, { merge: true });
+    return { enabled: d.enabled };
+  }
+  const snap = await ref.get();
+  return { enabled: !!(snap.exists && snap.data().followUp && snap.data().followUp.enabled) };
+});
+
 // Llamadas de WhatsApp desde el panel. Una sola función con `accion`:
 //   entrantes | permiso | pedirPermiso | llamar | contestar | rechazar | colgar | estado
 const calls = require("./calls");
@@ -242,6 +257,7 @@ const adminCall = onCall({ secrets: cfg.ALL_SECRETS }, async (request) => {
 
 module.exports = {
   adminCall,
+  adminFollowUp,
   adminAnalyzeChats,
   adminListConversations,
   adminGetConversation,
