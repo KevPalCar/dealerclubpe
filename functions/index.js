@@ -18,6 +18,7 @@ const store = require("./lib/store");
 const brain = require("./lib/brain");
 const wa = require("./lib/whatsapp");
 const notify = require("./lib/notify");
+const calls = require("./lib/calls");
 const { BROCHURES, enviarBrochure } = require("./lib/brochures");
 
 // Región cercana a Perú y límites razonables para v1.
@@ -69,11 +70,20 @@ function parseIncoming(body) {
       // Un gesto sobre un mensaje anterior: se guarda para verlo en el panel,
       // pero el bot no lo contesta (no es un mensaje nuevo).
       text = `[reacción ${message.reaction?.emoji || "(quitada)"}]`;
+    } else if (message.type === "interactive" && message.interactive?.type === "call_permission_reply") {
+      // Respondió al botón "¿Podemos llamarte?" del panel. Tampoco se contesta.
+      const r = message.interactive.call_permission_reply || {};
+      text = r.response === "accept" ? "[permiso de llamada: aceptó ✅]" : "[permiso de llamada: no aceptó]";
+      return { from: message.from, id: message.id, type: "call_permission", text, profileName };
     } else {
       text = `[mensaje de tipo ${message.type}]`;
     }
 
-    return { from: message.from, id: message.id, type: message.type, text, profileName, mediaId, caption, filename, mime };
+    // Llegó tocando un anuncio de Facebook/Instagram ("Enviar mensaje"):
+    // Meta adjunta de qué anuncio viene solo en ese primer mensaje.
+    const referral = message.referral || null;
+
+    return { from: message.from, id: message.id, type: message.type, text, profileName, mediaId, caption, filename, mime, referral };
   } catch (err) {
     logger.error("Error parseando entrante", err);
     return null;
@@ -214,6 +224,13 @@ function inferirBrochure(respuestaBot, mensajesLead) {
   return null;
 }
 
+// ¿El cliente pide material para leer? ("¿tendrás algún material?", "mándame
+// info", "el brochure", "verlo más a detalle"). Fotos o la web no cuentan.
+function pideMaterial(texto) {
+  const t = (texto || "").toLowerCase();
+  return /material|brochure|cat[aá]logo|folleto|pdf|presentaci[oó]n|a detalle|en detalle|m[aá]s detalle|(m[aá]nd|env[ií]|p[aá]s|compart)\w*.{0,20}\binfo/.test(t);
+}
+
 // Panel de atención (bandeja de la empresa). Con ?to=<número> abre ese chat.
 const PANEL_URL = "https://dealerclubpe.web.app/";
 
@@ -232,6 +249,7 @@ const citas = require("./lib/citas");
 const EVENTOS_FOCO = `
 ## FOCO DE ESTA CONVERSACIÓN: COTIZACIÓN DE EVENTO (manda sobre lo anterior)
 - Trata de USTED. Una sola pregunta por mensaje, corta (máximo 3 líneas). No repitas el Instagram ni el catálogo si ya los diste.
+- Si pide material, información para leer o verlo a detalle (no solo fotos), responde "Le comparto nuestro catálogo de Casino de Fantasía" con la etiqueta [[BROCHURE:eventos]] en ese mensaje, y sigue con la pregunta que toque. La web es solo para quien quiere ver fotos de las mesas.
 - Datos a reunir, revisando antes la conversación para no preguntar lo que ya dijeron: Fecha, Ubicación (distrito y local), Horario (una hora fija de inicio: si dan un rango, propón la mitad del rango y confírmala), Invitados, Juegos/Mesas (si no saben, recomienda con la referencia de 7 jugadores por mesa) y, si es una empresa, Empresa (razón social) y RUC. Si pediste un dato una vez y no lo dieron, sigue sin él.
 - Cuando tengas Fecha, Ubicación, Horario, Invitados y Juegos/Mesas (y Empresa y RUC si es una empresa), tu respuesta debe ser ÚNICAMENTE la etiqueta [[COTIZACION]], sola, sin ningún otro texto. El sistema arma el resumen con los datos de la conversación. No la repitas si ya se envió el resumen.`;
 const CAMPOS_COTIZACION = [
@@ -252,6 +270,84 @@ function resumenCotizacion(datos) {
     `Un asesor le arma su cotización en unos minutos y se la comparte por aquí. ` +
     `Mientras tanto, puede ver cómo son nuestros eventos en Instagram: https://www.instagram.com/dealerclubpe/`
   );
+}
+
+// --- Leads que llegan por un anuncio --------------------------
+// La bienvenida automática del anuncio la muestra Meta en el chat del lead,
+// pero no llega al webhook: sin ella el bot repetía su propio menú 1/2.
+// Si Meta no manda el texto (referral.welcome_message), se usa este, el de la
+// plantilla "dealerclub 1" de la campaña de noviembre 2026.
+const BIENVENIDA_ANUNCIO =
+  "¡Hola! Bienvenido a DealerClub ♠️♥️. Es un gusto saludarte. ¿En cuál de nuestros servicios estás interesado hoy?\n" +
+  "1️⃣ Escuela de Dealers (cursos profesionales para iniciar tu carrera y embarcar).\n" +
+  "2️⃣ Eventos Casino de Fantasía (alquiler de mesas, montaje y Dealers)\n" +
+  "Preguntas frecuentes:\n1. Deseo información de la Escuela de Dealers\n" +
+  "2. Quiero mi celebración como Las Vegas, quiero cotizar.\n3. Tengo experiencia como Dealer, quiero embarcar.";
+
+// Qué servicio promociona el anuncio, por su texto: "escuela" | "eventos" | null.
+// Eventos va primero: su anuncio puede nombrar a los dealers.
+function campanaDeAnuncio(ref) {
+  const t = [ref.headline, ref.body, ref.source_url].filter(Boolean).join(" ").toLowerCase();
+  if (/evento|fiesta|celebra|matrimonio|boda|cumplea|las vegas|casino de fantas|cotiz/.test(t)) return "eventos";
+  if (/crucer|mundo|embarc|viaj|escuela|curso|aprend|carrera|dealer|croupier/.test(t)) return "escuela";
+  return null;
+}
+
+function origenDeAnuncio(ref, mid) {
+  return {
+    tipo: ref.source_type || "ad", // "ad" | "post"
+    adId: ref.source_id || null,
+    titulo: ref.headline || null,
+    texto: ref.body || null,
+    url: ref.source_url || null,
+    campana: campanaDeAnuncio(ref),
+    bienvenida: ref.welcome_message?.text || null,
+    ctwaClid: ref.ctwa_clid || null,
+    mid,
+    ts: Date.now(),
+  };
+}
+
+// Instrucciones para responder a quien acaba de entrar por un anuncio. Solo
+// mientras el bot no le haya contestado desde ese anuncio.
+function focoAnuncio(o) {
+  const servicio = { escuela: "de la Escuela de Dealers", eventos: "de Casino de Fantasía (eventos)" }[o.campana] || "";
+  const soloSaluda = {
+    escuela: 'saluda en una línea y entra al flujo Escuela, ej.: "Hola, te cuento de la Escuela de Dealers. Para orientarte bien: ¿ya tienes experiencia en casinos o empezarías desde cero?"',
+    eventos: 'saluda en una línea, de usted, y entra al flujo Casino de Fantasía, ej.: "Buenas, con gusto le ayudo con su evento de Casino de Fantasía. Para registrar su cotización, ¿con quién tengo el gusto?"',
+  }[o.campana] || 'pregunta en una sola línea, sin repetir el menú completo: "Hola, ¿te interesa la Escuela de Dealers o Casino de Fantasía para un evento?"';
+  return `
+## ORIGEN DE ESTE LEAD (manda sobre "Primer contacto")
+Llegó tocando un anuncio ${servicio} en Facebook/Instagram${o.texto ? ` (texto del anuncio: "${o.texto.slice(0, 200)}")` : ""}.
+El primer mensaje de DealerClub del historial es la bienvenida automática del anuncio: la persona ya la vio. No la repitas ni vuelvas a mandar el menú 1/2.
+- Si responde "1", "2" o con una de las preguntas frecuentes, es su respuesta a ese menú: entra directo al flujo que corresponde (la 3 es "Dealer CON experiencia que quiere embarcar").
+- Si solo saluda o pide información sin decir qué ("hola", "info", "más información"): ${soloSaluda}
+- Si pide otra cosa que lo que promociona el anuncio, manda lo que pide la persona.
+- La bienvenida del anuncio tutea, pero eso no fija el trato: Escuela de tú, eventos de USTED (Casino de Fantasía siempre de usted).`;
+}
+
+// Historial para el modelo con la bienvenida del anuncio justo antes del
+// mensaje con que entró el lead (el bot no la envió: la puso Meta).
+function conBienvenidaAnuncio(history, conv) {
+  const o = conv?.ultimoAnuncio;
+  if (!o) return history;
+  const i = history.findIndex((h) => h.mid === o.mid);
+  if (i < 0) return history;
+  const bienvenida = { role: "assistant", text: o.bienvenida || BIENVENIDA_ANUNCIO };
+  return [...history.slice(0, i), bienvenida, ...history.slice(i)];
+}
+
+// ¿El bot aún no contestó desde que entró por el último anuncio?
+function recienLlegadoDeAnuncio(conv) {
+  const o = conv?.ultimoAnuncio;
+  return !!o && !(conv.history || []).some((h) => h.role === "assistant" && h.ts > o.ts);
+}
+
+// Servicio del chat: el que marcó el bot; en chats antiguos, por el catálogo enviado.
+function segmentoDe(conv) {
+  if (conv?.segment) return conv.segment;
+  const b = conv?.brochuresSent || [];
+  return b.includes("eventos") && !b.includes("escuela") ? "eventos" : b.includes("escuela") ? "escuela" : null;
 }
 
 // ¿El mensaje `mid` sigue siendo lo último que escribió el lead?
@@ -352,6 +448,23 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     field: req.body?.entry?.[0]?.changes?.[0]?.field,
   });
 
+  // Llamadas: entrante (suena en el panel), respuesta de una saliente o fin.
+  if (calls.esEventoDeLlamada(req.body)) {
+    try {
+      for (const c of await calls.onWebhook(req.body)) {
+        await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
+          title: "Llamada entrante por WhatsApp",
+          message: `${c.nombre || "Un lead"} (+${c.phone}) está llamando. Contesta desde el panel (suena unos 30-60 s).`,
+          click: PANEL_URL + "?to=" + c.phone,
+          tags: "telephone_receiver",
+        });
+      }
+    } catch (e) {
+      logger.error("Evento de llamada", { error: e.message });
+    }
+    return;
+  }
+
   const msg = parseIncoming(req.body);
   if (!msg || !msg.text) {
     // Sin mensaje: es un aviso de estado (entregado / leído / falló).
@@ -369,6 +482,12 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
 
     // 1.5) ¿Es Kevin (admin) dando un comando? Entonces NO es un lead:
     //      controla el bot por WhatsApp (responder como empresa / pausar).
+    if (msg.from === cfg.ADMIN_PHONE.value() && msg.type === "call_permission") {
+      // Kevin probando las llamadas con su número: se anota, no es un comando.
+      await store.ensureConversation(msg.from, msg.profileName);
+      await store.appendMessages(msg.from, [{ role: "user", text: msg.text, ts: Date.now(), mid: msg.id }]);
+      return;
+    }
     if (msg.from === cfg.ADMIN_PHONE.value()) {
       await handleAdminCommand(msg);
       return;
@@ -376,6 +495,11 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
 
     // 2) Estado de conversación
     await store.ensureConversation(msg.from, msg.profileName);
+    if (msg.referral) {
+      const origen = origenDeAnuncio(msg.referral, msg.id);
+      await store.setOrigen(msg.from, origen);
+      logger.info("Lead desde anuncio", { from: msg.from, adId: origen.adId, campana: origen.campana, titulo: origen.titulo, texto: origen.texto });
+    }
 
     // 3) Guarda el mensaje del usuario (si trae archivo, lo descarga a Storage)
     const userEntry = { role: "user", text: msg.text, ts: Date.now(), mid: msg.id };
@@ -404,7 +528,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     if (await store.isHumanTakeover(msg.from)) {
       logger.info("Takeover activo: el bot no responde", { from: msg.from });
       // El bot está callado: que el mensaje no se quede sin respuesta.
-      if (msg.type !== "reaction" && (await store.marcarAvisoCada(msg.from, "pausedAlertAt", AVISO_PAUSA_MS))) {
+      if (!["reaction", "call_permission"].includes(msg.type) && (await store.marcarAvisoCada(msg.from, "pausedAlertAt", AVISO_PAUSA_MS))) {
         await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
           title: "Te escribieron en un chat en pausa",
           message:
@@ -415,7 +539,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       }
       return;
     }
-    if (msg.type === "reaction") return;
+    if (["reaction", "call_permission"].includes(msg.type)) return;
 
     // Un "ok, gracias" o un "lo converso y le aviso" cierra la conversación:
     // no se contesta (antes el bot seguía con otra despedida). En una
@@ -424,7 +548,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     {
       const previo = await store.getConversation(msg.from);
       const hist = previo?.history || [];
-      const conAsesor = hist.some((h) => h.by === "asesor") && (previo?.brochuresSent || []).includes("eventos");
+      const conAsesor = hist.some((h) => h.by === "asesor") && segmentoDe(previo) === "eventos";
       if (cerroConversacion(hist) ||
           (conAsesor && !(msg.text || "").includes("?") && !(await necesitaRespuesta(hist)))) {
         logger.info("Acuse de cierre: no se responde", { from: msg.from });
@@ -443,11 +567,14 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     }
 
     // 6) Cerebro -> respuesta (con respaldo si el modelo falla)
-    const history = (conv?.history || []).slice(-MODEL_HISTORY).map((h) => ({ role: h.role, text: h.text }));
-    const esEventos = (conv?.brochuresSent || []).includes("eventos") && !(conv?.brochuresSent || []).includes("escuela");
+    const history = conBienvenidaAnuncio((conv?.history || []).slice(-MODEL_HISTORY), conv)
+      .map((h) => ({ role: h.role, text: h.text }));
+    const esEventos = segmentoDe(conv) === "eventos";
+    const extra = [esEventos ? EVENTOS_FOCO : "", recienLlegadoDeAnuncio(conv) ? focoAnuncio(conv.ultimoAnuncio) : ""]
+      .filter(Boolean).join("\n");
     let reply;
     try {
-      reply = await brain.generateReply(history, esEventos ? { extra: EVENTOS_FOCO } : {});
+      reply = await brain.generateReply(history, extra ? { extra } : {});
     } catch (err) {
       logger.error("Cerebro falló tras reintentos; enviando respaldo", err);
       reply =
@@ -470,9 +597,10 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     }
 
     // 7) Detectar etiquetas del cerebro: [[ESCALAR]] (derivar a humano),
-    //    [[AVISO:…]] (avisar sin pausar) y [[BROCHURE:escuela|eventos]]
-    //    (enviar PDF). Se quitan del texto.
+    //    [[AVISO:…]] (avisar sin pausar), [[SERVICIO:…]] (marca el servicio
+    //    del chat) y [[BROCHURE:escuela|eventos]] (enviar PDF). Se quitan del texto.
     let escalar = false;
+    let servicio = null;
     let cita = null;
     let cotizacion = null;
     let seguimientoAt = null;
@@ -503,6 +631,10 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
         if (at > Date.now()) cita = { at, video: !!video };
         return "";
       })
+      .replace(/\[\[SERVICIO:(escuela|eventos)\]\]/gi, (_m, tipo) => {
+        servicio = tipo.toLowerCase();
+        return "";
+      })
       .replace(/\[\[BROCHURE:(escuela|eventos)\]\]/gi, (_m, tipo) => {
         pedidos.push(tipo.toLowerCase());
         return "";
@@ -531,7 +663,9 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     const cleanReply = cotizacion || normalizarWhatsapp(sinEtiquetas);
 
     // 8) Enviar el texto (si quedó algo) y guardarlo en el historial.
-    if (cleanReply) {
+    if (cleanReply && store.repiteUltimo(conv, cleanReply)) {
+      logger.warn("Respuesta idéntica a la anterior: no se reenvía", { from: msg.from });
+    } else if (cleanReply) {
       const sendResult = await wa.sendText(msg.from, cleanReply);
       logger.info("Respuesta enviada", {
         to: msg.from,
@@ -555,6 +689,13 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
         pedidos.push(inferido);
         logger.info("Brochure inferido (el cerebro lo entregó sin etiqueta)", { tipo: inferido, from: msg.from });
       }
+    }
+
+    // 8.7) Eventos: el catálogo va solo si el cliente pide material para leer.
+    //      Si lo pidió y el bot lo mandó a la web, se envía igual.
+    if (segmentoDe(conv) === "eventos" && pideMaterial(msg.text) && !pedidos.includes("eventos")) {
+      pedidos.push("eventos");
+      logger.info("Catálogo de eventos: lo pidió el cliente", { from: msg.from });
     }
 
     // 9) Enviar los brochures pedidos que aún no se hayan enviado.
@@ -586,14 +727,18 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     //      lugar, invitados, mesas, extras). Avisamos a Kevin apenas entra el
     //      lead —una sola vez— pero SIN pausar el bot: mientras él se organiza,
     //      el bot sigue conversando y recogiendo los datos del evento.
-    if (enviados.includes("eventos")) {
+    // El servicio del chat (lo marca el bot al entrar a un flujo; antes se
+    // deducía del catálogo, que en eventos ya solo va si lo piden).
+    if (!servicio && enviados.length === 1) servicio = enviados[0];
+    if (servicio && servicio !== segmentoDe(conv)) await store.setSegment(msg.from, servicio);
+    if (servicio === "eventos" || enviados.includes("eventos")) {
       const primeraVez = await store.marcarAvisoUnico(msg.from, "eventAlertSent");
       if (primeraVez) {
         await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
           title: "Lead de eventos - Casino de Fantasia",
           message:
             `${msg.profileName || "Un lead"} (+${msg.from}) pidió información de Casino de Fantasía.\n` +
-            `El bot ya le envió el catálogo y está recogiendo los datos del evento (fecha, lugar, invitados, mesas).\n` +
+            `El bot está recogiendo por el chat los datos del evento (fecha, lugar, invitados, mesas).\n` +
             `Entra cuando puedas para cotizar: el bot NO está pausado.`,
           click: adminReplyLink(msg.from),
           tags: "tada",
@@ -689,7 +834,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
 });
 
 // Helpers expuestos solo para pruebas locales (no afecta a producción).
-exports._test = { parseIncoming, parseStatuses, motivoFallo, isValidSignature, inferirBrochure, anunciaEntrega, esElUltimoDelLead, resumenCotizacion, EVENTOS_FOCO };
+exports._test = { pideMaterial, campanaDeAnuncio, origenDeAnuncio, focoAnuncio, conBienvenidaAnuncio, recienLlegadoDeAnuncio, segmentoDe, parseIncoming, parseStatuses, motivoFallo, isValidSignature, inferirBrochure, anunciaEntrega, esElUltimoDelLead, resumenCotizacion, EVENTOS_FOCO };
 
 // ---- Tareas programadas ------------------------------------
 // Seguimiento a leads en silencio: revisa cada 30 min, solo escribe dentro
@@ -728,3 +873,4 @@ exports.adminSendMedia = adminFns.adminSendMedia;
 exports.adminSendBrochure = adminFns.adminSendBrochure;
 exports.adminStartChat = adminFns.adminStartChat;
 exports.adminAnalyzeChats = adminFns.adminAnalyzeChats;
+exports.adminCall = adminFns.adminCall;

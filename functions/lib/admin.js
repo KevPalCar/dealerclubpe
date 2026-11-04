@@ -42,6 +42,8 @@ const adminListConversations = onCall(async (request) => {
       phone: x.phone,
       name: x.name || null,
       humanTakeover: !!x.humanTakeover,
+      // Anuncio de Meta por el que llegó ("escuela" | "eventos" | "otro"), si vino por uno.
+      anuncio: x.origen ? x.origen.campana || "otro" : null,
       last: last ? previewOf(last) : "",
       lastRole: last ? last.role : null,
       lastFailed: !!(last && last.status === "failed"),
@@ -192,7 +194,54 @@ const adminAnalyzeChats = onCall({ secrets: cfg.ALL_SECRETS, timeoutSeconds: 120
   return { id: informe.id, conversaciones: informe.embudo.conversaciones };
 });
 
+// Llamadas de WhatsApp desde el panel. Una sola función con `accion`:
+//   entrantes | permiso | pedirPermiso | llamar | contestar | rechazar | colgar | estado
+const calls = require("./calls");
+const adminCall = onCall({ secrets: cfg.ALL_SECRETS }, async (request) => {
+  assertAdmin(request);
+  const d = request.data || {};
+  const phone = onlyDigits(d.phone);
+  try {
+    switch (d.accion) {
+      case "entrantes":
+        return (await calls.entrantes()).map(({ id, phone, nombre, oferta }) => ({ id, phone, nombre, oferta }));
+      case "permiso":
+        return await calls.permiso(phone);
+      case "pedirPermiso": {
+        const waId = await calls.pedirPermiso(phone, d.texto || "Para resolver tus dudas más rápido, ¿te podemos llamar por WhatsApp? Son unos minutos.");
+        await store.appendMessages(phone, [{ role: "assistant", by: "asesor", text: "📞 Se le pidió permiso para llamarle", ts: Date.now(), waId }]);
+        return { ok: true };
+      }
+      case "llamar":
+        return { id: await calls.llamar(phone, d.sdp) };
+      case "contestar":
+        await calls.contestar(d.id, d.sdp);
+        return { ok: true };
+      case "rechazar":
+        await calls.rechazar(d.id);
+        return { ok: true };
+      case "colgar":
+        await calls.colgar(d.id);
+        return { ok: true };
+      case "estado": {
+        const c = await calls.get(d.id);
+        return c ? { estado: c.estado, respuesta: c.respuesta || null, duracion: c.duracion || 0 } : { estado: "desconocido" };
+      }
+      default:
+        throw new HttpsError("invalid-argument", "Acción desconocida.");
+    }
+  } catch (e) {
+    if (e instanceof HttpsError) throw e;
+    const motivos = {
+      138006: "Esta persona aún no aceptó recibir llamadas. Usa \"Pedir permiso\" primero.",
+      131047: "Pasaron más de 24 h desde su último mensaje: no se le puede pedir permiso ahora.",
+    };
+    throw new HttpsError("failed-precondition", motivos[e.waCode] || e.message);
+  }
+});
+
 module.exports = {
+  adminCall,
   adminAnalyzeChats,
   adminListConversations,
   adminGetConversation,

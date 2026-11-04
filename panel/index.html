@@ -29,6 +29,7 @@
   .item .nm { font-weight:600; font-size:14px; display:flex; justify-content:space-between; gap:8px; }
   .item .ls { color:var(--muted); font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
   .pill { font-size:10.5px; background:#5b2330; color:#ffb3b3; padding:1px 7px; border-radius:10px; }
+  .pill.ad { background:#1f3b5b; color:#b3d4ff; margin-right:4px; }
   /* Chat */
   #chat { display:flex; flex-direction:column; min-height:0; }
   #chatTop { padding:12px 14px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px; }
@@ -69,6 +70,17 @@
   @keyframes blink { 50% { opacity:.25; } }
   .composer.recording #reply, .composer.recording #brochureBtn, .composer.recording #attachBtn, .composer.recording #micBtn, .composer.recording #sendBtn { display:none; }
   .composer.recording #recBar { display:flex; }
+  /* Llamadas de WhatsApp */
+  #callBar { display:none; position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:40; background:#14341f; border:1px solid #25d366; color:#fff; border-radius:12px; padding:10px 14px; align-items:center; gap:10px; box-shadow:0 6px 24px rgba(0,0,0,.5); max-width:calc(100% - 32px); }
+  #callBar.ring { background:#3a2a0b; border-color:var(--gold); animation:pulse 1.2s infinite; }
+  @keyframes pulse { 50% { box-shadow:0 0 0 6px rgba(233,185,73,.25); } }
+  #callBar .cb-txt { font-size:14px; } #callBar .cb-txt small { display:block; color:#cfe9d8; font-size:12px; }
+  #callBar button { border:none; border-radius:8px; padding:8px 12px; font-weight:600; }
+  #cbAccept { background:#25d366; color:#08210f; } #cbHang { background:#e5484d; color:#fff; } #cbMute { background:rgba(255,255,255,.14); color:#fff; }
+  /* ⓘ de ayuda */
+  .info-tip { position:relative; display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; border:1px solid var(--line); color:var(--muted); font-size:12px; font-style:italic; font-weight:700; cursor:help; align-self:center; }
+  .info-tip .tip-box { display:none; position:absolute; right:0; top:26px; z-index:30; width:320px; max-width:80vw; white-space:pre-line; font-style:normal; font-weight:400; font-size:12.5px; line-height:1.45; color:var(--txt); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px; box-shadow:0 6px 24px rgba(0,0,0,.5); }
+  .info-tip:hover .tip-box, .info-tip:focus .tip-box { display:block; }
   @media (max-width:720px){
     #app { grid-template-columns:1fr; }
     .col.hide-m { display:none; } #chat.show-m { display:flex; }
@@ -96,6 +108,15 @@
       <div id="chatTop"><span id="chatTitle"></span>
         <span style="display:flex;gap:6px">
           <button class="ghost" id="backBtn" style="display:none">←</button>
+          <button class="ghost" id="callBtn" title="Llamar por WhatsApp desde el número de la empresa, con el micrófono de este dispositivo.">📞 Llamar</button>
+          <span class="info-tip" tabindex="0">i<span class="tip-box"><b>Llamadas por WhatsApp: cuánto cuestan</b>
+• Si el cliente te llama: GRATIS, siempre. Suena aquí en el panel.
+• Si tú le llamas: aprox. US$ 0.012 por minuto (≈ S/ 0.05). Se cobra por minuto, en bloques de 6 s, solo si contesta.
+• Promedio: 5 min ≈ S/ 0.25 · 10 min ≈ S/ 0.45 · 20 min ≈ S/ 0.90. Sin contestar: S/ 0.
+• Para llamarle, antes debe aceptar (le llega un botón). El permiso dura 7 días. Se puede pedir 1 vez al día y 2 por semana.
+• Fallos: si no contesta 2 llamadas seguidas, WhatsApp le pregunta si quiere seguir recibiéndolas; con 4 seguidas sin contestar, se pierde el permiso.
+• Truco gratis: pídele por chat que te llame él ("¿te llamo o prefieres llamarme? toca el ícono 📞 de este chat"). Así no pagas nada.
+• Vale la pena si: ya dio su nombre, preguntó precio u horario, o duda entre programas. No vale si solo saludó.</span></span>
           <button class="ghost" id="toggleBot"></button>
         </span>
       </div>
@@ -122,6 +143,14 @@
       </div>
     </div>
   </div>
+
+  <div id="callBar">
+    <span class="cb-txt"><b id="cbName"></b><small id="cbState"></small></span>
+    <button id="cbAccept">Contestar</button>
+    <button id="cbMute">🎙 Silenciar</button>
+    <button id="cbHang">Colgar</button>
+  </div>
+  <audio id="cbAudio" autoplay></audio>
 
   <div id="lightbox">
     <div class="lbbar"><a id="lbDown" href="#">⬇ Descargar</a><button id="lbClose">✕ Cerrar</button></div>
@@ -254,7 +283,7 @@ async function refreshList() {
       const div = document.createElement("div");
       div.className = "item" + (current === c.phone ? " active" : "");
       const name = c.name || ("+" + c.phone);
-      div.innerHTML = `<div class="nm"><span>${esc(name)}</span>${c.humanTakeover ? '<span class="pill">pausado</span>' : ''}</div>
+      div.innerHTML = `<div class="nm"><span>${esc(name)}</span><span>${c.anuncio ? `<span class="pill ad" title="Llegó tocando un anuncio de Facebook/Instagram">📣 ${{ escuela: 'Anuncio Escuela', eventos: 'Anuncio Eventos' }[c.anuncio] || 'Anuncio'}</span>` : ''}${c.humanTakeover ? '<span class="pill">pausado</span>' : ''}</span></div>
         <div class="ls${c.lastFailed ? ' fail' : ''}">${c.lastFailed ? '⚠ No entregado: ' : c.lastRole === 'user' ? '' : '✓ '}${esc(c.last || '')}</div>`;
       div.onclick = () => openChat(c.phone, name);
       list.appendChild(div);
@@ -495,6 +524,184 @@ $("recSend").onclick = async () => {
   $("micBtn").textContent = "🎤"; $("micBtn").disabled = false;
   await loadChat(); refreshList();
 };
+
+// ---- Llamadas de WhatsApp ----
+// El audio va directo navegador <-> WhatsApp (WebRTC); el panel solo pasa
+// la señalización por la función adminCall.
+const callFn = (data) => call("adminCall")(data).then((r) => r.data);
+let llamada = null;          // { id, phone, nombre, dir, pc, stream, poll, reloj }
+const vistas = new Set();    // entrantes ya mostradas
+
+async function nuevaConexion() {
+  const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+  pc.ontrack = (e) => { $("cbAudio").srcObject = e.streams[0]; };
+  return { pc, stream };
+}
+
+// WhatsApp no acepta candidatos sueltos: el SDP va completo.
+function sdpCompleto(pc) {
+  return new Promise((ok) => {
+    const fin = () => ok(pc.localDescription.sdp);
+    if (pc.iceGatheringState === "complete") return fin();
+    pc.addEventListener("icegatheringstatechange", () => { if (pc.iceGatheringState === "complete") fin(); });
+    setTimeout(fin, 2500);
+  });
+}
+
+function mostrarBarra(estado, { sonando = false } = {}) {
+  $("callBar").style.display = "flex";
+  $("callBar").classList.toggle("ring", sonando);
+  $("cbName").textContent = llamada.nombre || "+" + llamada.phone;
+  $("cbState").textContent = estado;
+  $("cbAccept").style.display = sonando ? "" : "none";
+  $("cbMute").style.display = sonando ? "none" : "";
+  $("cbHang").style.display = "";
+  $("cbHang").textContent = sonando ? "Rechazar" : "Colgar";
+}
+
+function terminar(motivo) {
+  if (!llamada) return;
+  clearInterval(llamada.poll); clearInterval(llamada.reloj);
+  llamada.pc?.close();
+  llamada.stream?.getTracks().forEach((t) => t.stop());
+  timbre(false);
+  $("cbState").textContent = motivo || "Llamada terminada";
+  $("callBar").classList.remove("ring");
+  ["cbAccept", "cbMute", "cbHang"].forEach((id) => ($(id).style.display = "none"));
+  llamada = null;
+  setTimeout(() => { if (!llamada) $("callBar").style.display = "none"; }, 2500);
+  if (current) loadChat();
+}
+
+function enCurso() {
+  if (llamada.reloj) return;
+  llamada.inicio = Date.now();
+  mostrarBarra("En llamada · 0:00");
+  llamada.reloj = setInterval(() => {
+    const s = Math.floor((Date.now() - llamada.inicio) / 1000);
+    $("cbState").textContent = `En llamada · ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  }, 1000);
+}
+
+// Sigue el estado que reporta WhatsApp por el webhook.
+function vigilar() {
+  llamada.poll = setInterval(async () => {
+    if (!llamada) return;
+    try {
+      const st = await callFn({ accion: "estado", id: llamada.id });
+      if (!llamada) return;
+      if (llamada.dir === "saliente" && st.respuesta && !llamada.conRespuesta) {
+        llamada.conRespuesta = true;
+        await llamada.pc.setRemoteDescription({ type: "answer", sdp: st.respuesta });
+      }
+      if (st.estado === "en curso") enCurso();
+      else if (st.estado === "sonando" && llamada.dir === "saliente") $("cbState").textContent = "Sonando en su celular…";
+      else if (st.estado === "rechazada") terminar("Rechazó la llamada");
+      else if (st.estado === "terminada") terminar(st.duracion ? "Llamada terminada" : "No contestó");
+    } catch (e) { console.error(e); }
+  }, 1200);
+}
+
+$("callBtn").onclick = async () => {
+  if (!current || llamada) return;
+  const phone = current;
+  $("callBtn").disabled = true;
+  try {
+    const p = await callFn({ accion: "permiso", phone });
+    if (p.status === "no_permission") {
+      if (!p.puedePedir) { alert('Esta persona aún no acepta llamadas y ya se le pidió permiso hace poco (WhatsApp deja pedirlo 1 vez al día y 2 por semana). Pídele por chat que toque "Aceptar" en el mensaje que le llegó.'); return; }
+      if (!confirm("Esta persona aún no aceptó recibir llamadas de la empresa.\n\n¿Le envío el botón para que acepte? Cuando lo toque, vuelve a pulsar 📞 Llamar.")) return;
+      await callFn({ accion: "pedirPermiso", phone });
+      await loadChat();
+      return;
+    }
+    if (!p.puedeLlamar) { alert("WhatsApp no permite llamarle ahora (límite de llamadas alcanzado). Prueba más tarde."); return; }
+    llamada = { phone, nombre: $("chatTitle").textContent.split(" · ")[0], dir: "saliente" };
+    mostrarBarra("Preparando micrófono…");
+    Object.assign(llamada, await nuevaConexion());
+    await llamada.pc.setLocalDescription(await llamada.pc.createOffer());
+    $("cbState").textContent = "Llamando…";
+    llamada.id = (await callFn({ accion: "llamar", phone, sdp: await sdpCompleto(llamada.pc) })).id;
+    vigilar();
+  } catch (e) {
+    const err = e.name === "NotAllowedError" ? "Permite el micrófono en el navegador para llamar." : (e.message || e);
+    terminar("No se pudo llamar");
+    alert("No se pudo llamar: " + err);
+  } finally { $("callBtn").disabled = false; }
+};
+
+$("cbAccept").onclick = async () => {
+  if (!llamada || llamada.dir !== "entrante") return;
+  timbre(false);
+  clearInterval(llamada.poll);
+  $("cbAccept").style.display = "none";
+  $("cbState").textContent = "Conectando…";
+  try {
+    Object.assign(llamada, await nuevaConexion());
+    await llamada.pc.setRemoteDescription({ type: "offer", sdp: llamada.oferta });
+    await llamada.pc.setLocalDescription(await llamada.pc.createAnswer());
+    await callFn({ accion: "contestar", id: llamada.id, sdp: await sdpCompleto(llamada.pc) });
+    enCurso();
+    vigilar();
+    openChat(llamada.phone, llamada.nombre || "+" + llamada.phone);
+  } catch (e) {
+    const err = e.name === "NotAllowedError" ? "Permite el micrófono en el navegador para contestar." : (e.message || e);
+    terminar("No se pudo contestar");
+    alert("No se pudo contestar: " + err);
+  }
+};
+
+$("cbHang").onclick = () => {
+  if (!llamada) return;
+  const { id, dir, reloj } = llamada;
+  const accion = dir === "entrante" && !reloj ? "rechazar" : "colgar";
+  terminar(accion === "rechazar" ? "Llamada rechazada" : "Llamada terminada");
+  if (id) callFn({ accion, id }).catch(console.error);
+};
+
+$("cbMute").onclick = () => {
+  const t = llamada?.stream?.getAudioTracks()[0];
+  if (!t) return;
+  t.enabled = !t.enabled;
+  $("cbMute").textContent = t.enabled ? "🎙 Silenciar" : "🔇 Activar micrófono";
+};
+
+// Timbre simple con WebAudio (sin archivos).
+let timbreTimer = null, actx = null;
+function timbre(on) {
+  clearInterval(timbreTimer);
+  if (!on) return;
+  const tono = () => {
+    try {
+      actx = actx || new AudioContext();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.frequency.value = 440; g.gain.value = 0.08;
+      o.connect(g).connect(actx.destination);
+      o.start(); o.stop(actx.currentTime + 0.8);
+    } catch {}
+  };
+  tono(); timbreTimer = setInterval(tono, 2000);
+}
+
+// Llamadas entrantes: se revisa cada 3 s mientras el panel está abierto.
+setInterval(async () => {
+  if (!auth.currentUser || llamada) return;
+  try {
+    const c = (await callFn({ accion: "entrantes" })).find((x) => !vistas.has(x.id));
+    if (!c || llamada) return;
+    vistas.add(c.id);
+    llamada = { id: c.id, phone: c.phone, nombre: c.nombre, oferta: c.oferta, dir: "entrante" };
+    mostrarBarra("Te está llamando por WhatsApp", { sonando: true });
+    timbre(true);
+    // Si nadie contesta, WhatsApp la corta a los 30-60 s.
+    llamada.poll = setInterval(async () => {
+      const st = await callFn({ accion: "estado", id: c.id }).catch(() => ({}));
+      if (st.estado === "terminada" && llamada?.id === c.id && !llamada.reloj) terminar("Llamada perdida");
+    }, 2000);
+  } catch (e) { console.error(e); }
+}, 3000);
 
 function esc(s){ return (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 </script>

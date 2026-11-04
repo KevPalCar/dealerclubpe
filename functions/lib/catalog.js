@@ -43,6 +43,20 @@ function limpio(v) {
   return !s || /^(undefined|null|n\/a|-)$/i.test(s) ? "" : s;
 }
 
+// Rango de mensualidades de los programas abiertos, para responder un
+// "¿cuánto cuesta?" antes de saber qué programa le calza.
+function rangoMensual(cursos) {
+  const montos = cursos
+    .filter((c) => /mensual/i.test(limpio(c.priceNote)) && !/pr[oó]ximamente|cerrado/i.test(limpio(c.status)))
+    .map((c) => Number(limpio(c.price).replace(/[^\d.]/g, "")))
+    .filter((n) => n > 0);
+  if (!montos.length) return null;
+  const min = Math.min(...montos), max = Math.max(...montos);
+  return min === max
+    ? `S/ ${min} al mes`
+    : `desde S/ ${min} hasta S/ ${max} al mes, según el programa`;
+}
+
 function lineaCurso(c) {
   const juegos = Array.isArray(c.gamesIncluded)
     ? c.gamesIncluded.map(limpio).filter(Boolean).join(", ")
@@ -114,6 +128,7 @@ function formatear(cursos) {
     "Si algo no está aquí, no lo inventes.\n\n" +
     "### Programas de la Escuela (dato vivo)\n" +
     cursos.sort(porOrden).map(lineaCurso).join("\n") +
+    (rangoMensual(cursos) ? `\n\nSi preguntan "¿cuánto cuesta?" y aún no sabes qué programa le calza, responde con este rango, tal cual y primero: ${rangoMensual(cursos)}, todo incluido.` : "") +
     "\n\nRecuerda: en eventos (Casino de Fantasía) NUNCA das precio, siempre se cotiza a medida."
   );
 }

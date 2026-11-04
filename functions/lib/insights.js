@@ -44,6 +44,15 @@ Reglas:
 - Escribe en español.
 `;
 
+// Servicio del chat: el que marcó el bot; en chats antiguos, por el catálogo enviado.
+function segmento(c) {
+  if (c.segment) return c.segment;
+  const b = c.brochuresSent || [];
+  return b.includes("eventos") && !b.includes("escuela") ? "eventos" : b.includes("escuela") ? "escuela" : null;
+}
+
+const ORIGEN = { escuela: "llegó por el anuncio de la Escuela", eventos: "llegó por el anuncio de Eventos" };
+
 // Embudo calculado con datos, no con el modelo.
 function embudo(convs) {
   const tras = (c) => {
@@ -62,8 +71,12 @@ function embudo(convs) {
     }).length,
     derivadosAHumano: convs.filter((c) => c.humanTakeover).length,
     conSeguimiento: convs.filter((c) => (c.followUps || 0) > 0).length,
-    escuela: convs.filter((c) => (c.brochuresSent || []).includes("escuela")).length,
-    eventos: convs.filter((c) => (c.brochuresSent || []).includes("eventos")).length,
+    escuela: convs.filter((c) => segmento(c) === "escuela").length,
+    eventos: convs.filter((c) => segmento(c) === "eventos").length,
+    // Leads traídos por los anuncios de Meta, según el anuncio que tocaron.
+    desdeAnuncio: convs.filter((c) => c.origen).length,
+    anuncioEscuela: convs.filter((c) => c.origen?.campana === "escuela").length,
+    anuncioEventos: convs.filter((c) => c.origen?.campana === "eventos").length,
   };
 }
 
@@ -75,7 +88,8 @@ function transcripcion(convs) {
         const texto = (m.type && m.type !== "text" ? `[${m.type}] ` : "") + (m.text || "");
         return `${quien}: ${texto.replace(/\s+/g, " ").slice(0, MAX_CARACTERES)}`;
       });
-      return `### Conversación ${i + 1}${c.humanTakeover ? " (derivada a un asesor humano)" : ""}\n${lineas.join("\n")}`;
+      const origen = c.origen ? ` (${ORIGEN[c.origen.campana] || "llegó por un anuncio"})` : "";
+      return `### Conversación ${i + 1}${origen}${c.humanTakeover ? " (derivada a un asesor humano)" : ""}\n${lineas.join("\n")}`;
     })
     .join("\n\n");
 }

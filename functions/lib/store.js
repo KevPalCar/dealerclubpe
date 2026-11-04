@@ -163,6 +163,31 @@ async function addBrochuresSent(phone, tipos) {
   );
 }
 
+// ¿`texto` es igual al último mensaje que le mandamos? Así nunca se le envía
+// dos veces lo mismo (pasó: el mismo mensaje del bot llegó 70 min después).
+function repiteUltimo(conv, texto) {
+  const norm = (t) => (t || "").replace(/\s+/g, " ").trim().toLowerCase();
+  const ultimo = [...((conv && conv.history) || [])].reverse().find((h) => h.role === "assistant");
+  return !!ultimo && norm(ultimo.text) === norm(texto);
+}
+
+// De dónde llegó el lead (anuncio de Meta). Se guarda el PRIMER origen: es el
+// que trajo a la persona; si vuelve por otro anuncio, solo se anota el último.
+async function setOrigen(phone, origen) {
+  const ref = db.collection("wa_conversations").doc(phone);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const patch = { ultimoAnuncio: origen };
+    if (!snap.exists || !snap.data().origen) patch.origen = origen;
+    tx.set(ref, patch, { merge: true });
+  });
+}
+
+// Servicio del chat ("escuela" | "eventos"), para el foco del bot y las métricas.
+async function setSegment(phone, segment) {
+  await db.collection("wa_conversations").doc(phone).set({ segment }, { merge: true });
+}
+
 // Marca que ya se avisó a Kevin de este lead (alerta de una sola vez).
 // Devuelve true si ESTA llamada fue la que lo marcó; false si ya estaba.
 async function marcarAvisoUnico(phone, campo) {
@@ -238,6 +263,9 @@ module.exports = {
   marcarAvisoUnico,
   marcarAvisoCada,
   addBrochuresSent,
+  setOrigen,
+  repiteUltimo,
+  setSegment,
   upsertLead,
   saveMedia,
   getMediaBase64,

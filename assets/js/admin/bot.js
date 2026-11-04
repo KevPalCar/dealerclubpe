@@ -42,7 +42,9 @@ document.getElementById('botSettingsForm').addEventListener('submit', async (e) 
 const FUNNEL_LABELS = [
     ['conversaciones', 'conversaciones'], ['recibieronCatalogo', 'recibieron el catálogo'],
     ['respondieronTrasCatalogo', 'siguieron tras el catálogo'], ['quedaronEnSilencio', 'quedaron en silencio'],
-    ['conSeguimiento', 'con seguimiento'], ['derivadosAHumano', 'derivados a ti']
+    ['conSeguimiento', 'con seguimiento'], ['derivadosAHumano', 'derivados a ti'],
+    ['desdeAnuncio', 'llegaron por anuncio <span class="info-tip" data-tip="Chats que empezaron tocando un anuncio de Facebook/Instagram. WhatsApp avisa de qué anuncio vienen; al lado, cuántos fueron del de la Escuela y cuántos del de Eventos. Sirve para comparar con lo que muestra Meta Ads.">i</span>'],
+    ['anuncioEscuela', 'del anuncio Escuela'], ['anuncioEventos', 'del anuncio Eventos']
 ];
 const INSIGHT_LISTS = [
     ['dondeSePierden', 'Dónde se pierden'], ['objeciones', 'Objeciones'],

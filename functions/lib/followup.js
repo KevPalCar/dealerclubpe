@@ -22,26 +22,39 @@ const MAX_POR_EJECUCION = 4; // el modelo gratuito admite ~5 peticiones/min
 const DISPARADOR =
   "[SISTEMA: el cliente ya recibió la información y no ha vuelto a escribir. Escribe ahora tu mensaje activador.]";
 
+// El modelo deducía el servicio del historial y a veces se equivocaba (le
+// ofreció "¿le espero a las 8 o a las 9?" a un cliente de eventos).
+function servicioDelChat(conv) {
+  let seg = conv.segment;
+  if (!seg) {
+    const b = conv.brochuresSent || [];
+    seg = b.includes("eventos") && !b.includes("escuela") ? "eventos" : b.includes("escuela") ? "escuela" : null;
+  }
+  if (seg === "eventos") return "\n\nESTE CHAT ES DE EVENTOS (Casino de Fantasía): trata de USTED y NUNCA ofrezcas Pase VIP, visitas ni citas con horario.";
+  if (seg === "escuela") return "\n\nESTE CHAT ES DE LA ESCUELA DE DEALERS: trata de tú.";
+  return "";
+}
+
 const INSTRUCCION = `
 ## MODO ACTIVADOR (solo para este mensaje)
 El cliente recibió nuestra información y no ha vuelto a escribir. Tu mensaje NO es un recordatorio ni una súplica: es un ACTIVADOR. Su objetivo es hacerlo pensar en lo que busca y llevarlo a dar el siguiente paso.
 
 Estructura (en este orden, 5 líneas como máximo):
 1. Su nombre, si lo sabes. Mantén el trato que venías usando (tú en Escuela, usted en eventos).
-2. Nuestros TRES puntos más fuertes PARA LO QUE ESA PERSONA BUSCA, uno por línea y muy cortos (máximo 8 palabras cada uno). Elígelos según lo que dijo: su meta, su evento, su duda. Si no dijo nada, usa los tres más fuertes de ese servicio. Si el punto está en el catálogo, dilo ("lo ve en el catálogo"; en Escuela puedes citar la página).
+2. Nuestros TRES puntos más fuertes PARA LO QUE ESA PERSONA BUSCA, uno por línea y muy cortos (máximo 8 palabras cada uno). Elígelos según lo que dijo: su meta, su evento, su duda. Si no dijo nada, usa los tres más fuertes de ese servicio. En Escuela, si el punto está en el catálogo y ya se le envió, puedes citar la página. En Eventos, si ayuda, remite a https://dealerclubpe.com/servicios (o al catálogo, solo si ya se le envió).
 3. La pregunta que lo hace decidir. En ESCUELA es siempre la cita: ofrece su Pase VIP con dos horarios concretos y reales (mira el Contexto temporal y los horarios de visita), ej.: "¿Te espero mañana a las 10 a. m. o a las 4 p. m.?". En EVENTOS: de lo que vio, qué es lo que más se acerca a lo que busca y qué le genera dudas, para poder avanzar.
 
 Hazlo PERSONAL: usa lo que ESA persona contó (su juego, el programa que le recomendaste, su problema de horario, lo que preguntó de la ubicación). Un mensaje que podría mandarse a cualquiera no sirve. En Escuela solo cites páginas del catálogo si en la conversación consta que ya se le envió.
 
 Puntos fuertes de donde elegir:
-- Escuela: todo incluido con certificación · bolsa de trabajo · se empieza desde cero, sin experiencia · clases que arrancan todos los lunes · horario personalizado si trabajas o estudias · Pase VIP: 30 minutos en una clase real sin costo. No uses cruceros como gancho.
+- Escuela: todo incluido con certificación · bolsa de trabajo · se empieza desde cero, sin experiencia · clases que arrancan todos los lunes · horario personalizado si trabajas o estudias · Pase VIP: 30 minutos en una clase real sin costo. Si la persona habló de cruceros o llegó por ese anuncio, úsalo en positivo (el primer paso hacia esa meta), sin prometer el embarque.
 - Eventos: dealers profesionales formados en nuestra escuela · traslado, montaje y desmontaje incluidos · la dirección de DealerClub presente en su evento · 3 h de evento con hasta 3 mesas a la vez · empresa formal con contrato · reserva incluso con 48 h de anticipación. En eventos NUNCA des precios.
 
 Tono: seguro y directo, de quien ofrece algo bueno y no necesita insistir.
 PROHIBIDO: mencionar que no respondió ("no me respondiste", "¿sigue ahí?", "quedé a la espera", "le recuerdo", "retomando"), pedir por favor que conteste, disculparte por escribir, crear urgencia ("últimos cupos", "solo por hoy"), ofrecer descuentos, volver a enviar el catálogo o poner etiquetas [[...]].
 
 Ejemplos del tono (no los copies literal; adapta los tres puntos a la persona):
-- Eventos: "Sra. Torres, para un cumpleaños como el suyo, esto es lo que más valoran nuestros clientes:\n• Dealers profesionales que enseñan a jugar a sus invitados\n• Traslado, montaje y desmontaje a nuestro cargo\n• Hasta 3 mesas funcionando a la vez\nDe lo que vio en el catálogo, ¿qué es lo que más se acerca a lo que busca y qué le genera dudas? Indíqueme para poder avanzar."
+- Eventos: "Sra. Torres, para un cumpleaños como el suyo, esto es lo que más valoran nuestros clientes:\n• Dealers profesionales que enseñan a jugar a sus invitados\n• Traslado, montaje y desmontaje a nuestro cargo\n• Hasta 3 mesas funcionando a la vez\nDe lo que conversamos, ¿qué es lo que más se acerca a lo que busca y qué le genera dudas? Indíqueme para poder avanzar."
 - Escuela: "Carlos, para lo que buscas (Blackjack y empezar desde cero), esto es lo que más te sirve:\n• Practicas en mesa real desde la primera semana\n• Certificación y bolsa de trabajo incluidas\n• Arrancas cualquier lunes\nVen a verlo con tu Pase VIP, 30 minutos en una clase real: ¿te espero mañana a las 10 a. m. o a las 4 p. m.?"
 
 Si la conversación ya se cerró de forma natural (se despidió, ya agendó su Pase VIP, ya tiene su cotización en manos de un asesor, o pidió que no le escriban), NO hay nada que activar: responde únicamente con la palabra NO.
@@ -187,10 +200,11 @@ async function rescatar(snap, ahora) {
         logger.info("Rescate omitido: la conversación quedó cerrada", { phone });
         continue;
       }
-      const reply = await brain.generateReply(history, { extra: RESCATE });
+      const reply = await brain.generateReply(history, { extra: RESCATE + servicioDelChat(conv) });
       const texto = (reply || "").replace(/\[\[[^\]]*\]\]/g, "").replace(/\*\*(.+?)\*\*/gs, "*$1*").trim();
       await ref.set({ rescueForTs: ts }, { merge: true });
       if (!texto || /^NO\b[.!]?$/i.test(texto)) continue;
+      if (store.repiteUltimo(conv, texto)) continue;
       const r = await wa.sendText(phone, texto);
       if (r && r.error) throw new Error(JSON.stringify(r.error));
       await store.appendMessages(phone, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null }]);
@@ -234,9 +248,10 @@ async function enviarPactados(snap, ahora) {
       await ref.set({ pactadoDoneFor: conv.pactadoAt }, { merge: true });
       const history = (conv.history || []).slice(-40).map((h) => ({ role: h.role, text: h.text }));
       history.push({ role: "user", text: "[SISTEMA: es la hora que acordaste con el cliente para escribirle. Escribe ahora tu mensaje.]" });
-      const texto = ((await brain.generateReply(history, { extra: PACTADO })) || "")
+      const texto = ((await brain.generateReply(history, { extra: PACTADO + servicioDelChat(conv) })) || "")
         .replace(/\[\[[^\]]*\]\]/g, "").replace(/\*\*(.+?)\*\*/gs, "*$1*").trim();
       if (!texto) continue;
+      if (store.repiteUltimo(conv, texto)) continue;
       const r = await wa.sendText(phone, texto);
       if (r && r.error) throw new Error(JSON.stringify(r.error));
       await store.appendMessages(phone, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null, followUp: true }]);
@@ -263,6 +278,7 @@ async function confirmarCitas(snap, ahora) {
     const phone = doc.id;
     try {
       const texto = citas.textoRecordatorio(tipo, conv);
+      if (store.repiteUltimo(conv, texto)) continue;
       const r = await wa.sendText(phone, texto);
       if (r && r.error) throw new Error(JSON.stringify(r.error));
       await store.appendMessages(phone, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null }]);
@@ -305,7 +321,7 @@ async function run() {
     try {
       const history = (conv.history || []).slice(-40).map((h) => ({ role: h.role, text: h.text }));
       history.push({ role: "user", text: DISPARADOR });
-      const reply = await brain.generateReply(history, { extra: INSTRUCCION });
+      const reply = await brain.generateReply(history, { extra: INSTRUCCION + servicioDelChat(conv) });
       const texto = (reply || "")
         .replace(/\[\[[^\]]*\]\]/g, "")
         .replace(/\*\*(.+?)\*\*/gs, "*$1*")
@@ -319,6 +335,7 @@ async function run() {
         continue;
       }
 
+      if (store.repiteUltimo(conv, texto)) continue;
       const r = await wa.sendText(phone, texto);
       if (r && r.error) throw new Error(JSON.stringify(r.error));
       await store.appendMessages(phone, [
