@@ -1,0 +1,142 @@
+{
+  "_nota": "Datos de los cursos según HANDOFF_FINAL 5 nov 2026. Vista previa local (cursos.html?maqueta) y fuente del script scripts/cursos-5nov.js que los carga en Firestore con el OK de Kevin.",
+  "comunes": [
+    "Clases 100% presenciales en Zárate, SJL (a ~15 min de la estación Caja de Agua).",
+    "Pago por transferencia, antes de iniciar cada mes.",
+    "Incluye práctica en mesa real, material y acceso al campus virtual.",
+    "Inicio de clases todos los lunes, sujeto a cupos (grupos reducidos).",
+    "Facilidades de pago: consúltanos.",
+    "Certificado solo al aprobar la prueba final práctica.",
+    "La duración en horas es referencial: depende del avance de cada alumno."
+  ],
+  "courses": [
+    {
+      "id": "Trotamundos",
+      "order": 1,
+      "name": "Trotamundos",
+      "tag": "¡Más Vendido! 🔥",
+      "status": "Abierto",
+      "description": "Aspirantes a dealers de élite para trabajar en cruceros.",
+      "price": "S/ 700",
+      "priceNote": "Mensual",
+      "schedule": "Lunes a Viernes (9am - 1pm)",
+      "duration": "300-320 horas (4 meses)",
+      "gamesIncluded": ["Blackjack / Dream 21", "Ruleta Francesa", "Ultimate Texas Hold'em / Three Card Póker", "Baccarat (Punto/Banco)"],
+      "backRules": [
+        "Refuerzo si no apruebas la prueba final: S/175 por semana, solo las semanas que necesites.",
+        "Horario a medida con sobrecargo (consultar).",
+        "Para embarcar, las navieras piden además inglés intermedio: no está incluido en este programa (ver combo con Bienvenidos a Bordo)."
+      ],
+      "backWarning": "Te preparamos para postular. No somos agencia de embarque: la contratación la decide cada naviera.",
+      "combo": {
+        "name": "Trotamundos + Bienvenidos a Bordo",
+        "switchTitle": "＋ Bienvenidos a Bordo",
+        "switchSub": "Súmale inglés para embarcar",
+        "price": "S/ 990",
+        "wasPrice": "S/ 1,075",
+        "priceNote": "Mensual · 4 meses",
+        "addLines": ["Meses 3 y 4: Inglés para tripulantes de casino (Lun, Mié, Vie 1–2 pm)", "CV en inglés y simulacros de entrevista"],
+        "backRules": [
+          "Meses 1 y 2: juegos. Meses 3 y 4: juegos + inglés.",
+          "Inglés técnico de mesa y de entrevista, no inglés general. Presencial, con opción online los días que no puedas venir.",
+          "Si al terminar necesitas más tiempo, ya sea de inglés o de juegos: S/150 por semana."
+        ],
+        "backWarning": "No somos agencia de embarque: te preparamos para postular y la contratación la decide cada naviera."
+      }
+    },
+    {
+      "id": "Sabelotodo",
+      "order": 2,
+      "name": "Sabelotodo",
+      "tag": "¡Recomendado! 🔥",
+      "status": "Abierto",
+      "description": "Para una formación integral y versátil en los juegos más demandados.",
+      "price": "S/ 500",
+      "priceNote": "Mensual",
+      "schedule": "Lunes a Viernes (3pm - 6pm)",
+      "duration": "140-160 horas (3 meses)",
+      "gamesIncluded": ["Blackjack", "Ruleta Europea", "Póker Caribeño", "Baccarat (Punto/Banco)"],
+      "backRules": [
+        "Refuerzo si no apruebas la prueba final: S/125 por semana.",
+        "Horario a medida con sobrecargo (consultar).",
+        "Orientado a casinos en Lima y eventos."
+      ]
+    },
+    {
+      "id": "Bienvenidos a Bordo",
+      "order": 6,
+      "name": "Bienvenidos a Bordo",
+      "isNew": true,
+      "status": "Abierto",
+      "description": "Para dealers con experiencia que quieren trabajar en cruceros.",
+      "price": "S/ 750",
+      "priceNote": "Mensual",
+      "schedule": "Lun, Mié, Vie · 1–2 pm inglés · 2–3 pm juegos",
+      "duration": "1 a 2 meses como máximo, según tu inglés",
+      "gamesLabel": "Incluye",
+      "gamesIncluded": ["Inglés para tripulantes de casino", "Juegos nuevos de a bordo incluidos", "Mesa libre para refrescar los juegos que ya sabes", "CV en inglés y simulacros de entrevista"],
+      "ctaText": "Agenda tu evaluación gratis",
+      "ctaWhatsapp": "Hola, quiero agendar mi evaluación gratis para Bienvenidos a Bordo 🚢",
+      "backRules": [
+        "Requisitos: experiencia como dealer e inglés al menos básico. Se confirma en una evaluación gratis de 30 min con test de nivel.",
+        "Duración: 1 mes con inglés intermedio, 2 meses con básico. Máximo 2 meses.",
+        "Inglés técnico de casino (mesa y entrevista), no inglés general. Presencial, con opción online los días que no puedas venir.",
+        "Juegos nuevos de a bordo que aún no sabes (como Ultimate Texas Hold'em y Three Card Póker): Lun, Mié, Vie de 2 a 3 pm, después del inglés.",
+        "Mesa libre: si ya sabes un juego pero te falta práctica, tienes mesa para recuperar la mano. No se enseña desde cero.",
+        "Fuera de Lima: inglés online y 1 semana presencial obligatoria al final para la prueba de mesa.",
+        "Refuerzo si no apruebas la prueba final: S/190 por semana."
+      ],
+      "backWarning": "No somos agencia de embarque ni vendemos puestos. Te preparamos para postular; la contratación la decide cada naviera."
+    },
+    {
+      "id": "Spin a la carta",
+      "order": 3,
+      "name": "Spin a la carta",
+      "status": "Abierto",
+      "description": "Ideal para principiantes que buscan una inmersión rápida y sólida.",
+      "price": "S/ 350",
+      "priceNote": "Mensual",
+      "schedule": "Lunes a Viernes (9am - 12pm)",
+      "duration": "100 horas (2 meses)",
+      "gamesIncluded": ["Blackjack", "Ruleta Europea"],
+      "backRules": [
+        "Refuerzo si no apruebas la prueba final: S/90 por semana.",
+        "Ideal como primer paso: luego puedes sumar juegos con Formación a la Carta."
+      ]
+    },
+    {
+      "id": "Póker Face",
+      "order": 4,
+      "name": "Póker Face",
+      "status": "Abierto",
+      "description": "Dirigido a los entusiastas del póker que desean dominar el rol del dealer.",
+      "price": "S/ 450",
+      "priceNote": "Pago único",
+      "schedule": "Sábados y Domingos (consultar)",
+      "duration": "80-100 horas (1 mes)",
+      "gamesIncluded": ["Texas Hold'em", "Póker Caribeño"],
+      "backRules": [
+        "Pago único al iniciar.",
+        "Refuerzo si no apruebas la prueba final: S/115 por semana.",
+        "Solo fines de semana: cupos limitados."
+      ]
+    },
+    {
+      "id": "Formación a la Carta",
+      "order": 5,
+      "name": "Formación a la Carta",
+      "status": "Abierto",
+      "description": "Diseña tu propio plan de estudio eligiendo los módulos de tu interés.",
+      "price": "",
+      "priceNote": "A cotizar",
+      "schedule": "Consultar",
+      "duration": "Consultar",
+      "gamesIncluded": ["Blackjack", "Dream 21", "Ultimate Texas Hold'em", "Ruleta Europea y Americana", "Three Card Póker", "Baccarat (Punto/Banco)", "Póker Caribeño"],
+      "backRules": [
+        "Precio según módulos elegidos y horas.",
+        "Ideal para complementar otro programa o aprender un juego puntual.",
+        "Refuerzo por semanas según cotización."
+      ]
+    }
+  ]
+}
