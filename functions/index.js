@@ -579,10 +579,13 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       logger.error("Cerebro falló tras reintentos; enviando respaldo", err);
       reply =
         "Disculpa, estamos con alta demanda en este momento. En breve te atiende un asesor de DealerClub. 🎲";
-      // Avisa a Kevin que el bot no pudo responder (para que intervenga).
+      // Avisa a Kevin que el bot no pudo responder (para que intervenga), con la causa.
+      const causa = err.cuotaDiaria
+        ? "Se acabó la cuota gratis de Gemini de hoy (se renueva a las 3:00 a. m.). Hasta entonces el bot no puede responder."
+        : "Gemini falló tras varios reintentos.";
       await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
         title: "Bot con problemas - atiende tu",
-        message: `El bot no pudo responder a ${msg.profileName || "un lead"} (+${msg.from}).\nUltimo mensaje: ${msg.text}`,
+        message: `El bot no pudo responder a ${msg.profileName || "un lead"} (+${msg.from}).\n${causa}\nUltimo mensaje: ${msg.text}`,
         click: adminReplyLink(msg.from),
       });
     }

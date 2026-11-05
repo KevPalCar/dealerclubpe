@@ -69,32 +69,45 @@ async function generateReply(history, { extra = "" } = {}) {
   const forced = LLM_MODEL.value();
   const modelos = forced ? [forced] : ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
   let lastErr;
+  let agotados = 0;
   for (const model of modelos) {
     try {
       return await withRetries(() => callGemini(history, apiKey, model, extra));
     } catch (err) {
       lastErr = err;
-      const transitorio = /\b(429|503)\b/.test(err.message || "");
+      if (err.cuotaDiaria) agotados++;
+      const transitorio = /\b(429|500|503)\b/.test(err.message || "");
       if (!transitorio) break; // error no transitorio: no tiene sentido cambiar de modelo
+    }
+  }
+  // Todos los modelos sin cuota del día: el webhook lo avisa con la causa real.
+  if (agotados === modelos.length) lastErr.cuotaDiaria = true;
+  throw lastErr;
+}
+
+// Reintenta ante errores pasajeros (503 saturado, 500, 429 por minuto) con
+// esperas de 1 s, 3 s y 8 s. Si se acabó la cuota DEL DÍA no reintenta: no
+// vuelve hasta que Google la renueva (medianoche de California = 3:00 a. m. Lima).
+const ESPERAS_MS = [1000, 3000, 8000];
+async function withRetries(fn) {
+  let lastErr;
+  for (let intento = 0; intento <= ESPERAS_MS.length; intento++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const transitorio = /\b(429|500|503)\b/.test(err.message || "");
+      if (!transitorio || err.cuotaDiaria || intento === ESPERAS_MS.length) break;
+      await sleep(ESPERAS_MS[intento]);
     }
   }
   throw lastErr;
 }
 
-// Reintenta una llamada ante errores transitorios (429 cuota / 503 saturado).
-async function withRetries(fn) {
-  let lastErr;
-  for (let intento = 0; intento < 2; intento++) {
-    try {
-      return await fn();
-    } catch (err) {
-      lastErr = err;
-      const transitorio = /\b(429|503)\b/.test(err.message || "");
-      if (!transitorio || intento === 1) break;
-      await sleep(600 * (intento + 1));
-    }
-  }
-  throw lastErr;
+// ¿El 429 es por la cuota diaria (y no por exceso por minuto)?
+function esCuotaDiaria(data) {
+  const v = (data?.error?.details || []).flatMap((d) => d.violations || []);
+  return v.some((x) => /PerDay/i.test(x.quotaId || ""));
 }
 
 // --- Gemini (Google AI Studio) ------------------------------
@@ -125,8 +138,11 @@ async function callGemini(history, apiKey, model, extra) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    logger.error("Error Gemini", { status: res.status, data });
-    throw new Error(`Gemini failed: ${res.status}`);
+    const cuotaDiaria = res.status === 429 && esCuotaDiaria(data);
+    logger.error(cuotaDiaria ? "Error Gemini: cuota diaria agotada" : "Error Gemini", { status: res.status, model, data });
+    const err = new Error(`Gemini failed: ${res.status}`);
+    err.cuotaDiaria = cuotaDiaria;
+    throw err;
   }
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   return (text || "").trim();
@@ -195,8 +211,10 @@ async function generateJson(encargo, texto) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          logger.error("Error Gemini (análisis)", { status: res.status, data });
-          throw new Error(`Gemini failed: ${res.status}`);
+          logger.error("Error Gemini (análisis)", { status: res.status, model, data });
+          const err = new Error(`Gemini failed: ${res.status}`);
+          err.cuotaDiaria = res.status === 429 && esCuotaDiaria(data);
+          throw err;
         }
         return JSON.parse(data?.candidates?.[0]?.content?.parts?.[0]?.text || "");
       });
