@@ -117,6 +117,18 @@ function check(name, cond) {
   check("no lo retoma si el asesor aún tiene tiempo", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 1 * H }] }, now) === null);
   check("no lo retoma si ya le respondieron o pasó la ventana", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 3 * H }, { role: "assistant", text: "dime", ts: now - 2 * H }] }, now) === null && tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 30 * H }] }, now) === null);
 
+  // --- 2.6b) Catálogo en vivo: tarjetas de /cursos y estados (5 nov 2026) ---
+  const { formatear } = require("../lib/catalog");
+  const cat = formatear([
+    { name: "Trotamundos", order: 1, status: "Abierto", price: "S/ 700", priceNote: "Mensual", backRules: ["Refuerzo S/175 por semana"],
+      combo: { name: "Trotamundos + Bienvenidos a Bordo", price: "S/ 990", priceNote: "Mensual · 4 meses", wasPrice: "S/ 1,075" } },
+    { name: "Póker Face", order: "2", status: "Cerrado", price: "S/ 450" },
+    { name: "Al Asador", order: 3, status: "Próximamente", price: "-" },
+  ], ["Clases 100% presenciales"]);
+  check("el catálogo marca el estado de cada programa", /Trotamundos \[ABIERTO\]/.test(cat) && /Póker Face \[CERRADO\]/.test(cat) && /Al Asador \[PRÓXIMAMENTE\]/.test(cat));
+  check("el catálogo trae el reverso, el combo y las condiciones comunes", /Refuerzo S\/175/.test(cat) && /COMBO disponible: Trotamundos \+ Bienvenidos a Bordo — S\/ 990/.test(cat) && /Clases 100% presenciales/.test(cat));
+  check("el rango de precios no cuenta programas cerrados ni próximos", /S\/ 700 al mes/.test(cat) && !/S\/ 450 hasta/.test(cat));
+
   // --- 2.7) Estados de entrega y ventana de 24 h ------------
   const estados = _test.parseStatuses({
     entry: [{ changes: [{ value: { statuses: [

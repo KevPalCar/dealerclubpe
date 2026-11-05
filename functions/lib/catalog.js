@@ -25,14 +25,14 @@ const BASE = `artifacts/${APP_SCOPE}/public/data`;
 const TTL_MS = 60 * 1000;
 let cache = { texto: null, ts: 0 };
 
-const porOrden = (a, b) => (a.order ?? 999) - (b.order ?? 999);
+const porOrden = (a, b) => (Number(a.order) || 999) - (Number(b.order) || 999);
 
 // "S/ 700" + priceNote "Mensual"  ->  "S/ 700 Mensual"
 // Un precio vacío o un guion ("-", "—") significa que no hay tarifa publicada.
 function precio(c) {
   const p = limpio(c.price);
   const nota = limpio(c.priceNote);
-  if (!p) return nota ? `a consultar (${nota})` : "a consultar";
+  if (!p) return nota && !/cotiz|consult/i.test(nota) ? `a cotizar (${nota})` : "a cotizar según lo que elija";
   return nota ? `${p} ${nota}` : p;
 }
 
@@ -40,7 +40,16 @@ function precio(c) {
 // "undefined", espacios sueltos). No debe llegar al cliente.
 function limpio(v) {
   const s = (v ?? "").toString().trim();
-  return !s || /^(undefined|null|n\/a|-)$/i.test(s) ? "" : s;
+  return !s || /^(undefined|null|n\/a|-|—)$/i.test(s) ? "" : s;
+}
+const textos = (arr) => (Array.isArray(arr) ? arr.map(limpio).filter(Boolean) : []);
+
+// Estado del curso → cómo debe tratarlo el bot (regla de Kevin, 5 nov 2026).
+function estadoDe(c) {
+  const s = limpio(c.status).toLowerCase();
+  if (/cerrad/.test(s)) return "CERRADO";
+  if (/pr[oó]xim/.test(s)) return "PRÓXIMAMENTE";
+  return "ABIERTO";
 }
 
 // Rango de mensualidades de los programas abiertos, para responder un
@@ -57,27 +66,54 @@ function rangoMensual(cursos) {
     : `desde S/ ${min} hasta S/ ${max} al mes, según el programa`;
 }
 
+// Bloque de un programa: lo mismo que muestra su tarjeta en /cursos, frente
+// y reverso ("lo que debes saber"), más su combo si lo tiene.
 function lineaCurso(c) {
-  const juegos = Array.isArray(c.gamesIncluded)
-    ? c.gamesIncluded.map(limpio).filter(Boolean).join(", ")
-    : limpio(c.gamesIncluded);
+  const juegos = Array.isArray(c.gamesIncluded) ? textos(c.gamesIncluded).join(", ") : limpio(c.gamesIncluded);
   const horario = limpio(c.schedule);
   const duracion = limpio(c.duration);
-  const partes = [
-    limpio(c.name) || "Programa",
+  const etiquetaLista = limpio(c.gamesLabel) || "Juegos";
+  const cabecera = [
+    `### ${limpio(c.name) || "Programa"} [${estadoDe(c)}]`,
     limpio(c.tag) ? `(${limpio(c.tag)})` : null,
-    limpio(c.status) || "Abierto",
-    precio(c),
-    horario ? `Horario: ${horario}` : "Horario: a coordinar",
-    juegos ? `Juegos: ${juegos}` : null,
+    c.isNew ? "(NUEVO)" : null,
+  ].filter(Boolean).join(" ");
+  const lineas = [
+    cabecera,
+    limpio(c.description) ? `Para quién: ${limpio(c.description)}` : null,
+    `Precio: ${precio(c)}`,
+    `Horario: ${horario || "a coordinar"}`,
     duracion ? `Duración: ${duracion}` : null,
-  ].filter(Boolean);
-  return `- ${partes.join(" — ")}`;
+    juegos ? `${etiquetaLista}: ${juegos}` : null,
+  ];
+  const reglas = textos(c.backRules);
+  if (reglas.length) lineas.push("Lo que debe saber de este programa:", ...reglas.map((r) => `  · ${r}`));
+  if (limpio(c.backWarning)) lineas.push(`Aviso: ${limpio(c.backWarning)}`);
+  const k = c.combo && limpio(c.combo.name) ? c.combo : null;
+  if (k) {
+    lineas.push(
+      `COMBO disponible: ${limpio(k.name)} — ${limpio(k.price)}${limpio(k.priceNote) ? " " + limpio(k.priceNote) : ""}` +
+        (limpio(k.wasPrice) ? ` (por separado costaría ${limpio(k.wasPrice)})` : "")
+    );
+    const extra = textos(k.addLines);
+    if (extra.length) lineas.push(`  El combo suma: ${extra.join("; ")}`);
+    const rk = textos(k.backRules);
+    if (rk.length) lineas.push("  Lo que debe saber del combo:", ...rk.map((r) => `    · ${r}`));
+    if (limpio(k.backWarning)) lineas.push(`  Aviso del combo: ${limpio(k.backWarning)}`);
+  }
+  return lineas.filter(Boolean).join("\n");
 }
 
 async function leerColeccion(nombre) {
   const snap = await db.collection(`${BASE}/${nombre}`).get();
   return snap.docs.map((d) => d.data());
+}
+
+// Condiciones comunes a todos los cursos (reverso de las tarjetas, editable en
+// Admin → Cursos → Condiciones comunes).
+async function leerComunes() {
+  const snap = await db.doc(`${BASE}/config/cursos`).get();
+  return snap.exists ? textos(snap.data().comunes) : [];
 }
 
 // Devuelve el bloque de texto para el system prompt, o null si
@@ -86,17 +122,18 @@ async function getCatalogoTexto() {
   if (cache.texto && Date.now() - cache.ts < TTL_MS) return cache.texto;
 
   try {
-    const [cursos, mesas, brochureEventos, brochureEscuela] = await Promise.all([
+    const [cursos, mesas, brochureEventos, brochureEscuela, comunes] = await Promise.all([
       leerColeccion("courses"),
       leerColeccion("tables"),
       leerBrochure("eventos"),
       leerBrochure("escuela"),
+      leerComunes().catch(() => []),
     ]);
 
     if (!cursos.length && !brochureEventos && !brochureEscuela) return cache.texto || null;
 
     // El catálogo en vivo (precios, horarios) va primero: manda sobre el brochure.
-    const texto = [formatear(cursos), formatearMesas(mesas), brochureEscuela, brochureEventos].filter(Boolean).join("\n\n");
+    const texto = [formatear(cursos, comunes), formatearMesas(mesas), brochureEscuela, brochureEventos].filter(Boolean).join("\n\n");
     cache = { texto, ts: Date.now() };
     return texto;
   } catch (err) {
@@ -120,15 +157,24 @@ async function leerBrochure(tipo) {
 }
 
 // Separado de la lectura para poder probarlo con datos de ejemplo.
-function formatear(cursos) {
+function formatear(cursos, comunes = []) {
   if (!cursos.length) return null;
+  const ordenados = [...cursos].sort(porOrden);
+  const rango = rangoMensual(ordenados);
   return (
-    "## CATÁLOGO VIGENTE (fuente de verdad — leído del panel de admin)\n" +
-    "Estos datos MANDAN sobre cualquier precio, horario o duración que aparezca en otra parte de tus instrucciones o en el catálogo PDF. " +
+    "## CATÁLOGO VIGENTE (fuente de verdad — leído en vivo del panel de admin)\n" +
+    "Estos datos MANDAN sobre cualquier precio, horario, duración, programa o condición que aparezca en otra parte de tus instrucciones, " +
+    "en ejemplos o en el catálogo PDF. Es lo mismo que el cliente ve en las tarjetas de dealerclubpe.com/cursos (frente y reverso). " +
     "Si algo no está aquí, no lo inventes.\n\n" +
-    "### Programas de la Escuela (dato vivo)\n" +
-    cursos.sort(porOrden).map(lineaCurso).join("\n") +
-    (rangoMensual(cursos) ? `\n\nSi preguntan "¿cuánto cuesta?" y aún no sabes qué programa le calza, responde con este rango, tal cual y primero: ${rangoMensual(cursos)}, todo incluido.` : "") +
+    "REGLAS POR ESTADO (obligatorias):\n" +
+    "- [ABIERTO]: se ofrece normalmente.\n" +
+    "- [CERRADO]: NO lo ofrezcas ni lo recomiendes. Si lo piden, di \"Ese programa no tiene cupos por ahora\" y ofrece el programa ABIERTO más parecido a lo que busca.\n" +
+    "- [PRÓXIMAMENTE]: si lo piden, di que aún no inicia y ofrece anotarlo en la lista de espera; si acepta, pon en línea aparte [[AVISO:Lista de espera - <nombre>, programa <X>]].\n" +
+    "Nunca recomiendes por iniciativa propia un programa que no esté [ABIERTO].\n\n" +
+    "### Programas de la Escuela (dato vivo)\n\n" +
+    ordenados.map(lineaCurso).join("\n\n") +
+    (comunes.length ? "\n\n### Condiciones para TODOS los programas\n" + comunes.map((t) => `- ${t}`).join("\n") : "") +
+    (rango ? `\n\nSi preguntan "¿cuánto cuesta?" y aún no sabes qué programa le calza, responde con este rango, tal cual y primero: ${rango}, todo incluido.` : "") +
     "\n\nRecuerda: en eventos (Casino de Fantasía) NUNCA das precio, siempre se cotiza a medida."
   );
 }
