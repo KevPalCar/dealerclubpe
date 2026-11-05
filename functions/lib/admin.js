@@ -10,6 +10,8 @@ const cfg = require("./config");
 const store = require("./store");
 const wa = require("./whatsapp");
 const { BROCHURES, enviarBrochure } = require("./brochures");
+const followup = require("./followup");
+const { getBotSettings, db: settingsDb, BASE } = require("./botsettings");
 
 function assertAdmin(request) {
   const email = request.auth && request.auth.token && request.auth.token.email;
@@ -59,10 +61,13 @@ const adminGetConversation = onCall(async (request) => {
   if (!phone) throw new HttpsError("invalid-argument", "Falta el número.");
   const conv = await store.getConversation(phone);
   const leadSnap = await store.db.collection("wa_leads").doc(phone).get();
+  const { followUp } = await getBotSettings();
   return {
     phone,
     name: conv && conv.name,
     humanTakeover: !!(conv && conv.humanTakeover),
+    // Mensajes automáticos que el bot enviaría si nadie escribe antes.
+    automaticos: followup.proximosAutomaticos(conv, followUp),
     history: (conv && conv.history) || [],
     // "open" | "closed" | "unknown": si WhatsApp aún deja escribirle gratis.
     window: store.windowState(conv),
@@ -196,17 +201,32 @@ const adminAnalyzeChats = onCall({ secrets: cfg.ALL_SECRETS, timeoutSeconds: 120
 
 // Interruptor del mensaje ACTIVADOR (el que el bot manda solo tras unas horas
 // de silencio). Es el mismo ajuste que Admin web → Bot y seguimiento.
+// Devuelve también los valores reales (horas, franja, tope) para que el panel
+// explique exactamente qué hace.
 const adminFollowUp = onCall(async (request) => {
   assertAdmin(request);
-  const { db, BASE } = require("./botsettings");
-  const ref = db.doc(`${BASE}/bot_settings/main`);
+  const ref = settingsDb.doc(`${BASE}/bot_settings/main`);
   const d = request.data || {};
   if (typeof d.enabled === "boolean") {
     await ref.set({ followUp: { enabled: d.enabled } }, { merge: true });
-    return { enabled: d.enabled };
   }
-  const snap = await ref.get();
-  return { enabled: !!(snap.exists && snap.data().followUp && snap.data().followUp.enabled) };
+  const { followUp } = await getBotSettings({ fresco: true });
+  return { ...followUp, max: followup.MAX_POR_CONVERSACION };
+});
+
+// Cancelar un mensaje automático programado en un chat.
+// tipo: "seguimiento" | "pactado" | "cita"
+const adminCancelAuto = onCall(async (request) => {
+  assertAdmin(request);
+  const phone = onlyDigits(request.data && request.data.phone);
+  const tipo = String((request.data && request.data.tipo) || "");
+  if (!phone) throw new HttpsError("invalid-argument", "Falta el número.");
+  const conv = await store.getConversation(phone);
+  const parche = conv && followup.parcheCancelar(conv, tipo);
+  if (!parche) throw new HttpsError("failed-precondition", "No hay nada programado de ese tipo.");
+  await store.db.collection("wa_conversations").doc(phone).set(parche, { merge: true });
+  logger.info("Mensaje automático cancelado desde el panel", { phone, tipo });
+  return { ok: true };
 });
 
 // Llamadas de WhatsApp desde el panel. Una sola función con `accion`:
@@ -258,6 +278,7 @@ const adminCall = onCall({ secrets: cfg.ALL_SECRETS }, async (request) => {
 module.exports = {
   adminCall,
   adminFollowUp,
+  adminCancelAuto,
   adminAnalyzeChats,
   adminListConversations,
   adminGetConversation,

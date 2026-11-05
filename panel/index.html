@@ -77,8 +77,23 @@
   #callBar .cb-txt { font-size:14px; } #callBar .cb-txt small { display:block; color:#cfe9d8; font-size:12px; }
   #callBar button { border:none; border-radius:8px; padding:8px 12px; font-weight:600; }
   #cbAccept { background:#25d366; color:#08210f; } #cbHang { background:#e5484d; color:#fff; } #cbMute { background:rgba(255,255,255,.14); color:#fff; }
-  .fu-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 14px; border-bottom:1px solid var(--line); font-size:13px; color:var(--muted); }
-  .fu-row label { display:flex; align-items:center; gap:6px; cursor:pointer; }
+  .fu-row { padding:10px 14px; border-bottom:1px solid var(--line); font-size:13px; color:var(--muted); }
+  .fu-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  /* Interruptor del seguimiento: el estado se lee en texto, no solo por el color */
+  .switch { display:flex; align-items:center; gap:10px; background:transparent; border:none; padding:0; color:var(--txt); text-align:left; }
+  .switch .track { position:relative; flex:none; width:40px; height:22px; border-radius:11px; background:#3a3a42; transition:background .2s; }
+  .switch .track::after { content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:#cfcfd6; transition:transform .2s; }
+  .switch[aria-checked="true"] .track { background:var(--gold); }
+  .switch[aria-checked="true"] .track::after { transform:translateX(18px); background:#1a1a1a; }
+  .switch .lbl { font-size:13px; } .switch .lbl b { color:#8d8d96; }
+  .switch[aria-checked="true"] .lbl b { color:var(--gold); }
+  .fu-desc { margin-top:6px; font-size:12px; line-height:1.4; }
+  /* Mensajes automáticos programados en el chat abierto */
+  #autoBar { display:none; padding:7px 14px; border-bottom:1px solid var(--line); background:#1a1708; font-size:12.5px; color:#e8d9a8; }
+  #autoBar .ar { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:2px 0; }
+  #autoBar.paused { background:#1d1d22; color:var(--muted); }
+  .autotag { font-size:11px; color:#e9cf86; margin-bottom:4px; opacity:.9; }
+  @media (prefers-reduced-motion: reduce) { .switch .track, .switch .track::after { transition:none; } }
   /* ⓘ de ayuda */
   .info-tip { position:relative; display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; border:1px solid var(--line); color:var(--muted); font-size:12px; font-style:italic; font-weight:700; cursor:help; align-self:center; }
   .info-tip .tip-box { display:none; position:absolute; right:0; top:26px; z-index:30; width:320px; max-width:80vw; white-space:pre-line; font-style:normal; font-weight:400; font-size:12.5px; line-height:1.45; color:var(--txt); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px; box-shadow:0 6px 24px rgba(0,0,0,.5); }
@@ -105,11 +120,18 @@
     <div class="col" id="listCol">
       <div class="top"><span style="display:flex;align-items:center;gap:8px"><img src="isotipo.png" alt="" style="height:26px" /><b>DealerClub</b></span><span style="display:flex;gap:6px"><button class="ghost" id="newChat">＋ Nuevo</button><button class="ghost" id="logout">Salir</button></span></div>
       <div class="fu-row">
-        <label><input type="checkbox" id="fuToggle" /> Seguimiento automático</label>
-        <span class="info-tip" tabindex="0">i<span class="tip-box"><b>Seguimiento automático (mensaje activador)</b>
-Si está encendido, el bot le escribe solo a quien dejó de responder unas horas (con 3 puntos fuertes y una pregunta). Afecta a TODOS los chats.
-Al apagarlo, el bot sigue: respondiendo todo lo que le escriban, el mensaje que el cliente aceptó ("¿te escribo mañana a las 11?"), la confirmación del Pase VIP y la respuesta a un chat que dejaste en pausa más de 2 h.
+        <div class="fu-head">
+          <button class="switch" id="fuToggle" role="switch" aria-checked="false" disabled>
+            <span class="track"></span><span class="lbl">Seguimiento automático: <b id="fuState">…</b></span>
+          </button>
+          <span class="info-tip" tabindex="0">i<span class="tip-box"><b>Seguimiento automático (mensaje activador)</b>
+Encendido: el bot le escribe solo a quien dejó de responder (3 puntos fuertes y una pregunta). Vale para TODOS los chats que no estén en pausa.
+Apagado: el bot no manda ese mensaje. Sí sigue respondiendo lo que le escriban, y mandando el mensaje que el cliente aceptó ("¿te escribo mañana a las 11?") y la confirmación del Pase VIP.
+En un chat en PAUSA el bot nunca escribe nada, ni siquiera eso. Si el cliente te escribió y en 2 h nadie le contestó, solo te llega una alerta a ti.
+En cada chat, arriba, ves si hay algo programado y puedes cancelarlo.
 Dato: de los 5 que mandó hasta el 4 nov, ninguno recibió respuesta.</span></span>
+        </div>
+        <div class="fu-desc" id="fuDesc"></div>
       </div>
       <div class="list" id="list"></div>
     </div>
@@ -129,6 +151,7 @@ Dato: de los 5 que mandó hasta el 4 nov, ninguno recibió respuesta.</span></sp
           <button class="ghost" id="toggleBot"></button>
         </span>
       </div>
+      <div id="autoBar"></div>
       <div id="msgs"></div>
       <div class="banner" id="winBanner" style="display:none"><span id="winText"></span><br>
         <a id="winPhone" href="#" target="_blank" rel="noopener" title="Abre WhatsApp en este dispositivo con el mensaje del cuadro. Sale desde el número que tengas ahí, no desde el de la empresa, y no queda en este panel.">📱 Escribirle desde mi WhatsApp (gratis)</a></div>
@@ -258,7 +281,7 @@ onAuthStateChanged(auth, (user) => {
     $("app").style.display = "grid";
     refreshList();
     listTimer = setInterval(refreshList, 5000);
-    call("adminFollowUp")({}).then((r) => { $("fuToggle").checked = r.data.enabled; }).catch(console.error);
+    call("adminFollowUp")({}).then((r) => pintarSeguimiento(r.data)).catch(console.error);
     handleDeepLink();
   } else {
     $("app").style.display = "none";
@@ -307,7 +330,7 @@ async function refreshList() {
 
 // ---- Chat ----
 async function openChat(phone, name) {
-  if (current !== phone) { mediaEls = {}; lastHistory = ""; }
+  if (current !== phone) { mediaEls = {}; lastHistory = ""; autoSig = ""; }
   current = phone;
   $("chat").classList.add("show-m"); $("listCol").classList.add("hide-m");
   $("backBtn").style.display = window.innerWidth <= 720 ? "" : "none";
@@ -355,6 +378,14 @@ async function loadChat() {
       } else {
         d.textContent = m.text;
       }
+      // Lo que el bot mandó solo (sin que el cliente escribiera), para no confundirlo con una respuesta.
+      const tipoAuto = m.auto || (m.followUp ? "seguimiento" : null);
+      if (m.role !== "user" && tipoAuto) {
+        const tag = document.createElement("div");
+        tag.className = "autotag";
+        tag.textContent = AUTO_ETIQUETA[tipoAuto] || AUTO_ETIQUETA.seguimiento;
+        d.prepend(tag);
+      }
       if (m.storagePath && m.caption) {
         const cap = document.createElement("div");
         cap.className = "cap"; cap.textContent = m.caption;
@@ -393,6 +424,7 @@ async function loadChat() {
     for (const id of ["sendBtn", "brochureBtn", "micBtn"]) $(id).disabled = closed;
     $("attachBtn").style.opacity = closed ? ".4" : "";
     $("attachBtn").style.pointerEvents = closed ? "none" : "";
+    pintarAutomaticos(data);
     const tb = $("toggleBot");
     tb.textContent = data.humanTakeover ? "▶ Reactivar bot" : "⏸ Pausar bot";
     tb.onclick = async () => { await call("adminSetTakeover")({ phone: current, value: !data.humanTakeover }); loadChat(); refreshList(); };
@@ -536,17 +568,82 @@ $("recSend").onclick = async () => {
 };
 
 // ---- Seguimiento automático (para todos los chats) ----
-$("fuToggle").onchange = async () => {
-  const enabled = $("fuToggle").checked;
-  $("fuToggle").disabled = true;
+// La descripción sale de los valores reales que usa el bot (los devuelve adminFollowUp).
+const hh = (h) => String(h).padStart(2, "0") + ":00";
+function pintarSeguimiento(fu) {
+  const sw = $("fuToggle");
+  sw.setAttribute("aria-checked", String(!!fu.enabled));
+  sw.disabled = false;
+  $("fuState").textContent = fu.enabled ? "ENCENDIDO" : "APAGADO";
+  $("fuDesc").textContent =
+    `Si el cliente deja de responder, el bot le escribe 1 vez a las ${fu.hours} h de silencio ` +
+    `(máximo ${fu.max} veces por cliente), de ${hh(fu.from)} a ${hh(fu.to)} (lunes desde las 11:00, viernes hasta las 16:00) ` +
+    `y solo dentro de las 24 h desde su último mensaje. Nunca en chats en pausa.`;
+}
+$("fuToggle").onclick = async () => {
+  const sw = $("fuToggle");
+  const enabled = sw.getAttribute("aria-checked") !== "true";
+  if (enabled && !confirm("¿Encender el seguimiento automático? El bot escribirá solo a los clientes que dejen de responder.")) return;
+  sw.disabled = true;
   try {
-    await call("adminFollowUp")({ enabled });
+    pintarSeguimiento((await call("adminFollowUp")({ enabled })).data);
+    lastHistory = ""; loadChat(); // lo programado en el chat abierto cambia
   } catch (e) {
-    $("fuToggle").checked = !enabled;
+    sw.disabled = false;
     alert("No se pudo cambiar: " + (e.message || e));
   }
-  $("fuToggle").disabled = false;
 };
+
+// ---- Mensajes automáticos programados en el chat abierto ----
+const AUTO_ETIQUETA = {
+  seguimiento: "🤖 seguimiento automático",
+  pactado: "🤖 seguimiento acordado con el cliente",
+  cita: "🤖 recordatorio automático del Pase VIP",
+};
+const AUTO_NOMBRE = {
+  seguimiento: "Seguimiento automático",
+  pactado: "Seguimiento que el cliente aceptó",
+  cita: "Recordatorio del Pase VIP",
+};
+function cuando(ms) {
+  if (ms - Date.now() <= 30 * 60 * 1000) return "en los próximos 30 min";
+  const f = new Date(ms);
+  const hoy = new Date().toDateString() === f.toDateString();
+  const hora = f.toLocaleTimeString("es-PE", { hour: "numeric", minute: "2-digit", timeZone: "America/Lima" });
+  return (hoy ? "hoy" : f.toLocaleDateString("es-PE", { weekday: "long", timeZone: "America/Lima" })) + " hacia las " + hora;
+}
+let autoSig = "";
+function pintarAutomaticos(data) {
+  const bar = $("autoBar");
+  const lista = data.automaticos || [];
+  const sig = JSON.stringify([data.humanTakeover, lista.map((a) => a.tipo + Math.round(a.at / 60000))]);
+  if (sig === autoSig) return; // evita repintar (y perder el clic) en cada poll
+  autoSig = sig;
+  bar.className = data.humanTakeover ? "paused" : "";
+  if (data.humanTakeover) {
+    bar.style.display = "block";
+    bar.textContent = "⏸ Bot en pausa en este chat: no se enviará ningún mensaje automático.";
+    return;
+  }
+  if (!lista.length) { bar.style.display = "none"; bar.replaceChildren(); return; }
+  bar.style.display = "block";
+  bar.replaceChildren(...lista.map((a) => {
+    const row = document.createElement("div");
+    row.className = "ar";
+    const txt = document.createElement("span");
+    txt.textContent = `🤖 Programado: ${AUTO_NOMBRE[a.tipo] || a.tipo}, ${cuando(a.at)} (si el cliente no escribe antes)`;
+    const btn = document.createElement("button");
+    btn.className = "ghost"; btn.textContent = "Cancelar";
+    btn.onclick = async () => {
+      if (!confirm(`¿Cancelar el mensaje "${AUTO_NOMBRE[a.tipo] || a.tipo}" en este chat?`)) return;
+      btn.disabled = true;
+      try { await call("adminCancelAuto")({ phone: current, tipo: a.tipo }); autoSig = ""; loadChat(); }
+      catch (e) { btn.disabled = false; alert("No se pudo cancelar: " + (e.message || e)); }
+    };
+    row.append(txt, btn);
+    return row;
+  }));
+}
 
 // ---- Llamadas de WhatsApp ----
 // El audio va directo navegador <-> WhatsApp (WebRTC); el panel solo pasa

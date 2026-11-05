@@ -30,8 +30,9 @@ const DEFAULTS = {
 const TTL_MS = 60 * 1000;
 let cache = { value: null, ts: 0 };
 
-async function getBotSettings() {
-  if (cache.value && Date.now() - cache.ts < TTL_MS) return cache.value;
+// { fresco: true } salta la caché (el panel, justo después de cambiar el ajuste).
+async function getBotSettings({ fresco = false } = {}) {
+  if (!fresco && cache.value && Date.now() - cache.ts < TTL_MS) return cache.value;
   try {
     const snap = await db.doc(`${BASE}/bot_settings/main`).get();
     const data = snap.exists ? snap.data() : {};

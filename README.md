@@ -91,7 +91,7 @@ El bot guarda sus chats aparte, en `wa_conversations`, `wa_leads` y `wa_processe
 | `lib/brain.js` | Llama al modelo de IA |
 | `lib/catalog.js` | Le pasa al bot los cursos vigentes y el texto de los brochures |
 | `lib/brochures.js` | Qué PDF envía (el subido en el admin o el de `brochures/`) y el envío en sí, para el bot y para el botón Catálogo del panel |
-| `lib/followup.js` | Mensaje activador a quien dejó de responder, relevo del bot en chats en pausa sin respuesta (2 h) y confirmación de citas |
+| `lib/followup.js` | Mensaje activador a quien dejó de responder, seguimiento pactado y confirmación de citas. Nada automático sale en un chat en pausa (se revisa justo antes de enviar); si un chat en pausa lleva 2 h sin respuesta, solo se avisa a Kevin. También calcula lo programado por chat para el panel |
 | `lib/citas.js` | Citas de Pase VIP: las anota en el Google Calendar del negocio, enlace de calendario para el lead y textos para confirmar antes de la visita |
 | `lib/insights.js` | Informe semanal de chats |
 | `lib/botsettings.js` | Lee los ajustes que se cambian en el admin |

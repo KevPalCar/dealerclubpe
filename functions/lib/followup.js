@@ -61,10 +61,10 @@ Si la conversación ya se cerró de forma natural (se despidió, ya agendó su P
 `;
 
 // Hora y día de la semana en Lima (0 = domingo … 6 = sábado).
-function ahoraLima() {
+function ahoraLima(ms = Date.now()) {
   const partes = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Lima", hour: "numeric", hour12: false, weekday: "short",
-  }).formatToParts(new Date());
+  }).formatToParts(new Date(ms));
   const hora = Number(partes.find((p) => p.type === "hour").value) % 24;
   const dia = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(partes.find((p) => p.type === "weekday").value);
   return { hora, dia };
@@ -99,19 +99,13 @@ function tocaSeguimiento(conv, ahora, horasSilencio) {
   return ultimoLead.ts;
 }
 
-// --- Rescate de chats en pausa ------------------------------
-// Con el bot en pausa responde una persona. Si el lead escribió y nadie le
-// contestó en RESCATE_HORAS, el bot retoma el chat (una vez por silencio)
-// antes de que se cierre la ventana gratuita de 24 h.
-const RESCATE_HORAS = 2;
-const RESCATE = `
-## MODO RELEVO (solo para este mensaje)
-Un asesor humano estaba atendiendo este chat y no ha podido responder el último mensaje del cliente. Retomas tú.
-- Responde lo último que escribió, con datos reales. No contradigas nada de lo que el asesor ya dijo en la conversación (precios, horarios acordados, condiciones): eso manda.
-- Si lo que pide solo puede decidirlo el asesor (una cotización, el adicional de un horario personalizado, un caso especial), dilo con claridad, sin inventar el dato, y avanza con lo que sí puedes: en Escuela, la cita del Pase VIP con dos horarios; en eventos, el dato que falte para cotizar.
-- No pongas etiquetas [[...]].
-Si su último mensaje no necesita respuesta (agradece, se despide, solo confirma), responde únicamente con la palabra NO.
-`;
+// --- Chats en pausa sin respuesta ----------------------------
+// REGLA DE KEVIN (5 nov 2026): en un chat en pausa (humanTakeover) el bot
+// NUNCA escribe solo: ni respuesta, ni seguimiento, ni recordatorio. Antes
+// existía un "rescate" que a las 2 h le contestaba al cliente y quitaba la
+// pausa; se eliminó. Ahora, si el cliente escribió y nadie le contestó en
+// AVISO_PAUSA_HORAS, solo se le avisa a Kevin (ntfy), una vez por silencio.
+const AVISO_PAUSA_HORAS = 2;
 // ¿El mensaje solo agradece, asiente o se despide? ("ok, gracias", "listo 👍",
 // "perfecto, muchas gracias"). No pide nada: la conversación terminó bien y
 // contestarle de nuevo la estira sin necesidad.
@@ -150,7 +144,8 @@ function cerroConversacion(history) {
   return anterior?.role === "assistant" && !(anterior.text || "").includes("?");
 }
 
-// Para lo que la lista de frases no alcanza a ver: el modelo lee el final del
+// Para lo que la lista de frases no alcanza a ver (lo usa el webhook al
+// recibir un mensaje): el modelo lee el final del
 // chat y decide si al lead le hace falta una respuesta. Ante un error, se
 // responde (es peor dejar a alguien sin respuesta que una de más).
 const ENCARGO_CIERRE =
@@ -170,59 +165,60 @@ async function necesitaRespuesta(history) {
   }
 }
 
-function tocaRescate(conv, ahora) {
+// ¿Hay que avisarle a Kevin que un chat en pausa espera respuesta?
+// Devuelve el ts del mensaje del cliente (para avisar una sola vez) o null.
+function tocaAvisoPausa(conv, ahora) {
   if (!conv || !conv.humanTakeover) return null;
   const history = conv.history || [];
   const ultimo = history[history.length - 1];
   if (!ultimo || ultimo.role !== "user" || !ultimo.ts) return null; // ya le respondieron
   if (/^\[reacción/.test(ultimo.text || "")) return null;
   if (cerroConversacion(history)) return null;
-  if (ahora - ultimo.ts < RESCATE_HORAS * HORA) return null; // el asesor aún tiene tiempo
-  if (ahora - ultimo.ts > VENTANA_MS) return null; // ventana gratuita cerrada
-  if (conv.rescueForTs === ultimo.ts) return null;
+  if (ahora - ultimo.ts < AVISO_PAUSA_HORAS * HORA) return null; // el asesor aún tiene tiempo
+  if (ahora - ultimo.ts > VENTANA_MS) return null; // ya no se le puede escribir gratis
+  if (conv.rescueForTs === ultimo.ts) return null; // ya se avisó por este mensaje
   return ultimo.ts;
 }
-async function rescatar(snap, ahora) {
+// Solo avisa a Kevin. NUNCA le escribe al cliente ni quita la pausa.
+async function avisarPausados(snap, ahora) {
   const notify = require("./notify");
   const cfg = require("./config");
-  let rescatados = 0;
+  let avisados = 0;
   for (const doc of snap.docs) {
-    if (rescatados >= MAX_POR_EJECUCION) break;
     const conv = doc.data();
-    const ts = tocaRescate(conv, ahora);
+    const ts = tocaAvisoPausa(conv, ahora);
     if (!ts) continue;
     const phone = doc.id;
-    const ref = store.db.collection("wa_conversations").doc(phone);
     try {
-      const history = (conv.history || []).slice(-40).map((h) => ({ role: h.role, text: h.text }));
-      if (!(await necesitaRespuesta(history))) {
-        await ref.set({ rescueForTs: ts }, { merge: true });
-        logger.info("Rescate omitido: la conversación quedó cerrada", { phone });
-        continue;
-      }
-      const reply = await brain.generateReply(history, { extra: RESCATE + servicioDelChat(conv) });
-      const texto = (reply || "").replace(/\[\[[^\]]*\]\]/g, "").replace(/\*\*(.+?)\*\*/gs, "*$1*").trim();
-      await ref.set({ rescueForTs: ts }, { merge: true });
-      if (!texto || /^NO\b[.!]?$/i.test(texto)) continue;
-      if (store.repiteUltimo(conv, texto)) continue;
-      const r = await wa.sendText(phone, texto);
-      if (r && r.error) throw new Error(JSON.stringify(r.error));
-      await store.appendMessages(phone, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null }]);
-      await store.setHumanTakeover(phone, false);
-      rescatados++;
+      await store.db.collection("wa_conversations").doc(phone).set({ rescueForTs: ts }, { merge: true });
+      const horas = Math.floor((ahora - ts) / HORA);
+      const quedan = Math.max(0, Math.floor((ts + VENTANA_MS - ahora) / HORA));
       await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
-        title: "El bot retomo un chat en pausa",
-        message: `${conv.name || "Un lead"} (+${phone}) llevaba ${RESCATE_HORAS} h sin respuesta. El bot le contestó y quedó activo en ese chat.`,
+        title: "Chat en pausa sin responder",
+        message: `${conv.name || "Un lead"} (+${phone}) escribió hace ${horas} h y nadie le contestó. ` +
+          `El bot sigue en pausa y no le escribirá. Te quedan unas ${quedan} h para responderle gratis.`,
         click: "https://dealerclubpe.web.app/?to=" + phone,
         priority: "default",
-        tags: "robot",
+        tags: "hourglass",
       });
-      logger.info("Chat en pausa retomado por el bot", { phone });
+      avisados++;
+      logger.info("Aviso a Kevin: chat en pausa sin respuesta", { phone });
     } catch (err) {
-      logger.error("No se pudo retomar el chat en pausa", { phone, error: err.message });
+      logger.error("No se pudo avisar del chat en pausa", { phone, error: err.message });
     }
   }
-  return rescatados;
+  return avisados;
+}
+
+// Última barrera antes de CUALQUIER envío automático: se vuelve a leer el
+// chat en ese instante (el modelo tarda unos segundos y Kevin puede haberlo
+// pausado mientras tanto). true = se puede enviar.
+async function puedeEnviarAuto(phone, motivo) {
+  if (await store.isHumanTakeover(phone)) {
+    logger.info("Envío automático cancelado: el chat está en pausa", { phone, motivo });
+    return false;
+  }
+  return true;
 }
 
 // --- Seguimiento pactado --------------------------------------
@@ -233,7 +229,7 @@ const PACTADO = `
 ## MODO SEGUIMIENTO PACTADO (solo para este mensaje)
 Quedaste con el cliente en escribirle a esta hora. Retoma como quien cumple lo que prometió: salúdalo por su nombre, recuerda en una línea lo que estaba evaluando (su cotización, su programa, su Pase VIP) y haz UNA pregunta que pida el siguiente paso concreto (en eventos: si separamos la fecha con el adelanto; en Escuela: qué día viene a su Pase VIP). Breve, máximo 3 líneas, con el mismo trato (tú o usted) que se venía usando. No pongas etiquetas [[...]].`;
 function tocaPactado(conv, ahora, ultimoDelLead) {
-  if (!conv || !conv.pactadoAt || conv.pactadoAt > ahora) return false;
+  if (!conv || conv.humanTakeover || !conv.pactadoAt || conv.pactadoAt > ahora) return false;
   if (conv.pactadoDoneFor === conv.pactadoAt) return false;
   return !!ultimoDelLead && ahora - ultimoDelLead <= VENTANA_MS;
 }
@@ -252,9 +248,10 @@ async function enviarPactados(snap, ahora) {
         .replace(/\[\[[^\]]*\]\]/g, "").replace(/\*\*(.+?)\*\*/gs, "*$1*").trim();
       if (!texto) continue;
       if (store.repiteUltimo(conv, texto)) continue;
+      if (!(await puedeEnviarAuto(phone, "pactado"))) continue;
       const r = await wa.sendText(phone, texto);
       if (r && r.error) throw new Error(JSON.stringify(r.error));
-      await store.appendMessages(phone, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null, followUp: true }]);
+      await store.appendMessages(phone, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null, followUp: true, auto: "pactado" }]);
       enviados++;
       logger.info("Seguimiento pactado enviado", { phone });
     } catch (err) {
@@ -268,20 +265,25 @@ async function enviarPactados(snap, ahora) {
 // No podemos escribirle a nadie pasadas 24 h de su último mensaje, así que
 // la confirmación se pide ANTES de que ese plazo se cierre; su respuesta lo
 // renueva y permite el recordatorio del mismo día. Ver lib/citas.js.
+const citas = require("./citas");
+function tocaCita(conv, ahora) {
+  if (!conv || conv.humanTakeover) return null;
+  return citas.tocaRecordatorio(conv, ahora, ahoraLima(ahora).hora, store.lastInboundOf(conv));
+}
 async function confirmarCitas(snap, ahora) {
-  const citas = require("./citas");
   let enviados = 0;
   for (const doc of snap.docs) {
     const conv = doc.data();
-    const tipo = citas.tocaRecordatorio(conv, ahora, ahoraLima().hora, store.lastInboundOf(conv));
+    const tipo = tocaCita(conv, ahora);
     if (!tipo) continue;
     const phone = doc.id;
     try {
       const texto = citas.textoRecordatorio(tipo, conv);
       if (store.repiteUltimo(conv, texto)) continue;
+      if (!(await puedeEnviarAuto(phone, "cita"))) continue;
       const r = await wa.sendText(phone, texto);
       if (r && r.error) throw new Error(JSON.stringify(r.error));
-      await store.appendMessages(phone, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null }]);
+      await store.appendMessages(phone, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null, auto: "cita" }]);
       await store.db.collection("wa_conversations").doc(phone).set({ [citas.MARCA[tipo]]: conv.vipAt }, { merge: true });
       enviados++;
       logger.info("Recordatorio de cita enviado", { phone, tipo });
@@ -300,12 +302,12 @@ async function run() {
     .get();
   const citasConfirmadas = await confirmarCitas(recientes, ahora0);
   const pactados = await enviarPactados(recientes, ahora0);
-  const rescatados = await rescatar(recientes, ahora0);
+  const avisosPausa = await avisarPausados(recientes, ahora0);
 
   const { followUp } = await getBotSettings();
-  if (!followUp.enabled) return { enviados: 0, rescatados, citasConfirmadas, pactados, motivo: "desactivado" };
+  if (!followUp.enabled) return { enviados: 0, avisosPausa, citasConfirmadas, pactados, motivo: "desactivado" };
 
-  if (!enHorario(followUp)) return { enviados: 0, rescatados, citasConfirmadas, pactados, motivo: "fuera de horario" };
+  if (!enHorario(followUp)) return { enviados: 0, avisosPausa, citasConfirmadas, pactados, motivo: "fuera de horario" };
 
   const ahora = Date.now();
   const snap = recientes;
@@ -336,10 +338,11 @@ async function run() {
       }
 
       if (store.repiteUltimo(conv, texto)) continue;
+      if (!(await puedeEnviarAuto(phone, "seguimiento"))) continue;
       const r = await wa.sendText(phone, texto);
       if (r && r.error) throw new Error(JSON.stringify(r.error));
       await store.appendMessages(phone, [
-        { role: "assistant", text: texto, followUp: true, ts: Date.now(), waId: r?.messages?.[0]?.id || null },
+        { role: "assistant", text: texto, followUp: true, auto: "seguimiento", ts: Date.now(), waId: r?.messages?.[0]?.id || null },
       ]);
       await store.db
         .collection("wa_conversations")
@@ -351,7 +354,44 @@ async function run() {
       logger.error("No se pudo enviar el seguimiento", { phone, error: err.message });
     }
   }
-  return { enviados, rescatados, citasConfirmadas, pactados };
+  return { enviados, avisosPausa, citasConfirmadas, pactados };
 }
 
-module.exports = { run, tocaSeguimiento, tocaRescate, tocaPactado, esAcuse, esCierre, cerroConversacion, necesitaRespuesta, enHorario, INSTRUCCION, RESCATE_HORAS };
+// --- Lo que el bot tiene programado en un chat (para el panel) ----
+// Recorre las próximas 24 h en pasos de 30 min (lo que tarda la tarea en
+// volver a pasar) con las MISMAS reglas que deciden el envío, suponiendo que
+// nadie escribe antes. Un chat en pausa nunca tiene nada programado.
+const PASO_MS = 30 * 60 * 1000;
+function proximosAutomaticos(conv, followUp, ahora = Date.now()) {
+  if (!conv || conv.humanTakeover) return [];
+  const ultimoDelLead = store.lastInboundOf(conv);
+  const encontrados = {};
+  for (let t = ahora; t <= ahora + 24 * HORA; t += PASO_MS) {
+    if (!encontrados.seguimiento && followUp.enabled && enHorario(followUp, ahoraLima(t)) && tocaSeguimiento(conv, t, followUp.hours)) {
+      encontrados.seguimiento = { tipo: "seguimiento", at: t };
+    }
+    if (!encontrados.pactado && tocaPactado(conv, t, ultimoDelLead)) {
+      encontrados.pactado = { tipo: "pactado", at: t };
+    }
+    const cita = !encontrados.cita && tocaCita(conv, t);
+    if (cita) encontrados.cita = { tipo: "cita", at: t, detalle: cita };
+  }
+  return Object.values(encontrados).sort((a, b) => a.at - b.at);
+}
+
+// Cancela lo programado de un tipo marcándolo como ya atendido (las mismas
+// marcas que deja el envío). Devuelve el parche para el documento del chat.
+function parcheCancelar(conv, tipo) {
+  if (tipo === "seguimiento") {
+    const ultimoLead = [...(conv.history || [])].reverse().find((h) => h.role === "user" && h.ts);
+    return ultimoLead ? { followUpForTs: ultimoLead.ts } : null;
+  }
+  if (tipo === "pactado") return conv.pactadoAt ? { pactadoDoneFor: conv.pactadoAt } : null;
+  if (tipo === "cita") return conv.vipAt ? { [citas.MARCA.confirmar]: conv.vipAt, [citas.MARCA.hoy]: conv.vipAt } : null;
+  return null;
+}
+
+module.exports = {
+  run, tocaSeguimiento, tocaAvisoPausa, tocaPactado, tocaCita, esAcuse, esCierre, cerroConversacion, necesitaRespuesta,
+  enHorario, proximosAutomaticos, parcheCancelar, INSTRUCCION, AVISO_PAUSA_HORAS, MAX_POR_CONVERSACION,
+};

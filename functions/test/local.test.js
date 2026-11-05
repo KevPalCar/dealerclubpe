@@ -77,9 +77,9 @@ function check(name, cond) {
   check("una reacción posterior no cuenta como mensaje nuevo", ultimo({ history: [{ role: "user", text: "hola", mid: "a" }, { role: "user", text: "[reacción 👍]", mid: "r" }] }, "a") === true);
   const reaccion = _test.parseIncoming({ entry: [{ changes: [{ value: { messages: [{ from: "51999", id: "x", type: "reaction", reaction: { emoji: "👍", message_id: "m" } }] } }] }] });
   check("lee las reacciones con su emoji", reaccion.type === "reaction" && reaccion.text === "[reacción 👍]");
-  const { tocaRescate } = require("../lib/followup");
+  const { tocaAvisoPausa: tocaRescate } = require("../lib/followup"); // ahora solo avisa a Kevin
   const H = 3600 * 1000, now = Date.now();
-  check("retoma un chat en pausa sin respuesta hace 3 h", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "¿y el precio?", ts: now - 3 * H }] }, now) === now - 3 * H);
+  check("avisa de un chat en pausa sin respuesta hace 3 h", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "¿y el precio?", ts: now - 3 * H }] }, now) === now - 3 * H);
   const { esAcuse } = require("../lib/followup");
   check("'ok, gracias' es un cierre", esAcuse("ok, gracias") && esAcuse("listo, muchas gracias 🙏") && esAcuse("👍"));
   check("una pregunta o un dato no es cierre", !esAcuse("Gracias lo revisamos, una consulta, que debe tener en cuenta el local") && !esAcuse("si, puede ser 2 juegos"));
@@ -101,6 +101,19 @@ function check(name, cond) {
   check("el seguimiento pactado sale a su hora si la ventana sigue abierta", tocaPactado({ pactadoAt: now - 60000 }, now, now - 20 * H) === true);
   check("el pactado no sale antes de tiempo ni dos veces ni con la ventana cerrada",
     !tocaPactado({ pactadoAt: now + H }, now, now - H) && !tocaPactado({ pactadoAt: now - 1, pactadoDoneFor: now - 1 }, now, now - H) && !tocaPactado({ pactadoAt: now - 1 }, now, now - 30 * H));
+  // Regla 5 nov 2026: en un chat en pausa NADA automático le llega al cliente.
+  const { tocaSeguimiento, tocaCita, proximosAutomaticos, parcheCancelar } = require("../lib/followup");
+  const silencio = { history: [{ role: "user", text: "info", ts: now - 4 * H }, { role: "assistant", text: "¿Te va el jueves?", ts: now - 4 * H }] };
+  check("el seguimiento no sale en un chat en pausa", tocaSeguimiento(silencio, now, 3) === now - 4 * H && tocaSeguimiento({ ...silencio, humanTakeover: true }, now, 3) === null);
+  check("el pactado no sale en un chat en pausa", tocaPactado({ pactadoAt: now - 60000 }, now, now - H) && !tocaPactado({ pactadoAt: now - 60000, humanTakeover: true }, now, now - H));
+  const conCita = { vipAt: now + 2 * H, lastInboundAt: now - H, history: [] };
+  check("el recordatorio de cita no sale en un chat en pausa", tocaCita({ ...conCita, humanTakeover: true }, now) === null);
+  const fuOn = { enabled: true, hours: 3, from: 0, to: 24 };
+  check("el panel ve el seguimiento programado", proximosAutomaticos(silencio, fuOn, now).some((p) => p.tipo === "seguimiento"));
+  check("un chat en pausa no tiene nada programado", proximosAutomaticos({ ...silencio, humanTakeover: true, pactadoAt: now + H }, fuOn, now).length === 0);
+  check("con el seguimiento apagado no se programa", !proximosAutomaticos(silencio, { ...fuOn, enabled: false }, now).some((p) => p.tipo === "seguimiento"));
+  const cancelado = { ...silencio, ...parcheCancelar(silencio, "seguimiento") };
+  check("cancelar desde el panel anula ese seguimiento", tocaSeguimiento(cancelado, now, 3) === null);
   check("no lo retoma si el asesor aún tiene tiempo", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 1 * H }] }, now) === null);
   check("no lo retoma si ya le respondieron o pasó la ventana", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 3 * H }, { role: "assistant", text: "dime", ts: now - 2 * H }] }, now) === null && tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 30 * H }] }, now) === null);
 

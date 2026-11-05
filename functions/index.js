@@ -238,7 +238,7 @@ const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const ESPERA_MS = 5000; // margen para que el lead termine de escribir
 const MODEL_HISTORY = 40; // mensajes recientes que lee el modelo
 const AVISO_PAUSA_MS = 30 * 60 * 1000; // como mucho un aviso cada 30 min por chat en pausa
-const { RESCATE_HORAS, cerroConversacion, necesitaRespuesta } = require("./lib/followup");
+const { AVISO_PAUSA_HORAS, cerroConversacion, necesitaRespuesta } = require("./lib/followup");
 const citas = require("./lib/citas");
 
 // --- Cotización de eventos -----------------------------------
@@ -533,7 +533,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
           title: "Te escribieron en un chat en pausa",
           message:
             `${msg.profileName || "Un lead"} (+${msg.from}): ${msg.text}\n` +
-            `El bot está en pausa ahí. Si no respondes en ${RESCATE_HORAS} h, el bot retoma solo.`,
+            `El bot está en pausa ahí y no le escribirá. Si en ${AVISO_PAUSA_HORAS} h sigue sin respuesta, te lo recuerdo.`,
           click: PANEL_URL + "?to=" + msg.from,
         });
       }
@@ -875,3 +875,4 @@ exports.adminStartChat = adminFns.adminStartChat;
 exports.adminAnalyzeChats = adminFns.adminAnalyzeChats;
 exports.adminCall = adminFns.adminCall;
 exports.adminFollowUp = adminFns.adminFollowUp;
+exports.adminCancelAuto = adminFns.adminCancelAuto;
