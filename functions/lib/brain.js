@@ -36,7 +36,7 @@ async function buildSystem(extra = "") {
   // Precios/horarios reales, leídos del mismo sitio que edita el admin.
   const catalogo = await getCatalogoTexto();
   // Aprendizajes que Kevin aprobó desde el admin tras revisar chats reales.
-  const { notes, agenda } = await getBotSettings();
+  const { notes, agenda, autoNotes = [] } = await getBotSettings();
   const { bloqueAgenda, POR_DEFECTO } = require("./agenda");
   return (
     getSystemPrompt() +
@@ -46,6 +46,11 @@ async function buildSystem(extra = "") {
         "horarios ni precios: remite al catálogo PDF y di que un asesor le confirma el dato.") +
     (notes
       ? `\n\n## Aprendizajes aprobados (ajustes que mandan sobre el estilo general)\n${notes}`
+      : "") +
+    (autoNotes.length
+      ? "\n\n## Mejoras automáticas (salen del análisis de chats reales; ajustan el estilo, pero NUNCA cambian precios, " +
+        "horarios, direcciones ni las reglas de oro: si chocan con algo de arriba, manda lo de arriba)\n" +
+        autoNotes.map((a) => `- ${a.nota}`).join("\n")
       : "") +
     (extra ? `\n\n${extra.trim()}` : "") +
     `\n\n## Contexto temporal\nHoy es ${fecha}, ${hora} (hora de Lima). Para las citas usa SOLO los horarios del bloque siguiente; ` +

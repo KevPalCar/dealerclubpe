@@ -4,8 +4,10 @@
 // Lee las conversaciones recientes de WhatsApp, calcula el embudo
 // (cuántos llegaron, recibieron catálogo, siguieron conversando…)
 // y pide al modelo un diagnóstico con sugerencias concretas. El
-// informe se guarda para el admin web; Kevin decide qué sugerencia
-// pasa a las notas del bot. El bot NO se modifica solo.
+// informe se guarda para el admin web. Desde el 5 nov 2026 (pedido de Kevin,
+// por la campaña de anuncios) corre cada 2 días y las sugerencias que pasan
+// los filtros de seguridad se APLICAN SOLAS como "mejoras automáticas"
+// (bot_settings/main.autoNotes); Kevin ve cuáles y quita la que no le guste.
 // ============================================================
 const logger = require("firebase-functions/logger");
 const store = require("./store");
@@ -39,7 +41,11 @@ Reglas:
 - Basa todo en lo que ves en las conversaciones. Si algo no aparece, no lo inventes; deja la lista vacía.
 - Máximo 5 elementos por lista. Sé concreto: cita el tipo de situación, no generalidades.
 - No incluyas nombres, teléfonos ni datos personales de los clientes.
-- Las sugerencias deben ser cambios de comportamiento del bot (qué decir, cuándo, cómo), no tareas para el dueño.
+- Las sugerencias deben ser cambios de comportamiento del bot (qué decir, cuándo, cómo), no tareas para el dueño. Se aplican SOLAS al bot, así que:
+  · Solo cómo responder mejor para llegar a la cita (Pase VIP o evaluación) o al pago: tono, orden, qué pregunta hacer, cómo responder una objeción frecuente.
+  · NUNCA cambies ni menciones precios, montos, porcentajes, descuentos, promociones, becas, horarios de citas, direcciones, duración de programas ni promesas de trabajo o embarque.
+  · NUNCA contradigas las reglas del bot (un mensaje por turno, una pregunta al final, dirección exacta solo al reservar, no mandar a la web salvo casos puntuales).
+  · Máximo 3 sugerencias, las de mayor impacto en ventas. Si no hay una mejora clara, deja la lista vacía.
 - Los mensajes marcados "ASESOR" los escribió el dueño en persona. Aprende de él en las dos direcciones: si resolvió algo mejor que el bot, conviértelo en una sugerencia para que el bot lo imite; si dejó pasar una oportunidad clave, anótalo en "loQuePudoHacerMejor" (con tono constructivo) y conviértelo en una sugerencia para que el bot sí lo haga en esa situación.
 - Escribe en español.
 `;
@@ -77,6 +83,9 @@ function embudo(convs) {
     desdeAnuncio: convs.filter((c) => c.origen).length,
     anuncioEscuela: convs.filter((c) => c.origen?.campana === "escuela").length,
     anuncioEventos: convs.filter((c) => c.origen?.campana === "eventos").length,
+    // Lo que acerca a la venta: citas agendadas por el bot.
+    pasesVip: convs.filter((c) => c.vipAt && !c.vipVideo).length,
+    evaluaciones: convs.filter((c) => c.vipAt && c.vipVideo).length,
   };
 }
 
@@ -94,7 +103,31 @@ function transcripcion(convs) {
     .join("\n\n");
 }
 
-async function run({ days = 7 } = {}) {
+// --- Mejoras automáticas ----------------------------------------
+// Filtro de seguridad: nada de dinero, horarios, direcciones ni promesas.
+const PROHIBIDO = /S\/\s?\d|US\$|\$\s?\d|\d+\s?%|descuento|promoci|beca|oferta|gratis por|garantiz|asegur\w* (el|un|tu) (puesto|trabajo|embarque)|coyllur|direcci[oó]n exacta|\b\d{1,2}(:\d{2})?\s?(a\.?\s?m|p\.?\s?m)\b/i;
+const MAX_AUTO = 15; // se conservan las más recientes
+const norm = (s) => String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
+function filtrarMejoras(sugerencias, existentes) {
+  const ya = new Set(existentes.map(norm));
+  return sugerencias
+    .filter((s) => s.nota.length >= 20 && s.nota.length <= 400 && !PROHIBIDO.test(s.nota) && !PROHIBIDO.test(s.titulo))
+    .filter((s) => !ya.has(norm(s.nota)))
+    .slice(0, 3);
+}
+async function aplicarMejoras(sugerencias, informeId) {
+  const { db, BASE: B } = require("./botsettings");
+  const ref = db.doc(`${B}/bot_settings/main`);
+  const snap = await ref.get();
+  const d = snap.exists ? snap.data() : {};
+  const actuales = Array.isArray(d.autoNotes) ? d.autoNotes : [];
+  const nuevas = filtrarMejoras(sugerencias, [...actuales.map((a) => a.nota), ...String(d.notes || "").split("\n")])
+    .map((s, i) => ({ id: `${Date.now()}-${i}`, titulo: s.titulo, nota: s.nota, fecha: new Date().toISOString(), informeId }));
+  if (nuevas.length) await ref.set({ autoNotes: [...actuales, ...nuevas].slice(-MAX_AUTO) }, { merge: true });
+  return nuevas;
+}
+
+async function run({ days = 7, aplicar = false } = {}) {
   const ahora = Date.now();
   const snap = await store.db
     .collection("wa_conversations")
@@ -142,7 +175,16 @@ async function run({ days = 7 } = {}) {
 
   const ref = await store.db.collection(`${BASE}/bot_insights`).add(informe);
   logger.info("Informe de chats guardado", { id: ref.id, conversaciones: convs.length });
+  if (aplicar && informe.sugerencias.length) {
+    try {
+      informe.aplicadas = await aplicarMejoras(informe.sugerencias, ref.id);
+      await ref.set({ aplicadas: informe.aplicadas }, { merge: true });
+      logger.info("Mejoras automáticas aplicadas", { n: informe.aplicadas.length });
+    } catch (err) {
+      logger.error("No se pudieron aplicar las mejoras automáticas", err);
+    }
+  }
   return { id: ref.id, ...informe };
 }
 
-module.exports = { run, embudo };
+module.exports = { run, embudo, filtrarMejoras };

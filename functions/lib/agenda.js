@@ -72,7 +72,7 @@ function bloqueAgenda(ahora = Date.now(), agenda = POR_DEFECTO) {
     "Pase VIP (presencial en la escuela, 30 min, gratis) — ofrece estos dos:\n" + vip.map(linea).join("\n") + "\n" +
     "Evaluación gratis (por videollamada, 30 min) — ofrece estos dos:\n" + ev.map((s) => linea(s).replace("]]", ":video]]")).join("\n") + "\n" +
     "Si la persona pide otro día u hora DENTRO de la agenda fija (Pase VIP: lunes a viernes 12:00 p. m. o 4:00 p. m., sábado 4:00 p. m.; " +
-    "evaluación: lunes a sábado 5:00 p. m.), acéptalo. Si no puede en NINGUNO de esos horarios, no inventes otro: ver \"Si no puede en ningún horario\"."
+    "evaluación: lunes a sábado 5:00 p. m.), acéptalo. Si no puede en los que le ofreciste, no inventes otro: ver \"Si está interesado pero no puede en los horarios\" (lo atiende Kevin)."
   );
 }
 

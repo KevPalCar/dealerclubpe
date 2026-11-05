@@ -841,6 +841,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS, timeoutSeconds: 120 }, a
         : /^inicio futuro/i.test(aviso) ? "Inicio futuro"
         : /^embarque/i.test(aviso) ? "Lead de embarque"
         : /^horario personalizado/i.test(aviso) ? "Horario personalizado por calcular"
+        : /^sin horario/i.test(aviso) ? "Dale tú la cita: no pudo en los horarios"
         : "El bot necesita que confirmes algo";
       await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
         title: titulo,
@@ -884,14 +885,19 @@ exports.followUps = onSchedule(
   }
 );
 
-// Informe semanal de chats (lunes 8:00, hora de Lima) + aviso a Kevin.
+// Informe de chats CADA 2 DÍAS (8:00, hora de Lima) que además aplica solo
+// las mejoras seguras al bot, y aviso a Kevin. (Se conserva el nombre de la
+// función para no tener que borrarla y crearla de nuevo.)
 exports.weeklyInsights = onSchedule(
-  { schedule: "every monday 08:00", timeZone: "America/Lima", secrets: cfg.ALL_SECRETS },
+  { schedule: "0 8 */2 * *", timeZone: "America/Lima", secrets: cfg.ALL_SECRETS },
   async () => {
-    const informe = await require("./lib/insights").run({ days: 7 });
+    const informe = await require("./lib/insights").run({ days: 2, aplicar: true });
+    const e = informe.embudo;
+    const mejoras = (informe.aplicadas || []).map((a) => `• ${a.titulo}`).join("\n");
     await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
-      title: "Informe semanal del bot listo",
-      message: `${informe.embudo.conversaciones} conversaciones esta semana. ${informe.resumen}`,
+      title: "Informe del bot (2 días) listo",
+      message: `${e.conversaciones} chats · ${e.pasesVip || 0} Pases VIP · ${e.evaluaciones || 0} evaluaciones · ${e.derivadosAHumano} te los pasó.\n` +
+        (mejoras ? `El bot aplicó solo:\n${mejoras}` : "Sin mejoras nuevas esta vez."),
       click: "https://dealerclubpe.com/admin",
       priority: "default",
       tags: "bar_chart",

@@ -1024,3 +1024,39 @@ tr.row-new td:first-child { box-shadow: inset 3px 0 0 #dc3545; }
     .course-fieldset { padding: 8px 10px 2px; }
     #courses-management .section-header > span { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 }
+/* Bot de WhatsApp — pantalla de informes (nov 2026): números primero, detalle plegado */
+.bot-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#bot-report-select { background: #141414; color: #eee; border: 1px solid #333; border-radius: 8px; padding: 8px 10px; }
+.bot-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 6px 0 12px; }
+.bot-kpi { background: #1a1a1a; border: 1px solid #333; border-left: 4px solid #555; border-radius: 10px; padding: 12px 14px; }
+.bot-kpi b { display: block; font-size: 1.9em; line-height: 1.1; color: #fff; font-variant-numeric: tabular-nums; }
+.bot-kpi span { color: #aaa; font-size: .85em; }
+.bot-kpi.good { border-left-color: #45e30b; } .bot-kpi.good b { color: #7cf05a; }
+.bot-kpi.warn { border-left-color: #ffc107; } .bot-kpi.warn b { color: #ffc107; }
+.bot-kpi.bad  { border-left-color: #e5484d; } .bot-kpi.bad b { color: #ff8a8a; }
+.bot-summary { background: #141414; border: 1px solid #2c2c2c; border-radius: 10px; padding: 12px 14px; color: #e6e6e6; font-size: .95em; line-height: 1.5; margin: 0 0 14px; max-width: 90ch; }
+.bot-summary-when { display: inline-block; color: #ffc107; font-size: .8em; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-right: 6px; }
+.bot-autonotes { display: flex; flex-direction: column; gap: 6px; }
+.bot-autonote { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; border-top: 1px solid #262626; padding-top: 8px; }
+.bot-autonote:first-child { border-top: 0; padding-top: 0; }
+.bot-autonote strong { display: block; color: #fff; font-size: .9em; }
+.bot-autonote span { color: #bbb; font-size: .85em; }
+.bot-autonote small { color: #777; white-space: nowrap; }
+.bot-empty { color: #888; margin: 0; font-size: .9em; }
+.bot-details { margin-top: 12px; background: #1a1a1a; border: 1px solid #333; border-radius: 12px; }
+.bot-details > summary { cursor: pointer; padding: 12px 16px; color: #ffc107; font-weight: 700; list-style: none; }
+.bot-details > summary::-webkit-details-marker { display: none; }
+.bot-details > summary::before { content: "▸ "; } .bot-details[open] > summary::before { content: "▾ "; }
+.bot-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; padding: 0 16px 16px; }
+.bot-list { background: #141414; border: 1px solid #2a2a2a; border-radius: 10px; padding: 10px 12px; min-width: 0; }
+.bot-list h4 { color: #ffc107; font-size: .78em; text-transform: uppercase; letter-spacing: .5px; margin: 0 0 6px; display: flex; justify-content: space-between; }
+.bot-list h4 span { color: #777; }
+.bot-list ul { margin: 0; padding-left: 16px; color: #ccc; font-size: .85em; display: flex; flex-direction: column; gap: 4px; }
+.bot-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 0 16px 16px; }
+.bot-settings h3 { color: #ffc107; font-size: 1em; margin: 0 0 8px; }
+.bot-settings .qe-actions { grid-column: 1 / -1; }
+@media (max-width: 760px) {
+    .bot-settings { grid-template-columns: 1fr; }
+    .bot-autonote { grid-template-columns: 1fr auto; }
+    .bot-autonote small { display: none; }
+}

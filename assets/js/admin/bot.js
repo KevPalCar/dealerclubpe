@@ -39,76 +39,106 @@ document.getElementById('botSettingsForm').addEventListener('submit', async (e) 
     } catch (err) { showMsg(msg, `Error: ${err.message}`, 'error'); }
 });
 
-const FUNNEL_LABELS = [
-    ['conversaciones', 'conversaciones'], ['recibieronCatalogo', 'recibieron el catálogo'],
-    ['respondieronTrasCatalogo', 'siguieron tras el catálogo'], ['quedaronEnSilencio', 'quedaron en silencio'],
-    ['conSeguimiento', 'con seguimiento'], ['derivadosAHumano', 'derivados a ti'],
-    ['desdeAnuncio', 'llegaron por anuncio <span class="info-tip" data-tip="Chats que empezaron tocando un anuncio de Facebook/Instagram. WhatsApp avisa de qué anuncio vienen; al lado, cuántos fueron del de la Escuela y cuántos del de Eventos. Sirve para comparar con lo que muestra Meta Ads.">i</span>'],
-    ['anuncioEscuela', 'del anuncio Escuela'], ['anuncioEventos', 'del anuncio Eventos']
+// Números clave arriba (lo que acerca a la venta primero). Las cifras viejas
+// del catálogo PDF ya no se muestran: el PDF de la Escuela está en pausa.
+const KPIS = [
+    ['conversaciones', 'chats', ''],
+    ['desdeAnuncio', 'llegaron por anuncio', ''],
+    ['pasesVip', 'Pases VIP agendados', 'good'],
+    ['evaluaciones', 'evaluaciones agendadas', 'good'],
+    ['derivadosAHumano', 'te los pasó a ti', 'warn'],
+    ['quedaronEnSilencio', 'dejaron de responder', 'bad'],
 ];
 const INSIGHT_LISTS = [
     ['dondeSePierden', 'Dónde se pierden'], ['objeciones', 'Objeciones'],
     ['preguntasFrecuentes', 'Preguntas frecuentes'], ['erroresDelBot', 'Fallos del bot'],
     ['loQueHizoElAsesor', 'Lo que hiciste tú y funcionó'], ['loQuePudoHacerMejor', 'Lo que pudiste hacer mejor']
 ];
+let informes = [];
+let autoNotes = [];
 
-const renderInsights = (list) => {
+const fechaDe = (r) => r.createdAt ? new Date(r.createdAt.seconds * 1000)
+    .toLocaleDateString('es-PE', { weekday: 'short', day: '2-digit', month: 'short' }) : '';
+
+const renderInforme = (r) => {
+    const kpis = document.getElementById('bot-kpis');
+    const resumen = document.getElementById('bot-summary');
     const box = document.getElementById('bot-insights');
-    if (!list.length) {
-        box.innerHTML = '<p style="color:#888;">Aún no hay informes. El primero llega el lunes, o pulsa "Analizar chats ahora".</p>';
+    if (!r) {
+        kpis.innerHTML = '';
+        resumen.textContent = 'Aún no hay informes. El próximo sale solo a las 8:00 a. m., o pulsa «Analizar ahora».';
+        box.innerHTML = '';
+        return;
+    }
+    kpis.innerHTML = KPIS.map(([k, l, tono]) =>
+        `<div class="bot-kpi ${tono}"><b>${r.embudo?.[k] ?? 0}</b><span>${l}</span></div>`).join('');
+    resumen.innerHTML = `<span class="bot-summary-when">${esc(fechaDe(r))} · últimos ${r.days || 7} días</span> ${esc(r.resumen || '')}`;
+    const listas = INSIGHT_LISTS.filter(([k]) => (r[k] || []).length);
+    box.innerHTML = listas.length
+        ? listas.map(([k, title]) => `<div class="bot-list"><h4>${title} <span>${r[k].length}</span></h4><ul>${r[k].map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')
+        : '<p class="bot-empty">Este informe no trae detalle.</p>';
+};
+
+const renderInformes = () => {
+    const sel = document.getElementById('bot-report-select');
+    const actual = sel.value;
+    sel.innerHTML = informes.map((r, i) => `<option value="${r.id}">${i === 0 ? 'Último · ' : ''}${esc(fechaDe(r))}</option>`).join('');
+    sel.hidden = informes.length < 2;
+    if (actual && informes.some(r => r.id === actual)) sel.value = actual;
+    renderInforme(informes.find(r => r.id === sel.value) || informes[0]);
+};
+document.getElementById('bot-report-select').addEventListener('change', (e) =>
+    renderInforme(informes.find(r => r.id === e.target.value)));
+
+const renderAutoNotes = () => {
+    const box = document.getElementById('bot-autonotes');
+    if (!autoNotes.length) {
+        box.innerHTML = '<p class="bot-empty">Todavía ninguna. Aparecen aquí después de cada análisis.</p>';
         return;
     }
     box.innerHTML = '';
-    list.forEach(r => {
-        const card = document.createElement('div');
-        card.className = 'insight';
-        const date = r.createdAt ? new Date(r.createdAt.seconds * 1000).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
-        card.innerHTML = `
-            <div class="insight-head"><b>${date}</b><span>Últimos ${r.days || 7} días</span></div>
-            <div class="insight-funnel">${FUNNEL_LABELS.map(([k, l]) => `<span><b>${r.embudo?.[k] ?? 0}</b>${l}</span>`).join('')}</div>
-            <p>${esc(r.resumen)}</p>
-            ${INSIGHT_LISTS.filter(([k]) => (r[k] || []).length).map(([k, title]) =>
-                `<h4>${title}</h4><ul>${r[k].map(x => `<li>${esc(x)}</li>`).join('')}</ul>`).join('')}
-            ${(r.sugerencias || []).length ? '<h4>Sugerencias para el bot</h4><div class="insight-sug"></div>' : ''}`;
-        const sugBox = card.querySelector('.insight-sug');
-        (r.sugerencias || []).forEach(sg => {
-            const row = document.createElement('div');
-            row.className = 'insight-suggestion';
-            row.innerHTML = `<div><strong>${esc(sg.titulo)}</strong><span>${esc(sg.nota)}</span></div>
-                             <button type="button" class="btn btn-secondary btn-sm"><i class="fas fa-plus"></i> A las notas</button>`;
-            row.querySelector('button').addEventListener('click', async (evt) => {
-                const notes = document.getElementById('botNotes');
-                if (notes.value.includes(sg.nota)) { showToast('Esa nota ya está en el bot.', 'info'); return; }
-                notes.value = `${notes.value.trim()}${notes.value.trim() ? '\n' : ''}- ${sg.nota}`;
-                try {
-                    await saveBotSettings();
-                    evt.currentTarget.disabled = true;
-                    showToast('Nota agregada al bot.', 'success');
-                } catch (err) { showToast(`Error: ${esc(err.message)}`, 'error'); }
-            });
-            sugBox.appendChild(row);
+    [...autoNotes].reverse().forEach(a => {
+        const row = document.createElement('div');
+        row.className = 'bot-autonote';
+        const f = a.fecha ? new Date(a.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' }) : '';
+        row.innerHTML = `<div><strong>${esc(a.titulo)}</strong><span>${esc(a.nota)}</span></div>
+            <small>${esc(f)}</small>
+            <button type="button" class="btn btn-secondary btn-sm" title="El bot deja de usar esta mejora"><i class="fas fa-xmark"></i> Quitar</button>`;
+        row.querySelector('button').addEventListener('click', async (evt) => {
+            const btn = evt.currentTarget;
+            btn.disabled = true;
+            try {
+                await setDoc(doc(db, dbPath('bot_settings/main')), {
+                    autoNotes: autoNotes.filter(x => x.id !== a.id), updatedAt: new Date()
+                }, { merge: true });
+                showToast('Mejora quitada: el bot deja de usarla en un minuto.', 'success');
+            } catch (err) { btn.disabled = false; showToast(`Error: ${esc(err.message)}`, 'error'); }
         });
-        box.appendChild(card);
+        box.appendChild(row);
     });
 };
 
 document.getElementById('bot-analyze-btn').addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     btn.disabled = true;
-    showToast('Analizando los chats de los últimos 7 días… puede tardar un minuto.', 'info');
+    showToast('Analizando los chats de los últimos 2 días… puede tardar un minuto.', 'info');
     try {
         const analyze = httpsCallable(getFunctions(auth.app, 'us-central1'), 'adminAnalyzeChats', { timeout: 130000 });
-        const res = await analyze({ days: 7 });
-        showToast(`Informe listo: ${res.data.conversaciones} conversaciones analizadas.`, 'success');
+        const res = await analyze({ days: 2 });
+        const n = res.data.aplicadas || 0;
+        showToast(`Listo: ${res.data.conversaciones} chats analizados${n ? `, ${n} mejora${n > 1 ? 's' : ''} aplicada${n > 1 ? 's' : ''}` : ''}.`, 'success');
+        document.getElementById('bot-report-select').value = '';
     } catch (err) { showToast(`No se pudo analizar: ${esc(err.message)}`, 'error'); }
     btn.disabled = false;
 });
 
 const loadBot = () => {
     unsubscribeListeners.botSettings = onSnapshot(doc(db, dbPath('bot_settings/main')), (snap) => {
-        if (botLoaded) return;   // no pisa lo que estés escribiendo
-        botLoaded = true;
         const d  = snap.exists() ? snap.data() : {};
+        autoNotes = Array.isArray(d.autoNotes) ? d.autoNotes : [];
+        renderAutoNotes();
+        if (botLoaded) return;   // el formulario no pisa lo que estés escribiendo
+        botLoaded = true;
         const fu = { ...BOT_DEFAULTS, ...(d.followUp || {}) };
         document.getElementById('botNotes').value           = d.notes || '';
         document.getElementById('botFollowEnabled').checked = fu.enabled;
@@ -117,8 +147,9 @@ const loadBot = () => {
         document.getElementById('botFollowTo').value        = fu.to;
     });
     unsubscribeListeners.botInsights = onSnapshot(collection(db, dbPath('bot_insights')), (snap) => {
-        renderInsights(snap.docs.map(d => ({ id: d.id, ...d.data() }))
-            .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)).slice(0, 8));
+        informes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+            .sort((a, b) => (b.createdAt?.seconds ?? 0) - (a.createdAt?.seconds ?? 0)).slice(0, 12);
+        renderInformes();
     });
 };
 

@@ -640,36 +640,49 @@
             <!-- ═══════════════ BOT DE WHATSAPP ═══════════════ -->
             <section id="bot-management" class="content-section">
                 <div class="section-header">
-                    <h2>Bot de WhatsApp <span class="info-tip" data-tip="Controla lo que el bot hace por su cuenta: escribir a quien dejó de responder, y revisar los chats para mejorar. Nada cambia en el bot sin que tú lo apruebes aquí.">i</span></h2>
-                    <button class="btn btn-primary" id="bot-analyze-btn"><i class="fas fa-chart-bar"></i> Analizar chats ahora</button> <span class="info-tip tip-left" data-tip="Genera en el momento el informe de los últimos 7 días, sin esperar al lunes. Tarda cerca de un minuto.">i</span>
+                    <h2>Bot de WhatsApp <span class="info-tip" data-tip="Cada 2 días (8:00 a. m.) el bot revisa sus chats, te deja aquí los números y aplica solo las mejoras seguras: nunca toca precios, horarios ni direcciones. Puedes quitar cualquier mejora con un clic.">i</span></h2>
+                    <span class="bot-head-actions">
+                        <select id="bot-report-select" aria-label="Elegir informe"></select>
+                        <button class="btn btn-primary" id="bot-analyze-btn"><i class="fas fa-rotate"></i> Analizar ahora</button>
+                        <span class="info-tip tip-left" data-tip="Analiza ya los chats de los últimos 2 días y aplica las mejoras seguras, sin esperar. Tarda cerca de un minuto y usa 1 consulta de la cuota gratis del bot.">i</span>
+                    </span>
                 </div>
-                <div class="bot-grid">
-                    <form id="botSettingsForm" class="bot-card">
-                        <h3>Mensaje activador <span class="info-tip" data-tip="Cuando un cliente recibe la información y no vuelve a escribir, el bot le envía un solo mensaje con nuestros tres puntos más fuertes para lo que busca y una pregunta que lo lleva a decidir. No es un recordatorio. Solo se envía dentro de las 24 horas en que WhatsApp no cobra.">i</span></h3>
-                        <p class="activate-note">Si un cliente deja de responder, el bot le escribe una sola vez: nuestros tres puntos más fuertes para lo que busca y una pregunta que lo lleva a decidir. Los lunes solo desde las 11:00 y los viernes solo hasta las 16:00. Siempre dentro de las 24 horas desde su último mensaje, que es cuando WhatsApp no cobra.</p>
-                        <label class="qe-check" style="margin-top:0;"><input type="checkbox" id="botFollowEnabled"> Mensaje activador encendido</label>
-                        <div class="qe-grid qe-3" style="margin-top:10px;">
-                            <label>Horas de silencio antes de escribir <input type="number" id="botFollowHours" min="1" max="20" step="1"></label>
-                            <label>Enviar desde las (hora) <input type="number" id="botFollowFrom" min="0" max="23" step="1"></label>
-                            <label>Enviar hasta las (hora) <input type="number" id="botFollowTo" min="1" max="24" step="1"></label>
+
+                <div class="bot-kpis" id="bot-kpis"></div>
+                <p class="bot-summary" id="bot-summary"></p>
+
+                <div class="bot-card">
+                    <h3>Mejoras que el bot aplicó solo <span class="info-tip" data-tip="Salen del análisis de chats reales. Solo cambian cómo responde (tono, orden, qué preguntar). Si alguna no te gusta, quítala: el bot deja de usarla en un minuto.">i</span></h3>
+                    <div id="bot-autonotes" class="bot-autonotes"></div>
+                </div>
+
+                <details class="bot-details">
+                    <summary>Ver el informe completo</summary>
+                    <div id="bot-insights" class="bot-lists"><div class="spinner"></div></div>
+                </details>
+
+                <details class="bot-details">
+                    <summary>Ajustes del bot</summary>
+                    <form id="botSettingsForm" class="bot-settings">
+                        <div>
+                            <h3>Mensaje activador <span class="info-tip" data-tip="Si un cliente deja de responder, el bot le escribe una sola vez: nuestros tres puntos más fuertes para lo que busca y una pregunta que lo lleva a decidir. Lunes solo desde las 11:00 y viernes solo hasta las 16:00; siempre dentro de las 24 h desde su último mensaje (cuando WhatsApp no cobra). También se enciende desde el panel de chats.">i</span></h3>
+                            <label class="qe-check" style="margin-top:0;"><input type="checkbox" id="botFollowEnabled"> Encendido</label>
+                            <div class="qe-grid qe-3" style="margin-top:10px;">
+                                <label>Horas de silencio <input type="number" id="botFollowHours" min="1" max="20" step="1"></label>
+                                <label>Desde las (hora) <input type="number" id="botFollowFrom" min="0" max="23" step="1"></label>
+                                <label>Hasta las (hora) <input type="number" id="botFollowTo" min="1" max="24" step="1"></label>
+                            </div>
                         </div>
-
-                        <h3 style="margin-top:22px;">Notas del bot <span class="info-tip" data-tip="Reglas extra que el bot aplica además de sus instrucciones. Escríbelas tú o agrégalas desde las sugerencias de un informe. El bot las toma en un minuto.">i</span></h3>
-                        <p class="activate-note">Reglas que el bot aplica además de sus instrucciones, una por línea. Puedes escribirlas tú o agregarlas desde las sugerencias de un informe. El bot las toma en un minuto.</p>
-                        <textarea id="botNotes" rows="9" class="qe-notes" placeholder="Ej.: Si preguntan por estacionamiento, di que hay cochera pública a media cuadra."></textarea>
-
+                        <div>
+                            <h3>Tus notas para el bot <span class="info-tip" data-tip="Reglas que tú escribes, una por línea. Mandan sobre las mejoras automáticas. El bot las toma en un minuto.">i</span></h3>
+                            <textarea id="botNotes" rows="6" class="qe-notes" placeholder="Ej.: Si preguntan por estacionamiento, di que hay cochera pública a media cuadra."></textarea>
+                        </div>
                         <div class="qe-actions" style="margin-left:0;">
                             <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
                             <div id="botSettingsMessage" class="form-message" style="display:none;"></div>
                         </div>
                     </form>
-
-                    <div class="bot-card">
-                        <h3>Informes de chats <span class="info-tip" data-tip="Cada lunes a las 8:00 el bot revisa las conversaciones de la semana: cuántos llegaron, dónde se quedaron y qué mejorar. El botón "A las notas" pasa una sugerencia a las reglas del bot.">i</span></h3>
-                        <p class="activate-note">Cada lunes el bot revisa las conversaciones de la semana: cuántos llegaron, dónde se quedaron y qué mejorar. Tú decides qué sugerencia pasa a sus notas.</p>
-                        <div id="bot-insights"><div class="spinner"></div></div>
-                    </div>
-                </div>
+                </details>
             </section>
 
         </main><!-- /admin-content -->

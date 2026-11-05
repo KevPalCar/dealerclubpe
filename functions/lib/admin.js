@@ -194,9 +194,9 @@ const adminSetTakeover = onCall(async (request) => {
 // Informe de chats a pedido (el semanal corre solo los lunes).
 const adminAnalyzeChats = onCall({ secrets: cfg.ALL_SECRETS, timeoutSeconds: 120 }, async (request) => {
   assertAdmin(request);
-  const days = Math.min(30, Math.max(1, Number(request.data && request.data.days) || 7));
-  const informe = await require("./insights").run({ days });
-  return { id: informe.id, conversaciones: informe.embudo.conversaciones };
+  const days = Math.min(30, Math.max(1, Number(request.data && request.data.days) || 2));
+  const informe = await require("./insights").run({ days, aplicar: true });
+  return { id: informe.id, conversaciones: informe.embudo.conversaciones, aplicadas: (informe.aplicadas || []).length };
 });
 
 // Interruptor del mensaje ACTIVADOR (el que el bot manda solo tras unas horas

@@ -40,6 +40,8 @@ async function getBotSettings({ fresco = false } = {}) {
       notes: (data.notes || "").trim(),
       followUp: { ...DEFAULTS.followUp, ...(data.followUp || {}) },
       agenda: data.agenda || null, // horarios de citas (ver lib/agenda.js)
+      // Mejoras que el informe cada 2 días aplicó solo (Kevin las puede quitar).
+      autoNotes: Array.isArray(data.autoNotes) ? data.autoNotes.filter((a) => a && a.nota) : [],
     };
     cache = { value, ts: Date.now() };
     return value;
