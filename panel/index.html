@@ -77,7 +77,8 @@
   #callBar .cb-txt { font-size:14px; } #callBar .cb-txt small { display:block; color:#cfe9d8; font-size:12px; }
   #callBar button { border:none; border-radius:8px; padding:8px 12px; font-weight:600; }
   #cbAccept { background:#25d366; color:#08210f; } #cbHang { background:#e5484d; color:#fff; } #cbMute { background:rgba(255,255,255,.14); color:#fff; }
-  .fu-row { padding:10px 14px; border-bottom:1px solid var(--line); font-size:13px; color:var(--muted); }
+  .fu-row { padding:8px 14px; border-bottom:1px solid var(--line); font-size:13px; color:var(--muted); }
+  .fu-row .tip-box { left:0; right:auto; }
   .fu-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
   /* Interruptor del seguimiento: el estado se lee en texto, no solo por el color */
   .switch { display:flex; align-items:center; gap:10px; background:transparent; border:none; padding:0; color:var(--txt); text-align:left; }
@@ -125,13 +126,13 @@
             <span class="track"></span><span class="lbl">Seguimiento automático: <b id="fuState">…</b></span>
           </button>
           <span class="info-tip" tabindex="0">i<span class="tip-box"><b>Seguimiento automático (mensaje activador)</b>
+<span id="fuDesc"></span>
 Encendido: el bot le escribe solo a quien dejó de responder (3 puntos fuertes y una pregunta). Vale para TODOS los chats que no estén en pausa.
 Apagado: el bot no manda ese mensaje. Sí sigue respondiendo lo que le escriban, y mandando el mensaje que el cliente aceptó ("¿te escribo mañana a las 11?") y la confirmación del Pase VIP.
 En un chat en PAUSA el bot nunca escribe nada, ni siquiera eso. Si el cliente te escribió y en 2 h nadie le contestó, solo te llega una alerta a ti.
 En cada chat, arriba, ves si hay algo programado y puedes cancelarlo.
 Dato: de los 5 que mandó hasta el 4 nov, ninguno recibió respuesta.</span></span>
         </div>
-        <div class="fu-desc" id="fuDesc"></div>
       </div>
       <div class="list" id="list"></div>
     </div>
@@ -576,8 +577,8 @@ function pintarSeguimiento(fu) {
   sw.disabled = false;
   $("fuState").textContent = fu.enabled ? "ENCENDIDO" : "APAGADO";
   $("fuDesc").textContent =
-    `Si el cliente deja de responder, el bot le escribe 1 vez a las ${fu.hours} h de silencio ` +
-    `(máximo ${fu.max} veces por cliente), de ${hh(fu.from)} a ${hh(fu.to)} (lunes desde las 11:00, viernes hasta las 16:00) ` +
+    `Si el cliente deja de responder, el bot le escribe ${fu.max === 1 ? "una sola vez" : `hasta ${fu.max} veces`} a las ${fu.hours} h de silencio, ` +
+    `de ${hh(fu.from)} a ${hh(fu.to)} (lunes desde las 11:00, viernes hasta las 16:00) ` +
     `y solo dentro de las 24 h desde su último mensaje. Nunca en chats en pausa.`;
 }
 $("fuToggle").onclick = async () => {

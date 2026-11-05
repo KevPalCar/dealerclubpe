@@ -315,7 +315,7 @@ function focoAnuncio(o) {
   const soloSaluda = {
     escuela: 'entra al flujo Escuela con la pregunta numerada, ej.: "¡Hola! Te damos la bienvenida a DealerClub 🎰 Para orientarte bien, respóndeme con un número:\\n\\n1️⃣ Ya trabajé como dealer\\n2️⃣ Empiezo desde cero"',
     eventos: 'saluda en una línea, de usted, y entra al flujo Casino de Fantasía, ej.: "Buenas, con gusto le ayudo con su evento de Casino de Fantasía. Para registrar su cotización, ¿con quién tengo el gusto?"',
-  }[o.campana] || 'pregunta en una sola línea, sin repetir el menú completo: "Hola, ¿te interesa la Escuela de Dealers o Casino de Fantasía para un evento?"';
+  }[o.campana] || 'responde con el menú de 3 opciones de "Primer contacto" (1 ya trabajé como dealer, 2 empiezo desde cero, 3 Casino de Fantasía)';
   return `
 ## ORIGEN DE ESTE LEAD (manda sobre "Primer contacto")
 Llegó tocando un anuncio ${servicio} en Facebook/Instagram${o.texto ? ` (texto del anuncio: "${o.texto.slice(0, 200)}")` : ""}.
@@ -718,9 +718,13 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS, timeoutSeconds: 120 }, a
     }
 
     // 9) Enviar los brochures pedidos que aún no se hayan enviado.
+    // El PDF de la Escuela está EN PAUSA hasta actualizarlo (decisión de Kevin,
+    // 5 nov 2026: aún menciona Al Asador). El bot no lo envía; Kevin sí puede
+    // mandarlo a mano desde el panel. Para reactivarlo, vaciar esta lista.
+    const BROCHURES_EN_PAUSA = ["escuela"];
     const yaEnviados = conv?.brochuresSent || [];
     const nuevos = [...new Set(pedidos)].filter(
-      (t) => BROCHURES[t] && !yaEnviados.includes(t)
+      (t) => BROCHURES[t] && !yaEnviados.includes(t) && !BROCHURES_EN_PAUSA.includes(t)
     );
     const enviados = [];
     for (const t of nuevos) {
@@ -767,14 +771,21 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS, timeoutSeconds: 120 }, a
     }
 
     // 9.5) Enviar capturas/imágenes solicitadas por el cerebro ([[IMG:nombre]]).
-    for (const nombre of [...new Set(imagenes)]) {
+    //      Cada una, una sola vez por chat. Los pantallazos de programas
+    //      (curso-*) van con el enlace a la web al pie (los genera
+    //      scripts/capturas-cursos.ps1 desde la web en vivo).
+    const imgYaEnviadas = conv?.imagesSent || [];
+    for (const nombre of [...new Set(imagenes)].filter((n) => !imgYaEnviadas.includes(n))) {
       const filePath = resolveMedia(nombre);
       if (!filePath) {
         logger.warn("Imagen no disponible", { nombre });
         continue;
       }
+      const pie = /^curso-/.test(nombre) ? "Todo el detalle en www.dealerclubpe.com/cursos" : undefined;
       try {
-        await wa.sendImage(msg.from, filePath);
+        const r = await wa.sendImage(msg.from, filePath, pie);
+        await store.appendMessages(msg.from, [{ role: "assistant", text: `[imagen ${nombre}]${pie ? " " + pie : ""}`, ts: Date.now(), waId: r?.messages?.[0]?.id || null }]);
+        await store.db.collection("wa_conversations").doc(msg.from).set({ imagesSent: store.FieldValue.arrayUnion(nombre) }, { merge: true });
       } catch (e) {
         logger.error("No se pudo enviar la imagen", { nombre, error: e.message });
       }

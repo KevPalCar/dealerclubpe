@@ -4,17 +4,17 @@
 // El modelo se equivocaba calculando fechas: aquí se calculan los próximos
 // horarios REALES y se le entregan listos para copiar.
 //   Pase VIP (presencial, 30 min): lun-vie 12:00 y 16:00 · sáb 16:00
-//   Evaluación gratis (videollamada, 30 min): lun-vie 17:00
+//   Evaluación gratis (videollamada, 30 min): lun-sáb 17:00
 // Se puede cambiar sin tocar código en bot_settings/main.agenda:
 //   { vip: { "1": [12,16], …, "6": [16] }, evaluacion: { "1": [17], … } }
 // (clave = día de la semana, 0 domingo … 6 sábado; valor = horas en punto).
 // ============================================================
 const HORA = 60 * 60 * 1000;
-const MARGEN_MS = 2 * HORA; // no se ofrece una cita que empiece en menos de 2 h
+const MARGEN_MS = 5 * HORA; // no se ofrece una cita que empiece en menos de 5 h (Kevin, 5 nov)
 
 const POR_DEFECTO = {
   vip: { 1: [12, 16], 2: [12, 16], 3: [12, 16], 4: [12, 16], 5: [12, 16], 6: [16] },
-  evaluacion: { 1: [17], 2: [17], 3: [17], 4: [17], 5: [17] },
+  evaluacion: { 1: [17], 2: [17], 3: [17], 4: [17], 5: [17], 6: [17] },
 };
 
 const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
@@ -72,7 +72,7 @@ function bloqueAgenda(ahora = Date.now(), agenda = POR_DEFECTO) {
     "Pase VIP (presencial en la escuela, 30 min, gratis) — ofrece estos dos:\n" + vip.map(linea).join("\n") + "\n" +
     "Evaluación gratis (por videollamada, 30 min) — ofrece estos dos:\n" + ev.map((s) => linea(s).replace("]]", ":video]]")).join("\n") + "\n" +
     "Si la persona pide otro día u hora DENTRO de la agenda fija (Pase VIP: lunes a viernes 12:00 p. m. o 4:00 p. m., sábado 4:00 p. m.; " +
-    "evaluación: lunes a viernes 5:00 p. m.), acéptalo. Si no puede en NINGUNO de esos horarios, no inventes otro: ver \"Si no puede en ningún horario\"."
+    "evaluación: lunes a sábado 5:00 p. m.), acéptalo. Si no puede en NINGUNO de esos horarios, no inventes otro: ver \"Si no puede en ningún horario\"."
   );
 }
 

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Tarjeta de curso</title>
+<!-- Solo para generar los pantallazos que envía el bot (scripts/capturas-cursos.ps1).
+     ?id=<id del curso>&combo=1 → frente y reverso de esa tarjeta, lado a lado. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="stylesheet" href="/assets/css/cursos.css">
+<style>
+  html, body { margin: 0; background: #161616; }
+  .lienzo { display: grid; grid-template-columns: 340px 340px; gap: 18px; padding: 18px; width: max-content; }
+  .lienzo .dc-inner, .lienzo .dc-front, .lienzo .dc-switch, .lienzo .dc-switch::after { transition: none !important; }
+  .lienzo .dc-back { overflow: hidden; }
+  .pie { grid-column: 1 / -1; text-align: center; color: #ffc107; font: 700 15px Montserrat, sans-serif; padding: 2px 0 4px; }
+</style>
+</head>
+<body>
+<div class="lienzo" id="lienzo"></div>
+<script type="module">
+// Sin animaciones (ni fichas cayendo ni conteo de precio) para la foto.
+window.matchMedia = (q) => ({ matches: /reduce/.test(q), addEventListener() {}, removeEventListener() {} });
+const { renderCourseCard } = await import('/assets/js/cursos-tarjeta.js');
+const p = new URLSearchParams(location.search);
+const datos = await (await fetch('/maqueta/cursos.json', { cache: 'no-store' })).json();
+const curso = datos.courses.find((c) => c.id === p.get('id'));
+const lienzo = document.getElementById('lienzo');
+if (curso) {
+  for (const lado of ['frente', 'reverso']) {
+    const card = renderCourseCard(curso, { comunes: datos.comunes, waNumber: '51929610747', onEnroll() {} });
+    lienzo.appendChild(card);
+    if (p.get('combo')) card.querySelector('[data-combo]')?.click();
+    if (lado === 'reverso') card.querySelector('[data-flip]').click();
+  }
+  document.activeElement?.blur();   // sin el marco de "botón enfocado" en la foto
+  const pie = document.createElement('div');
+  pie.className = 'pie';
+  pie.textContent = 'Todo el detalle en dealerclubpe.com/cursos';
+  lienzo.appendChild(pie);
+}
+document.body.dataset.listo = '1';
+</script>
+</body>
+</html>
