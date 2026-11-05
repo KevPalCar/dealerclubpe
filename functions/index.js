@@ -235,7 +235,7 @@ function pideMaterial(texto) {
 const PANEL_URL = "https://dealerclubpe.web.app/";
 
 const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
-const ESPERA_MS = 5000; // margen para que el lead termine de escribir
+const ESPERA_MS = 20000; // ~20 s: si manda varios mensajes seguidos, se responde una sola vez (handoff 3.1)
 const MODEL_HISTORY = 40; // mensajes recientes que lee el modelo
 const AVISO_PAUSA_MS = 30 * 60 * 1000; // como mucho un aviso cada 30 min por chat en pausa
 const { AVISO_PAUSA_HORAS, cerroConversacion, necesitaRespuesta } = require("./lib/followup");
@@ -313,14 +313,15 @@ function origenDeAnuncio(ref, mid) {
 function focoAnuncio(o) {
   const servicio = { escuela: "de la Escuela de Dealers", eventos: "de Casino de Fantasía (eventos)" }[o.campana] || "";
   const soloSaluda = {
-    escuela: 'saluda en una línea y entra al flujo Escuela, ej.: "Hola, te cuento de la Escuela de Dealers. Para orientarte bien: ¿ya tienes experiencia en casinos o empezarías desde cero?"',
+    escuela: 'entra al flujo Escuela con la pregunta numerada, ej.: "¡Hola! Te damos la bienvenida a DealerClub 🎰 Para orientarte bien, respóndeme con un número:\\n\\n1️⃣ Ya trabajé como dealer\\n2️⃣ Empiezo desde cero"',
     eventos: 'saluda en una línea, de usted, y entra al flujo Casino de Fantasía, ej.: "Buenas, con gusto le ayudo con su evento de Casino de Fantasía. Para registrar su cotización, ¿con quién tengo el gusto?"',
   }[o.campana] || 'pregunta en una sola línea, sin repetir el menú completo: "Hola, ¿te interesa la Escuela de Dealers o Casino de Fantasía para un evento?"';
   return `
 ## ORIGEN DE ESTE LEAD (manda sobre "Primer contacto")
 Llegó tocando un anuncio ${servicio} en Facebook/Instagram${o.texto ? ` (texto del anuncio: "${o.texto.slice(0, 200)}")` : ""}.
 El primer mensaje de DealerClub del historial es la bienvenida automática del anuncio: la persona ya la vio. No la repitas ni vuelvas a mandar el menú 1/2.
-- Si responde "1", "2" o con una de las preguntas frecuentes, es su respuesta a ese menú: entra directo al flujo que corresponde (la 3 es "Dealer CON experiencia que quiere embarcar").
+- Si responde "1", "2" o con una de las preguntas frecuentes, es su respuesta a ESE menú de servicios: "1" o las frecuentes 1 y 3 = Escuela; "2" o la frecuente 2 = Casino de Fantasía.
+- En la Escuela tu respuesta es SIEMPRE la pregunta numerada "1️⃣ Ya trabajé como dealer / 2️⃣ Empiezo desde cero", aunque haya tocado "Tengo experiencia como Dealer, quiero embarcar": muchos que tocan ese botón en realidad empiezan de cero. No asumas la ruta por el texto del botón.
 - Si solo saluda o pide información sin decir qué ("hola", "info", "más información"): ${soloSaluda}
 - Si pide otra cosa que lo que promociona el anuncio, manda lo que pide la persona.
 - La bienvenida del anuncio tutea, pero eso no fija el trato: Escuela de tú, eventos de USTED (Casino de Fantasía siempre de usted).`;
@@ -418,7 +419,7 @@ async function handleAdminCommand(msg) {
   }
 }
 
-exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
+exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS, timeoutSeconds: 120 }, async (req, res) => {
   // ---- GET: verificación del webhook (Meta) ----------------
   if (req.method === "GET") {
     const mode = req.query["hub.mode"];
@@ -786,11 +787,11 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
       await store.db.collection("wa_conversations").doc(msg.from).set({ vipAt: cita.at, vipVideo: cita.video }, { merge: true });
       // También en el calendario del negocio (si se reagenda, se mueve el mismo evento).
       try {
-        const datos = avisos.find((a) => /pase vip/i.test(a)) || "";
+        const datos = avisos.find((a) => /pase vip|evaluaci[oó]n/i.test(a)) || "";
         const eventId = await citas.anotarEnCalendario(cfg.CALENDAR_ID.value(), {
           cita,
           eventId: conv?.vipEventId,
-          titulo: `Pase VIP${cita.video ? " (videollamada)" : ""} - ${msg.profileName || "+" + msg.from}`,
+          titulo: `${cita.video ? "Evaluación gratis (videollamada)" : "Pase VIP"} - ${msg.profileName || "+" + msg.from}`,
           detalle: `${datos}\nWhatsApp: +${msg.from}\nChat: ${PANEL_URL}?to=${msg.from}`,
         });
         await store.db.collection("wa_conversations").doc(msg.from).set({ vipEventId: eventId }, { merge: true });
@@ -798,7 +799,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
         logger.error("No se pudo anotar la cita en Google Calendar", { error: e.message });
         await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
           title: "La cita no se anoto en tu calendario",
-          message: `El Pase VIP de +${msg.from} quedó agendado, pero no pude anotarlo en Google Calendar (${e.message}). Revisa que el calendario siga compartido con el bot.`,
+          message: `La cita de +${msg.from} quedó agendada, pero no pude anotarlo en Google Calendar (${e.message}). Revisa que el calendario siga compartido con el bot.`,
           click: PANEL_URL + "?to=" + msg.from,
           priority: "default",
         });
@@ -822,9 +823,16 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     // 9.8) Avisos al asesor que NO pausan el bot: cita agendada, horario
     //      personalizado por cotizar, un dato por confirmar.
     for (const aviso of avisos) {
-      const cita = /pase vip/i.test(aviso);
+      const cita = /pase vip|evaluaci[oó]n agendada/i.test(aviso);
+      const titulo = /evaluaci[oó]n agendada/i.test(aviso) ? "Evaluación agendada - manda el enlace"
+        : cita ? "Pase VIP agendado"
+        : /^lista de espera/i.test(aviso) ? "Lista de espera"
+        : /^inicio futuro/i.test(aviso) ? "Inicio futuro"
+        : /^embarque/i.test(aviso) ? "Lead de embarque"
+        : /^horario personalizado/i.test(aviso) ? "Horario personalizado por calcular"
+        : "El bot necesita que confirmes algo";
       await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
-        title: cita ? "Pase VIP agendado" : "El bot necesita que confirmes algo",
+        title: titulo,
         message: `${aviso}\n${msg.profileName || "Lead"} (+${msg.from}). El bot sigue atendiendo.`,
         click: PANEL_URL + "?to=" + msg.from,
         tags: cita ? "calendar" : "bell",

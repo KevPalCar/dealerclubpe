@@ -39,6 +39,7 @@ async function getBotSettings({ fresco = false } = {}) {
     const value = {
       notes: (data.notes || "").trim(),
       followUp: { ...DEFAULTS.followUp, ...(data.followUp || {}) },
+      agenda: data.agenda || null, // horarios de citas (ver lib/agenda.js)
     };
     cache = { value, ts: Date.now() };
     return value;

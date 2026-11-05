@@ -36,7 +36,8 @@ async function buildSystem(extra = "") {
   // Precios/horarios reales, leídos del mismo sitio que edita el admin.
   const catalogo = await getCatalogoTexto();
   // Aprendizajes que Kevin aprobó desde el admin tras revisar chats reales.
-  const { notes } = await getBotSettings();
+  const { notes, agenda } = await getBotSettings();
+  const { bloqueAgenda, POR_DEFECTO } = require("./agenda");
   return (
     getSystemPrompt() +
     (catalogo
@@ -47,8 +48,9 @@ async function buildSystem(extra = "") {
       ? `\n\n## Aprendizajes aprobados (ajustes que mandan sobre el estilo general)\n${notes}`
       : "") +
     (extra ? `\n\n${extra.trim()}` : "") +
-    `\n\n## Contexto temporal\nHoy es ${fecha}, ${hora} (hora de Lima). Úsalo para proponer horarios REALES de Pase VIP ` +
-    `(nunca una hora que ya pasó ni fuera de los horarios de visita). Para todo lo demás no propongas fechas.`
+    `\n\n## Contexto temporal\nHoy es ${fecha}, ${hora} (hora de Lima). Para las citas usa SOLO los horarios del bloque siguiente; ` +
+    `no calcules otros.\n\n` +
+    bloqueAgenda(Date.now(), agenda || POR_DEFECTO)
   );
 }
 

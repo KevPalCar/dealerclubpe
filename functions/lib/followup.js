@@ -15,7 +15,7 @@ const { getBotSettings } = require("./botsettings");
 
 const HORA = 60 * 60 * 1000;
 const VENTANA_MS = 23 * HORA; // margen de 1 h bajo las 24 h de WhatsApp
-const MAX_POR_CONVERSACION = 2; // seguimientos en total por lead
+const MAX_POR_CONVERSACION = 1; // un solo recordatorio por lead (handoff 3.4.3)
 const MAX_POR_EJECUCION = 4; // el modelo gratuito admite ~5 peticiones/min
 
 // Turno ficticio para que el modelo sepa que le toca escribir a él.
@@ -42,7 +42,7 @@ El cliente recibió nuestra información y no ha vuelto a escribir. Tu mensaje N
 Estructura (en este orden, 5 líneas como máximo):
 1. Su nombre, si lo sabes. Mantén el trato que venías usando (tú en Escuela, usted en eventos).
 2. Nuestros TRES puntos más fuertes PARA LO QUE ESA PERSONA BUSCA, uno por línea y muy cortos (máximo 8 palabras cada uno). Elígelos según lo que dijo: su meta, su evento, su duda. Si no dijo nada, usa los tres más fuertes de ese servicio. En Escuela, si el punto está en el catálogo y ya se le envió, puedes citar la página. En Eventos, si ayuda, remite a https://dealerclubpe.com/servicios (o al catálogo, solo si ya se le envió).
-3. La pregunta que lo hace decidir. En ESCUELA es siempre la cita: ofrece su Pase VIP con dos horarios concretos y reales (mira el Contexto temporal y los horarios de visita), ej.: "¿Te espero mañana a las 10 a. m. o a las 4 p. m.?". En EVENTOS: de lo que vio, qué es lo que más se acerca a lo que busca y qué le genera dudas, para poder avanzar.
+3. La pregunta que lo hace decidir. En ESCUELA es siempre la cita: ofrece la cita con los dos horarios del bloque "PRÓXIMOS HORARIOS DISPONIBLES" (Pase VIP a quien empieza desde cero; evaluación gratis por videollamada a quien ya fue dealer), tal cual. En EVENTOS: de lo que vio, qué es lo que más se acerca a lo que busca y qué le genera dudas, para poder avanzar.
 
 Hazlo PERSONAL: usa lo que ESA persona contó (su juego, el programa que le recomendaste, su problema de horario, lo que preguntó de la ubicación). Un mensaje que podría mandarse a cualquiera no sirve. En Escuela solo cites páginas del catálogo si en la conversación consta que ya se le envió.
 
@@ -55,7 +55,7 @@ PROHIBIDO: mencionar que no respondió ("no me respondiste", "¿sigue ahí?", "q
 
 Ejemplos del tono (no los copies literal; adapta los tres puntos a la persona):
 - Eventos: "Sra. Torres, para un cumpleaños como el suyo, esto es lo que más valoran nuestros clientes:\n• Dealers profesionales que enseñan a jugar a sus invitados\n• Traslado, montaje y desmontaje a nuestro cargo\n• Hasta 3 mesas funcionando a la vez\nDe lo que conversamos, ¿qué es lo que más se acerca a lo que busca y qué le genera dudas? Indíqueme para poder avanzar."
-- Escuela: "Carlos, para lo que buscas (Blackjack y empezar desde cero), esto es lo que más te sirve:\n• Practicas en mesa real desde la primera semana\n• Certificación y bolsa de trabajo incluidas\n• Arrancas cualquier lunes\nVen a verlo con tu Pase VIP, 30 minutos en una clase real: ¿te espero mañana a las 10 a. m. o a las 4 p. m.?"
+- Escuela: "Carlos, para lo que buscas (Blackjack y empezar desde cero), esto es lo que más te sirve:\n• Practicas en mesa real desde la primera semana\n• Certificación y bolsa de trabajo incluidas\n• Arrancas cualquier lunes\nVen a verlo con tu Pase VIP, 30 minutos en una clase real: ¿te espero mañana a las 12 del mediodía o a las 4 p. m.?"
 
 Si la conversación ya se cerró de forma natural (se despidió, ya agendó su Pase VIP, ya tiene su cotización en manos de un asesor, o pidió que no le escriban), NO hay nada que activar: responde únicamente con la palabra NO.
 `;

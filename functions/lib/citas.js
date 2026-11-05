@@ -33,7 +33,7 @@ function enlaceCalendario(cita, numeroEmpresa) {
   const confirmar = `https://wa.me/${numeroEmpresa}?text=${encodeURIComponent("Confirmo mi Pase VIP")}`;
   const params = new URLSearchParams({
     action: "TEMPLATE",
-    text: "Pase VIP DealerClub" + (cita.video ? " (videollamada)" : ""),
+    text: cita.video ? "Evaluación gratis DealerClub (videollamada)" : "Pase VIP DealerClub",
     dates: `${sello(cita.at)}/${sello(cita.at + 30 * 60 * 1000)}`,
     ctz: "America/Lima",
     details: `30 minutos en una clase real. Confirma tu asistencia aquí: ${confirmar}`,
@@ -57,7 +57,13 @@ function tocaRecordatorio(conv, ahora, horaLima, ultimoDelLead) {
 
 function textoRecordatorio(tipo, conv) {
   const hora = horaDe(conv.vipAt);
-  const lugar = conv.vipVideo ? "por videollamada" : `en ${DIRECCION}`;
+  // Por videollamada = evaluación gratis de dealers con experiencia (no es Pase VIP).
+  if (conv.vipVideo) {
+    return tipo === "hoy"
+      ? `Hoy es tu evaluación gratis por videollamada a las ${hora} 🚢 En un momento te mando el enlace para conectarte. ¿Sigue en pie?`
+      : `Tu evaluación gratis por videollamada quedó para el ${diaDe(conv.vipAt)} a las ${hora} 🚢\n¿Me confirmas que te conectas? Respóndeme *confirmo* y te dejo todo listo.`;
+  }
+  const lugar = `en ${DIRECCION}`;
   if (tipo === "hoy") {
     return (
       `Hoy es tu Pase VIP 🎟️ Te esperamos a las ${hora} ${lugar}.` +
