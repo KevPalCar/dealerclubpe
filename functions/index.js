@@ -576,18 +576,33 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS }, async (req, res) => {
     try {
       reply = await brain.generateReply(history, extra ? { extra } : {});
     } catch (err) {
-      logger.error("Cerebro falló tras reintentos; enviando respaldo", err);
-      reply =
-        "Disculpa, estamos con alta demanda en este momento. En breve te atiende un asesor de DealerClub. 🎲";
-      // Avisa a Kevin que el bot no pudo responder (para que intervenga), con la causa.
+      // Decisión de Kevin (5 nov 2026): sin plan de pago, el bot responde lo
+      // que alcance la cuota gratis y el resto lo atiende él. Si el cerebro no
+      // puede responder: mensaje amable (una sola vez), chat EN PAUSA para que
+      // quede en manos de Kevin, y alerta con la causa.
+      logger.error("Cerebro falló tras reintentos; se pasa el chat al asesor", err);
+      conv = await store.getConversation(msg.from);
+      if (!esElUltimoDelLead(conv, msg.id) || conv?.humanTakeover) return;
+      const texto = "¡Gracias por escribirnos! En un momento te responde un asesor de DealerClub 🎰";
+      if (!store.repiteUltimo(conv, texto)) {
+        try {
+          const r = await wa.sendText(msg.from, texto);
+          await store.appendMessages(msg.from, [{ role: "assistant", text: texto, ts: Date.now(), waId: r?.messages?.[0]?.id || null }]);
+        } catch (e) {
+          logger.error("No se pudo enviar el mensaje de espera", { error: e.message });
+        }
+      }
+      await store.setHumanTakeover(msg.from, true);
       const causa = err.cuotaDiaria
-        ? "Se acabó la cuota gratis de Gemini de hoy (se renueva a las 3:00 a. m.). Hasta entonces el bot no puede responder."
+        ? "Se acabó la cuota gratis de Gemini de hoy (se renueva a las 3:00 a. m.)."
         : "Gemini falló tras varios reintentos.";
       await notify.notifyHuman(cfg.NTFY_TOPIC.value(), {
-        title: "Bot con problemas - atiende tu",
-        message: `El bot no pudo responder a ${msg.profileName || "un lead"} (+${msg.from}).\n${causa}\nUltimo mensaje: ${msg.text}`,
+        title: "Te toca responder - bot sin cuota",
+        message: `${msg.profileName || "Un lead"} (+${msg.from}): ${msg.text}\n${causa} ` +
+          `Le dije que en un momento lo atiende un asesor y dejé el chat EN PAUSA para ti.`,
         click: adminReplyLink(msg.from),
       });
+      return;
     }
     if (!reply) return;
 
