@@ -1139,3 +1139,121 @@ h2 {
 /* Botones del asistente de inscripción (lado a lado, apilados en móvil) */
 .wizard-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 15px; }
 .wizard-actions .btn { flex: 1 1 160px; text-align: center; text-decoration: none; }
+
+/* =========================================
+   10. TARJETAS DE CURSO DE DOS CARAS (nov 2026)
+   Frente = información; reverso = "lo que debes saber".
+   Gira con botón (no con hover: en celular no existe y estorbaría
+   al tocar "Inscríbete" o el interruptor del combo).
+   ========================================= */
+.paquete-grid.flip-grid {
+    grid-auto-rows: 1fr;          /* todas las tarjetas a la misma altura */
+    align-items: stretch;
+    gap: 26px;
+}
+.dc-card { perspective: 1400px; min-width: 0; }
+.dc-inner {
+    display: grid; height: 100%; position: relative;
+    transform-style: preserve-3d;
+    transition: transform .7s cubic-bezier(.2, .7, .2, 1);
+}
+.dc-card.flipped .dc-inner { transform: rotateY(180deg); }
+.dc-face {
+    grid-area: 1 / 1; min-width: 0;
+    -webkit-backface-visibility: hidden; backface-visibility: hidden;
+    background-color: #212121; border: 1px solid #333; border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, .4);
+    padding: 52px 22px 20px;
+    display: flex; flex-direction: column; gap: 8px;
+    position: relative; text-align: center;
+}
+.dc-front { overflow: hidden; transition: box-shadow .4s, border-color .4s; }
+/* El reverso ocupa EXACTAMENTE el tamaño del frente; si su texto es más largo, se desplaza por dentro */
+.dc-back {
+    position: absolute; inset: 0;
+    transform: rotateY(180deg);
+    background-color: #262626; text-align: left;
+    padding: 22px 20px 18px; gap: 6px;
+    overflow-y: auto; scrollbar-width: thin; scrollbar-color: #555 transparent;
+}
+.dc-hot {
+    position: absolute; top: 12px; left: 14px; z-index: 2;
+    padding: 4px 10px; border-radius: 4px;
+    font-size: .7rem; font-weight: 800; text-transform: uppercase;
+    color: #000; background: #ffc107; box-shadow: 0 4px 10px rgba(0, 0, 0, .5);
+}
+.dc-pills { position: absolute; top: 12px; right: 14px; display: flex; gap: 6px; z-index: 2; }
+.dc-pills .course-status { position: static; }      /* reutiliza los colores de estado */
+.dc-pill { font-size: .72em; font-weight: 700; text-transform: uppercase; border-radius: 15px; padding: 3px 10px; }
+.dc-pill-new { background: #ffc107; color: #111; }
+
+/* Filas de altura fija para que precio, horario y juegos queden alineados entre tarjetas */
+.dc-title {
+    font-size: 1.7em; color: #ffc107; margin: 0; line-height: 1.25;
+    min-height: 2.5em; display: flex; align-items: center; justify-content: center;
+    text-wrap: balance;
+}
+.dc-desc {
+    color: #ccc; margin: 0; font-size: .95em; line-height: 1.5;
+    min-height: 3em;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.dc-was { height: 1.3em; font-size: .9em; color: #9d9d9d; text-decoration: line-through; }
+.dc-price { font-size: 2.5em; font-weight: 800; color: #ffc107; line-height: 1; font-variant-numeric: tabular-nums; }
+.dc-unit { min-height: 1.4em; font-size: .85em; font-weight: 500; color: #bdbdbd; }
+.dc-meta { color: #ccc; font-size: .95em; line-height: 1.45; }
+.dc-front > .dc-meta:not(.dc-games-label) { min-height: 2.9em; }   /* horario y duración: 2 líneas reservadas */
+.dc-meta strong { color: #eee; }
+.dc-games { margin: 0; padding: 0; list-style: none; counter-reset: dcg; color: #ccc; font-size: .95em; display: flex; flex-direction: column; gap: 3px; }
+.dc-games li { counter-increment: dcg; }
+.dc-games li::before { content: counter(dcg) ". "; color: #8f8f8f; }
+.dc-games li.dc-add { color: #ffd24d; animation: dcSlide .45s ease both; }
+@keyframes dcSlide { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+.dc-cta { margin-top: auto; padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.dc-enroll { width: 100%; }
+.dc-enroll:disabled { opacity: .5; cursor: not-allowed; }
+.dc-flip {
+    font: 700 .85em 'Montserrat', sans-serif; cursor: pointer;
+    background: transparent; color: #bdbdbd; border: 1px solid #444; border-radius: 6px; padding: 9px;
+}
+.dc-flip:hover { color: #fff; border-color: #777; }
+.dc-card button:focus-visible { outline: 2px solid #ffc107; outline-offset: 2px; }
+
+/* Interruptor del combo */
+.dc-combo {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: #1a1a1a; border: 1px dashed #6b5520; border-radius: 10px; padding: 9px 12px;
+    color: #f1f1f1; text-align: left; font: 500 .85em 'Montserrat', sans-serif; cursor: pointer;
+}
+.dc-combo small { display: block; color: #a9a9a9; font-size: .9em; }
+.dc-switch { flex: none; width: 40px; height: 22px; border-radius: 999px; background: #444; position: relative; transition: background .3s; }
+.dc-switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .3s; }
+.dc-card.is-combo .dc-switch { background: #ffc107; }
+.dc-card.is-combo .dc-switch::after { transform: translateX(18px); }
+.dc-card.is-combo .dc-front { border-color: #ffc107; box-shadow: 0 0 0 1px #ffc107, 0 0 28px rgba(255, 193, 7, .25); }
+
+/* Reverso */
+.dc-back h4 { color: #ffc107; font-size: 1.05em; margin: 0 0 2px; line-height: 1.3; }
+.dc-k { font-size: .68em; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #ffc107; margin-top: 8px; }
+.dc-back ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: .84em; color: #ddd; line-height: 1.45; }
+.dc-warn { margin-top: 8px; background: #2a1c1c; border: 1px solid #5a2e2e; border-radius: 8px; padding: 8px 10px; font-size: .82em; color: #f3c9c9; }
+.dc-back .dc-cta { padding-top: 10px; }
+
+/* Fichas que caen al activar el combo */
+.dc-chip {
+    position: absolute; top: -24px; width: 20px; height: 20px; border-radius: 50%; z-index: 3; pointer-events: none;
+    background: var(--c); border: 3px dashed rgba(255, 255, 255, .85); box-shadow: 0 0 0 2px var(--c);
+    animation: dcFall 1.4s cubic-bezier(.3, .1, .6, 1) forwards;
+}
+@keyframes dcFall { to { transform: translateY(620px) rotate(var(--r)); opacity: 0; } }
+
+@media (max-width: 768px) {
+    .paquete-grid.flip-grid { grid-auto-rows: auto; }
+    .dc-front > .dc-meta:not(.dc-games-label), .dc-title, .dc-desc { min-height: 0; }
+    .dc-face { padding: 50px 18px 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .dc-inner, .dc-switch, .dc-switch::after, .dc-front { transition: none; }
+    .dc-games li.dc-add { animation: none; }
+}

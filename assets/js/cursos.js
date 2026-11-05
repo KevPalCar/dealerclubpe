@@ -107,79 +107,64 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── CARGA DE CURSOS ───────────────────────────────────────
+    // Tarjetas de dos caras (frente / reverso con "lo que debes saber").
+    // Todo sale de Firestore (colección courses + config/cursos), la misma
+    // fuente que lee el bot de WhatsApp. Ver renderCourseCard().
+    let comunes = COMUNES_POR_DEFECTO;
+    let waNumber = '51929610747';
+    let ultimosCursos = [];
+
+    const abrirInscripcion = (courseId, courseName, isWl) => {
+        if (enrollCourseName) enrollCourseName.textContent = `Curso: ${courseName}`;
+        if (enrollCourseId)   enrollCourseId.value = courseId;
+        if (enrollIsWaitlist) enrollIsWaitlist.value = isWl;
+        const wizardTitle = document.getElementById('wizardMainTitle');
+        const paymentBox  = document.getElementById('paymentBox');
+        if (wizardTitle) wizardTitle.textContent = isWl ? 'Lista de Espera' : 'Inscripción al Curso';
+        if (paymentBox)  paymentBox.style.display = isWl ? 'none' : 'block';
+        resetWizard();
+        if (enrollCourseModal) {
+            enrollCourseModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    };
+
+    const pintarCursos = (courses) => {
+        ultimosCursos = courses;
+        if (!coursesGridContainer) return;
+        coursesGridContainer.innerHTML = '';
+        if (loadingCoursesMessage) loadingCoursesMessage.style.display = 'none';
+        if (noCoursesMessage) noCoursesMessage.style.display = courses.length ? 'none' : 'block';
+        coursesGridContainer.classList.add('flip-grid');
+        [...courses]
+            .sort((a, b) => (Number(a.order) || 999) - (Number(b.order) || 999))
+            .forEach(course => coursesGridContainer.appendChild(
+                renderCourseCard(course, { comunes, waNumber, onEnroll: abrirInscripcion })
+            ));
+    };
+
     const loadCourses = () => {
+        // Vista previa local con datos de prueba: http://localhost:8000/cursos.html?maqueta
+        // (solo en este equipo; nunca en la web publicada).
+        const esLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
+        if (esLocal && new URLSearchParams(location.search).has('maqueta')) {
+            fetch('/maqueta/cursos.json', { cache: 'no-store' })
+                .then(r => r.json())
+                .then(d => { if (d.comunes) comunes = d.comunes; pintarCursos(d.courses || []); })
+                .catch(err => console.error('Maqueta no disponible', err));
+            return;
+        }
+        onSnapshot(doc(db, dbPath('config/cursos')), (snap) => {
+            const lista = snap.exists() && snap.data().comunes;
+            comunes = Array.isArray(lista) && lista.length ? lista : COMUNES_POR_DEFECTO;
+            if (ultimosCursos.length) pintarCursos(ultimosCursos);
+        }, () => { /* sin config: se usan los textos por defecto */ });
+        onSnapshot(doc(db, dbPath('config/announceBar')), (snap) => {
+            const n = snap.exists() && String(snap.data().whatsapp || '').replace(/\D/g, '');
+            if (n) waNumber = n.length === 9 ? '51' + n : n;
+        }, () => {});
         onSnapshot(collection(db, dbPath('courses')), (snap) => {
-            if (coursesGridContainer) coursesGridContainer.innerHTML = '';
-            if (loadingCoursesMessage) loadingCoursesMessage.style.display = 'none';
-
-            if (snap.empty) {
-                if (noCoursesMessage) noCoursesMessage.style.display = 'block';
-                return;
-            }
-
-            const courses = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-                .sort((a, b) => (a.order || 999) - (b.order || 999));
-
-            courses.forEach(course => {
-                const isClosed   = course.status === 'Cerrado';
-                const isWaitlist = course.status === 'Próximamente';
-                let btnText   = isWaitlist ? 'Unirse a Lista de Espera' : '¡Inscríbete ahora!';
-                let btnClass  = isWaitlist ? 'btn-secondary' : 'btn-primary';
-                let disabledA = isClosed ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '';
-                if (isClosed) btnText = 'Cupos Agotados';
-
-                const statusClass  = `status-${(course.status || 'default').toLowerCase().replace(/\s/g, '-')}`;
-                const statusHtml   = `<span class="course-status ${statusClass}">${course.status || 'N/A'}</span>`;
-                const marketingHtml= course.tag ? `<div class="marketing-tag"><i class="fas fa-fire"></i> ${course.tag}</div>` : '';
-                const gamesHtml    = Array.isArray(course.gamesIncluded)
-                    ? course.gamesIncluded.map(g => `<li>${g}</li>`).join('')
-                    : `<li>${course.gamesIncluded || ''}</li>`;
-
-                const card = document.createElement('div');
-                card.className = 'paquete-card';
-                card.innerHTML = `
-                    ${marketingHtml}${statusHtml}
-                    <div class="card-content-wrapper">
-                        <h3 class="course-title">${course.name || 'Curso'}</h3>
-                        <p class="course-description">${course.description || ''}</p>
-                        <div class="price-block">
-                            <p class="price">${course.price || 'N/A'}</p>
-                            ${course.priceNote ? `<p class="price-note">${course.priceNote}</p>` : ''}
-                        </div>
-                        <ul class="course-details">
-                            <li><strong>Horario:</strong> ${course.schedule || 'N/A'}</li>
-                            <li><strong>Juegos:</strong></li>
-                            <ol>${gamesHtml}</ol>
-                        </ul>
-                        <p class="course-duration"><strong>Duración:</strong> ${course.duration || 'N/A'}</p>
-                    </div>
-                    <button class="btn ${btnClass} enroll-btn"
-                        data-course-id="${course.id}"
-                        data-course-name="${course.name}"
-                        data-waitlist="${isWaitlist}" ${disabledA}>
-                        ${btnText}
-                    </button>
-                `;
-                coursesGridContainer?.appendChild(card);
-            });
-
-            document.querySelectorAll('.enroll-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const isWl = e.target.dataset.waitlist === 'true';
-                    if (enrollCourseName) enrollCourseName.textContent = `Curso: ${e.target.dataset.courseName}`;
-                    if (enrollCourseId)   enrollCourseId.value = e.target.dataset.courseId;
-                    if (enrollIsWaitlist) enrollIsWaitlist.value = isWl;
-                    const wizardTitle = document.getElementById('wizardMainTitle');
-                    const paymentBox  = document.getElementById('paymentBox');
-                    if (wizardTitle) wizardTitle.textContent = isWl ? 'Lista de Espera' : 'Inscripción al Curso';
-                    if (paymentBox)  paymentBox.style.display = isWl ? 'none' : 'block';
-                    resetWizard();
-                    if (enrollCourseModal) {
-                        enrollCourseModal.style.display = 'flex';
-                        document.body.style.overflow = 'hidden';
-                    }
-                });
-            });
+            pintarCursos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         });
     };
 
@@ -323,3 +308,169 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadCourses();
 });
+
+// ════════════════════════════════════════════════════════════
+// TARJETA DE CURSO (dos caras)
+// Campos de cada documento de `courses` (los nuevos son opcionales):
+//   name, description, price ("S/ 700"), priceNote ("Mensual"), schedule,
+//   duration, gamesIncluded[], status (Abierto|Cerrado|Próximamente), tag, order
+//   isNew        → pastilla NUEVO
+//   gamesLabel   → título de la lista ("Juegos" por defecto, ej. "Incluye")
+//   ctaText      → texto del botón principal
+//   ctaWhatsapp  → si existe, el botón abre WhatsApp con ese mensaje
+//   backRules[]  → reverso: "De este programa"
+//   backWarning  → reverso: aviso en recuadro
+//   combo        → { name, price, wasPrice, priceNote, addLines[], backRules[],
+//                    backWarning, switchTitle, switchSub }  (interruptor del frente)
+// ════════════════════════════════════════════════════════════
+const COMUNES_POR_DEFECTO = [
+    'Clases 100% presenciales en Zárate, SJL (a ~15 min de la estación Caja de Agua).',
+    'Pago por transferencia, antes de iniciar cada mes.',
+    'Incluye práctica en mesa real, material y acceso al campus virtual.',
+    'Inicio de clases todos los lunes, sujeto a cupos (grupos reducidos).',
+    'Facilidades de pago: consúltanos.',
+    'Certificado solo al aprobar la prueba final práctica.',
+    'La duración en horas es referencial: depende del avance de cada alumno.',
+];
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const numero = (precio) => { const n = parseInt(String(precio ?? '').replace(/[^\d]/g, ''), 10); return Number.isFinite(n) ? n : null; };
+const soles = (n) => 'S/ ' + n.toLocaleString('en-US');
+const sinMovimiento = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const lista = (items, cls = '') => (items || []).map(t => `<li${cls ? ` class="${cls}"` : ''}>${esc(t)}</li>`).join('');
+
+function renderCourseCard(course, { comunes, waNumber, onEnroll }) {
+    const status     = course.status || 'Abierto';
+    const isClosed   = status === 'Cerrado';
+    const isWaitlist = status === 'Próximamente';
+    const statusCls  = `status-${status.toLowerCase().replace(/\s/g, '-')}`;
+    const precio     = String(course.price ?? '').trim();
+    const games      = Array.isArray(course.gamesIncluded) ? course.gamesIncluded : (course.gamesIncluded ? [course.gamesIncluded] : []);
+    const combo      = course.combo && course.combo.name ? course.combo : null;
+    const ctaText    = isClosed ? 'Cupos Agotados' : isWaitlist ? 'Unirse a Lista de Espera' : (course.ctaText || '¡Inscríbete ahora!');
+
+    const card = document.createElement('article');
+    card.className = 'dc-card';
+    card.innerHTML = `
+      <div class="dc-inner">
+        <div class="dc-face dc-front">
+          ${course.tag ? `<span class="dc-hot">${esc(course.tag)}</span>` : ''}
+          <div class="dc-pills">
+            ${course.isNew ? '<span class="dc-pill dc-pill-new">Nuevo</span>' : ''}
+            <span class="course-status ${statusCls} dc-pill">${esc(status)}</span>
+          </div>
+          <h3 class="dc-title" data-name>${esc(course.name || 'Curso')}</h3>
+          <p class="dc-desc">${esc(course.description || '')}</p>
+          <div class="dc-was" data-was></div>
+          <div class="dc-price" data-price>${precio ? esc(precio) : '—'}</div>
+          <div class="dc-unit" data-unit>${esc(course.priceNote || '')}</div>
+          <div class="dc-meta"><strong>Horario:</strong> ${esc(course.schedule || 'Consultar')}</div>
+          <div class="dc-meta"><strong>Duración:</strong> ${esc(course.duration || 'Consultar')}</div>
+          <div class="dc-meta dc-games-label"><strong>${esc(course.gamesLabel || 'Juegos')}:</strong></div>
+          <ol class="dc-games" data-games>${lista(games)}</ol>
+          <div class="dc-cta">
+            ${combo && !isClosed ? `
+            <button class="dc-combo" type="button" aria-pressed="false" data-combo>
+              <span><b>${esc(combo.switchTitle || '＋ ' + combo.name)}</b><small>${esc(combo.switchSub || '')}</small></span>
+              <span class="dc-switch" aria-hidden="true"></span>
+            </button>` : ''}
+            <button class="btn ${isWaitlist ? 'btn-secondary' : 'btn-primary'} dc-enroll" type="button" ${isClosed ? 'disabled' : ''}>${esc(ctaText)}</button>
+            <button class="dc-flip" type="button" data-flip aria-label="Ver a detalle ${esc(course.name || '')}">Ver a detalle ↻</button>
+          </div>
+        </div>
+        <div class="dc-face dc-back" aria-hidden="true">
+          <h4 data-bname>${esc(course.name || 'Curso')}: lo que debes saber</h4>
+          ${course.backRules?.length ? `<div class="dc-k">De este programa</div><ul data-rules>${lista(course.backRules)}</ul>` : '<ul data-rules hidden></ul>'}
+          <div class="dc-k">Para todos los cursos</div>
+          <ul>${lista(comunes)}</ul>
+          <div class="dc-warn" data-warn ${course.backWarning ? '' : 'hidden'}>${esc(course.backWarning || '')}</div>
+          <div class="dc-cta"><button class="dc-flip" type="button" data-unflip>↺ Volver</button></div>
+        </div>
+      </div>`;
+
+    const front = card.querySelector('.dc-front');
+    const back  = card.querySelector('.dc-back');
+    const voltear = (aReverso) => {
+        card.classList.toggle('flipped', aReverso);
+        back.setAttribute('aria-hidden', String(!aReverso));
+        front.setAttribute('aria-hidden', String(aReverso));
+        // Que el teclado no recorra la cara oculta.
+        front.querySelectorAll('button').forEach(b => { b.tabIndex = aReverso ? -1 : 0; });
+        back.querySelectorAll('button').forEach(b => { b.tabIndex = aReverso ? 0 : -1; });
+        (aReverso ? back.querySelector('[data-unflip]') : front.querySelector('[data-flip]')).focus({ preventScroll: true });
+        if (aReverso) back.scrollTop = 0;
+    };
+    back.querySelectorAll('button').forEach(b => { b.tabIndex = -1; });
+    card.querySelector('[data-flip]').addEventListener('click', () => voltear(true));
+    card.querySelector('[data-unflip]').addEventListener('click', () => voltear(false));
+
+    // Botón principal: inscripción (modal) o WhatsApp (ej. evaluación gratis).
+    let nombreActual = course.name || 'Curso';
+    card.querySelector('.dc-enroll').addEventListener('click', () => {
+        if (isClosed) return;
+        if (course.ctaWhatsapp && !isWaitlist) {
+            window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(course.ctaWhatsapp)}`, '_blank', 'noopener');
+            return;
+        }
+        onEnroll(course.id, nombreActual, isWaitlist);
+    });
+
+    if (combo && !isClosed) {
+        const btn    = card.querySelector('[data-combo]');
+        const base   = numero(precio);
+        const precioCombo = numero(combo.price);
+        const rules  = card.querySelector('[data-rules]');
+        const warn   = card.querySelector('[data-warn]');
+        btn.addEventListener('click', () => {
+            const on = !card.classList.contains('is-combo');
+            card.classList.toggle('is-combo', on);
+            btn.setAttribute('aria-pressed', String(on));
+            nombreActual = on ? combo.name : (course.name || 'Curso');
+            card.querySelector('[data-name]').textContent = nombreActual;
+            card.querySelector('[data-bname]').textContent = `${nombreActual}: lo que debes saber`;
+            card.querySelector('[data-was]').textContent = on && combo.wasPrice ? `Por separado ${combo.wasPrice}` : '';
+            card.querySelector('[data-unit]').textContent = on ? (combo.priceNote || '') : (course.priceNote || '');
+            const ol = card.querySelector('[data-games]');
+            ol.querySelectorAll('.dc-add').forEach(li => li.remove());
+            if (on) ol.insertAdjacentHTML('beforeend', lista(combo.addLines, 'dc-add'));
+            const reglas = on ? combo.backRules : course.backRules;
+            rules.innerHTML = lista(reglas);
+            rules.hidden = !reglas?.length;
+            const aviso = on ? (combo.backWarning ?? course.backWarning) : course.backWarning;
+            warn.textContent = aviso || '';
+            warn.hidden = !aviso;
+            const priceEl = card.querySelector('[data-price]');
+            if (base && precioCombo) contarHasta(priceEl, on ? base : precioCombo, on ? precioCombo : base);
+            else priceEl.textContent = on ? combo.price : precio;
+            if (on) lluviaDeFichas(front);
+        });
+    }
+    return card;
+}
+
+function contarHasta(nodo, desde, hasta) {
+    if (sinMovimiento()) { nodo.textContent = soles(hasta); return; }
+    const t0 = performance.now(), dur = 550;
+    const paso = (t) => {
+        const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        nodo.textContent = soles(Math.round((desde + (hasta - desde) * e) / 10) * 10);
+        if (k < 1) requestAnimationFrame(paso); else nodo.textContent = soles(hasta);
+    };
+    requestAnimationFrame(paso);
+}
+
+// Ráfaga corta de fichas al activar el combo (~1.5 s). No queda permanente.
+function lluviaDeFichas(cara) {
+    if (sinMovimiento()) return;
+    const colores = ['#ffc107', '#c62828', '#1e88e5', '#2e7d32', '#111'];
+    for (let i = 0; i < 14; i++) {
+        const f = document.createElement('span');
+        f.className = 'dc-chip';
+        f.style.left = (5 + Math.random() * 90) + '%';
+        f.style.setProperty('--c', colores[i % colores.length]);
+        f.style.setProperty('--r', (Math.random() * 540 - 270) + 'deg');
+        f.style.animationDelay = (Math.random() * 0.35) + 's';
+        cara.appendChild(f);
+        setTimeout(() => f.remove(), 1900);
+    }
+}
