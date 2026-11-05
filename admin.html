@@ -73,8 +73,13 @@
             <section id="courses-management" class="content-section">
                 <div class="section-header">
                     <h2>Listado de Cursos</h2>
-                    <button class="btn btn-primary" id="add-course-btn"><i class="fas fa-plus"></i> Añadir Curso</button>
+                    <span>
+                        <button class="btn btn-secondary" id="course-common-btn"><i class="fas fa-list-check"></i> Condiciones comunes</button>
+                        <span class="info-tip" data-tip="Lo que aparece en el reverso de TODAS las tarjetas, bajo 'Para todos los cursos' (presencial, forma de pago, certificado…). Se edita una sola vez aquí."></span>
+                        <button class="btn btn-primary" id="add-course-btn"><i class="fas fa-plus"></i> Añadir Curso</button>
+                    </span>
                 </div>
+                <p class="section-hint" style="color:#aaa;margin:-6px 0 12px;font-size:.9em">Para cambiar el orden escribe el número en la columna <b>Orden</b>: si ese lugar ya lo tenía otro curso, intercambian posiciones solos.</p>
                 <div class="table-toolbar">
                     <input type="text" class="table-search" id="search-courses" placeholder="Buscar por nombre...">
                     <span class="results-count" id="count-courses"></span>
@@ -701,7 +706,10 @@
                     <label>Etiqueta Estratégica (Opcional):</label>
                     <input type="text" id="courseTag" placeholder="Ej: MÁS SOLICITADO 🔥, NUEVO, ÚLTIMOS CUPOS">
                 </div>
-                <div class="form-group"><label>Orden de Visualización:</label><input type="number" id="courseOrder" value="0" required></div>
+                <div class="form-group"><label>Orden de Visualización: <span class="info-tip" data-tip="Posición de la tarjeta en /cursos (1 = primera). Si eliges un lugar que ya tiene otro curso, ese curso pasa al lugar que deja este."></span></label><input type="number" id="courseOrder" value="1" min="1" required></div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="courseIsNew" style="width:auto"> Mostrar pastilla «NUEVO» <span class="info-tip" data-tip="Agrega la pastilla dorada NUEVO junto al estado en la tarjeta. Quítala cuando el curso deje de ser novedad."></span></label>
+                </div>
                 <div class="form-group"><label>Descripción:</label><textarea id="courseDescription" rows="3" required></textarea></div>
                 <div class="form-group"><label>Precio:</label><input type="text" id="coursePrice" placeholder="Ej: S/ 600" required></div>
                 <div class="form-group">
@@ -715,9 +723,13 @@
                     <label>Días de clase (para la lista de asistencia):</label>
                     <div class="day-picks" id="courseDays"></div>
                 </div>
+                <div class="form-group">
+                    <label>Título de la lista: <span class="info-tip" data-tip="Lo que va encima de la lista numerada del frente. Normalmente «Juegos»; en Bienvenidos a Bordo dice «Incluye»."></span></label>
+                    <input type="text" id="courseGamesLabel" placeholder="Juegos">
+                </div>
                 <div class="form-group"><label>Juegos Incluidos (separados por coma):</label><input type="text" id="courseGames"></div>
                 <div class="form-group">
-                    <label>Estado:</label>
+                    <label>Estado: <span class="info-tip" data-tip="Abierto: se puede inscribir. Próximamente: el botón cambia a «Unirse a Lista de Espera». Cerrado: el botón dice «Cupos Agotados» y queda bloqueado. El bot de WhatsApp sigue las mismas reglas."></span></label>
                     <select id="courseStatus" required>
                         <option value="Abierto">Abierto</option>
                         <option value="En Progreso">En Progreso</option>
@@ -725,8 +737,64 @@
                         <option value="Cerrado">Cerrado</option>
                     </select>
                 </div>
+
+                <fieldset class="course-fieldset">
+                    <legend>Botón principal</legend>
+                    <div class="form-group">
+                        <label>Texto del botón (opcional): <span class="info-tip" data-tip="Si lo dejas vacío dice «¡Inscríbete ahora!». Con Próximamente o Cerrado el texto cambia solo."></span></label>
+                        <input type="text" id="courseCtaText" placeholder="¡Inscríbete ahora!">
+                    </div>
+                    <div class="form-group">
+                        <label>Mensaje de WhatsApp (opcional): <span class="info-tip" data-tip="Si escribes un mensaje, el botón abre WhatsApp de la empresa con ese texto ya escrito (ej. para agendar una evaluación gratis) en vez del formulario de inscripción."></span></label>
+                        <input type="text" id="courseCtaWhatsapp" placeholder="Hola, quiero agendar mi evaluación gratis…">
+                    </div>
+                </fieldset>
+
+                <fieldset class="course-fieldset">
+                    <legend>Reverso de la tarjeta («Ver a detalle»)</legend>
+                    <div class="form-group">
+                        <label>De este programa (un punto por línea): <span class="info-tip" data-tip="Lo que se ve al girar la tarjeta, solo de este curso: refuerzo, requisitos, horario a medida… Debajo aparecen siempre las «Condiciones comunes»."></span></label>
+                        <textarea id="courseBackRules" rows="4" placeholder="Refuerzo si no apruebas la prueba final: S/125 por semana."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Aviso en recuadro (opcional): <span class="info-tip" data-tip="Un aviso destacado al final del reverso. Ej.: «No somos agencia de embarque…»."></span></label>
+                        <textarea id="courseBackWarning" rows="2"></textarea>
+                    </div>
+                </fieldset>
+
+                <fieldset class="course-fieldset">
+                    <legend><label style="display:inline-flex;align-items:center;gap:8px;margin:0"><input type="checkbox" id="courseComboOn" style="width:auto"> Combo con interruptor</label> <span class="info-tip" data-tip="Agrega en el frente un interruptor que, al activarlo, convierte la tarjeta en un combo: cambia título, precio (con el precio por separado tachado), suma líneas a la lista y cambia el reverso. Ej.: Trotamundos + Bienvenidos a Bordo."></span></legend>
+                    <div id="courseComboFields">
+                        <div class="form-group"><label>Nombre del combo:</label><input type="text" id="comboName" placeholder="Trotamundos + Bienvenidos a Bordo"></div>
+                        <div class="form-group"><label>Texto del interruptor (título / subtítulo):</label>
+                            <input type="text" id="comboSwitchTitle" placeholder="＋ Bienvenidos a Bordo">
+                            <input type="text" id="comboSwitchSub" placeholder="Súmale inglés para embarcar" style="margin-top:6px">
+                        </div>
+                        <div class="form-group"><label>Precio del combo / precio por separado (tachado):</label>
+                            <input type="text" id="comboPrice" placeholder="S/ 990">
+                            <input type="text" id="comboWasPrice" placeholder="S/ 1,075" style="margin-top:6px">
+                        </div>
+                        <div class="form-group"><label>Nota bajo el precio del combo:</label><input type="text" id="comboPriceNote" placeholder="Mensual · 4 meses"></div>
+                        <div class="form-group"><label>Líneas que se agregan a la lista (una por línea):</label><textarea id="comboAddLines" rows="2"></textarea></div>
+                        <div class="form-group"><label>Reverso del combo (un punto por línea):</label><textarea id="comboBackRules" rows="3"></textarea></div>
+                        <div class="form-group"><label>Aviso del combo (opcional; si lo dejas vacío usa el del curso):</label><textarea id="comboBackWarning" rows="2"></textarea></div>
+                    </div>
+                </fieldset>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Curso</button>
                 <div id="courseFormMessage" class="form-message" style="display:none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Condiciones comunes de los cursos -->
+    <div id="courseCommonModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeCourseCommonBtn">&times;</span>
+            <h2>Condiciones comunes</h2>
+            <p style="color:#aaa;font-size:.9em">Aparecen en el reverso de todas las tarjetas, bajo «Para todos los cursos». Un punto por línea.</p>
+            <form id="courseCommonForm">
+                <div class="form-group"><textarea id="courseCommonText" rows="9"></textarea></div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
             </form>
         </div>
     </div>

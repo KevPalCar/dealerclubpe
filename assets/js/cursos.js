@@ -2,6 +2,7 @@ import { auth, db, dbPath } from './firebase.js';
 import { compressImage } from './image.js';
 import { initCopyButtons } from './copy.js';
 import { parseReferralCode } from './billing.js';
+import { COMUNES_POR_DEFECTO } from './cursos-comunes.js';
 import { onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { collection, addDoc, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -150,7 +151,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (esLocal && new URLSearchParams(location.search).has('maqueta')) {
             fetch('/maqueta/cursos.json', { cache: 'no-store' })
                 .then(r => r.json())
-                .then(d => { if (d.comunes) comunes = d.comunes; pintarCursos(d.courses || []); })
+                .then(async d => {
+                    if (d.comunes) comunes = d.comunes;
+                    pintarCursos(d.courses || []);
+                    const { montarProbador } = await import('./cursos-probador.js');
+                    montarProbador(d.courses || [], pintarCursos);
+                })
                 .catch(err => console.error('Maqueta no disponible', err));
             return;
         }
@@ -323,16 +329,6 @@ document.addEventListener('DOMContentLoaded', () => {
 //   combo        → { name, price, wasPrice, priceNote, addLines[], backRules[],
 //                    backWarning, switchTitle, switchSub }  (interruptor del frente)
 // ════════════════════════════════════════════════════════════
-const COMUNES_POR_DEFECTO = [
-    'Clases 100% presenciales en Zárate, SJL (a ~15 min de la estación Caja de Agua).',
-    'Pago por transferencia, antes de iniciar cada mes.',
-    'Incluye práctica en mesa real, material y acceso al campus virtual.',
-    'Inicio de clases todos los lunes, sujeto a cupos (grupos reducidos).',
-    'Facilidades de pago: consúltanos.',
-    'Certificado solo al aprobar la prueba final práctica.',
-    'La duración en horas es referencial: depende del avance de cada alumno.',
-];
-
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const numero = (precio) => { const n = parseInt(String(precio ?? '').replace(/[^\d]/g, ''), 10); return Number.isFinite(n) ? n : null; };
 const soles = (n) => 'S/ ' + n.toLocaleString('en-US');

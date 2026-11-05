@@ -1015,3 +1015,12 @@ tr.row-new td:first-child { box-shadow: inset 3px 0 0 #dc3545; }
 .bro-upload-msg.busy  { color: #17a2b8; }
 .bro-upload-msg.ok    { color: #28a745; font-weight: 600; }
 .bro-upload-msg.error { color: #dc3545; }
+
+/* Formulario de curso: bloques (botón, reverso, combo) — nov 2026 */
+.course-fieldset { border: 1px solid #333; border-radius: 10px; padding: 10px 14px 4px; margin: 14px 0; min-width: 0; }
+.course-fieldset legend { color: #ffc107; font-weight: 700; padding: 0 6px; font-size: .95em; }
+.order-input { padding: 6px; background: #111; color: #eee; border: 1px solid #444; border-radius: 6px; text-align: center; }
+@media (max-width: 600px) {
+    .course-fieldset { padding: 8px 10px 2px; }
+    #courses-management .section-header > span { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+}

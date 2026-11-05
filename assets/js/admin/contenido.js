@@ -6,17 +6,64 @@
 
 import { db, dbPath } from '../firebase.js';
 import { compressImage } from '../image.js';
-import { collection, addDoc, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, addDoc, doc, updateDoc, onSnapshot, getDoc, setDoc, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { showToast, pState, renderPaged, openModal, closeModal, showMsg, confirmDelete, deleteItem, DAY_LABELS, guessClassDays, registerSection, unsubscribeListeners } from './core.js';
+import { COMUNES_POR_DEFECTO } from '../cursos-comunes.js';
 
 // ══════════════════════════════════════════════════════════
 // CRUD: CURSOS
+// Lo que se edita aquí es lo que muestran las tarjetas de /cursos y lo que
+// lee el bot de WhatsApp (misma colección `courses`).
 // ══════════════════════════════════════════════════════════
+let cursosTodos = [];   // todos los cursos (sin filtro de búsqueda), ordenados
+
+// Orden: si el lugar elegido ya lo tiene otro curso, INTERCAMBIAN posiciones
+// (Bienvenidos 6 → 1 deja a Trotamundos en 6). Un curso nuevo se INSERTA en
+// ese lugar y los siguientes bajan uno. Luego se renumera 1..n sin huecos ni
+// repetidos. Devuelve los cambios {id: order} sin escribirlos.
+const calcularOrden = (lista, id, destino, esNuevo) => {
+    const n = lista.length + (esNuevo ? 1 : 0);
+    destino = Math.min(Math.max(parseInt(destino, 10) || n, 1), n);
+    const pos = new Map(lista.map(c => [c.id, Number(c.order) || 999]));
+    const actual = esNuevo ? null : pos.get(id);
+    const ocupante = lista.find(c => c.id !== id && pos.get(c.id) === destino);
+    if (esNuevo) {
+        lista.forEach(c => { if (pos.get(c.id) >= destino) pos.set(c.id, pos.get(c.id) + 1); });
+    } else if (ocupante) {
+        pos.set(ocupante.id, actual ?? n);
+    }
+    pos.set(id, destino);
+    // Renumerar 1..n respetando lo decidido (en empates gana el que se movió).
+    const ids = [...pos.keys()].sort((a, b) => (pos.get(a) - pos.get(b)) || (a === id ? -1 : b === id ? 1 : 0));
+    const final = {};
+    ids.forEach((cid, i) => { final[cid] = i + 1; });
+    return final;
+};
+
+// Escribe en un solo paso el curso (si hay datos) y el nuevo orden de los demás.
+const guardarConOrden = async (id, destino, datos) => {
+    const esNuevo = !id;
+    const ref = esNuevo ? doc(collection(db, dbPath('courses'))) : doc(db, dbPath(`courses/${id}`));
+    const orden = calcularOrden(cursosTodos, ref.id, destino, esNuevo);
+    const batch = writeBatch(db);
+    if (datos) batch[esNuevo ? 'set' : 'update'](ref, { ...datos, order: orden[ref.id] });
+    else batch.update(ref, { order: orden[ref.id] });
+    cursosTodos.forEach(c => {
+        if (c.id !== ref.id && Number(c.order) !== orden[c.id]) {
+            batch.update(doc(db, dbPath(`courses/${c.id}`)), { order: orden[c.id] });
+        }
+    });
+    await batch.commit();
+    return orden[ref.id];
+};
+
+const lineas = (id) => document.getElementById(id).value.split('\n').map(s => s.trim()).filter(Boolean);
+
 const renderCourseRow = (c) => {
     const tbody = document.getElementById('courses-table-body');
     const tr = tbody.insertRow();
     tr.innerHTML = `
-        <td>${c.order ?? '-'}</td>
+        <td><input type="number" class="order-input" min="1" value="${c.order ?? ''}" title="Escribe la nueva posición: si la tenía otro curso, intercambian lugares" style="width:58px"></td>
         <td><strong>${c.name}</strong><br><small style="color:#ffc107;">${c.tag || ''}</small></td>
         <td>${(c.description || '').substring(0, 35)}…</td>
         <td>${c.price}${c.priceNote ? `<br><small style="color:#999;">${c.priceNote}</small>` : ''}</td><td>${c.schedule}</td><td>${c.duration}</td>
@@ -37,18 +84,43 @@ const renderCourseRow = (c) => {
         await updateDoc(doc(db, dbPath(`courses/${e.target.dataset.id}`)), { status: e.target.value });
         showToast('Estado del curso actualizado.', 'success');
     });
+    tr.querySelector('.order-input').addEventListener('change', async (e) => {
+        const antes = c.order;
+        try {
+            const final = await guardarConOrden(c.id, e.target.value, null);
+            showToast(final === Number(antes) ? 'El orden no cambió.' : `«${c.name}» quedó en la posición ${final}.`, 'success');
+        } catch (err) {
+            e.target.value = antes ?? '';
+            showToast(`No se pudo cambiar el orden: ${err.message}`, 'error');
+        }
+    });
     tr.querySelector('.btn-edit').addEventListener('click', () => {
-        document.getElementById('courseId').value          = c.id;
-        document.getElementById('courseName').value        = c.name;
-        document.getElementById('courseTag').value         = c.tag || '';
-        document.getElementById('courseOrder').value       = c.order;
-        document.getElementById('courseDescription').value = c.description;
-        document.getElementById('coursePrice').value       = c.price;
-        document.getElementById('coursePriceNote').value   = c.priceNote || '';
-        document.getElementById('courseSchedule').value    = c.schedule;
-        document.getElementById('courseDuration').value    = c.duration;
-        document.getElementById('courseGames').value       = (c.gamesIncluded || []).join(', ');
-        document.getElementById('courseStatus').value      = c.status;
+        const v = (id, val) => { document.getElementById(id).value = val ?? ''; };
+        v('courseId', c.id);
+        v('courseName', c.name);
+        v('courseTag', c.tag);
+        v('courseOrder', c.order);
+        v('courseDescription', c.description);
+        v('coursePrice', c.price);
+        v('coursePriceNote', c.priceNote);
+        v('courseSchedule', c.schedule);
+        v('courseDuration', c.duration);
+        v('courseGames', (c.gamesIncluded || []).join(', '));
+        v('courseStatus', c.status);
+        document.getElementById('courseIsNew').checked = !!c.isNew;
+        v('courseGamesLabel', c.gamesLabel);
+        v('courseCtaText', c.ctaText);
+        v('courseCtaWhatsapp', c.ctaWhatsapp);
+        v('courseBackRules', (c.backRules || []).join('\n'));
+        v('courseBackWarning', c.backWarning);
+        const k = c.combo || {};
+        document.getElementById('courseComboOn').checked = !!c.combo;
+        v('comboName', k.name); v('comboSwitchTitle', k.switchTitle); v('comboSwitchSub', k.switchSub);
+        v('comboPrice', k.price); v('comboWasPrice', k.wasPrice); v('comboPriceNote', k.priceNote);
+        v('comboAddLines', (k.addLines || []).join('\n'));
+        v('comboBackRules', (k.backRules || []).join('\n'));
+        v('comboBackWarning', k.backWarning);
+        mostrarCombo();
         _courseDays = new Set(c.classDays ?? guessClassDays(c.schedule));
         renderCourseDays();
         document.getElementById('modal-title-action').textContent = 'Editar';
@@ -64,7 +136,8 @@ const loadCourses = () => {
         `<tr><td colspan="8" class="spinner-cell"><div class="spinner"></div></td></tr>`;
     unsubscribeListeners.courses = onSnapshot(collection(db, dbPath('courses')), (snap) => {
         const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-            .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+            .sort((a, b) => (Number(a.order) || 99) - (Number(b.order) || 99));
+        cursosTodos = data;
         pState.courses.data = data;
         renderPaged('courses', renderCourseRow, 'No hay cursos registrados.');
     });
@@ -82,11 +155,19 @@ const renderCourseDays = () => {
     }));
 };
 
+const mostrarCombo = () => {
+    document.getElementById('courseComboFields').style.display =
+        document.getElementById('courseComboOn').checked ? '' : 'none';
+};
+document.getElementById('courseComboOn').addEventListener('change', mostrarCombo);
+
 document.getElementById('add-course-btn').addEventListener('click', () => {
     document.getElementById('courseForm').reset();
     _courseDays = new Set([1, 2, 3, 4, 5]);
     renderCourseDays();
     document.getElementById('courseId').value = '';
+    document.getElementById('courseOrder').value = cursosTodos.length + 1;   // al final, salvo que elijas otro lugar
+    mostrarCombo();
     document.getElementById('modal-title-action').textContent = 'Añadir';
     openModal(document.getElementById('courseModal'));
 });
@@ -94,29 +175,80 @@ document.getElementById('add-course-btn').addEventListener('click', () => {
 document.getElementById('courseForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('courseId').value;
+    const val = (k) => document.getElementById(k).value.trim();
+    // Campo opcional vacío: al editar se borra del documento; en un curso nuevo ni se escribe.
+    const BORRAR = Symbol('borrar');
+    const opcional = (valor) => (valor ? valor : BORRAR);
     const data = {
-        name: document.getElementById('courseName').value,
-        tag: document.getElementById('courseTag').value,
-        order: parseInt(document.getElementById('courseOrder').value) || 0,
-        description: document.getElementById('courseDescription').value,
-        price: document.getElementById('coursePrice').value,
-        priceNote: document.getElementById('coursePriceNote').value.trim(),
-        schedule: document.getElementById('courseSchedule').value,
-        duration: document.getElementById('courseDuration').value,
+        name: val('courseName'),
+        tag: val('courseTag'),
+        description: val('courseDescription'),
+        price: val('coursePrice'),
+        priceNote: val('coursePriceNote'),
+        schedule: val('courseSchedule'),
+        duration: val('courseDuration'),
         gamesIncluded: document.getElementById('courseGames').value.split(',').map(g => g.trim()).filter(Boolean),
         status: document.getElementById('courseStatus').value,
         classDays: [..._courseDays].sort(),
+        isNew: document.getElementById('courseIsNew').checked,
+        gamesLabel: opcional(val('courseGamesLabel')),
+        ctaText: opcional(val('courseCtaText')),
+        ctaWhatsapp: opcional(val('courseCtaWhatsapp')),
+        backRules: lineas('courseBackRules'),
+        backWarning: opcional(val('courseBackWarning')),
         lastUpdated: new Date()
     };
+    if (document.getElementById('courseComboOn').checked) {
+        if (!val('comboName') || !val('comboPrice')) {
+            showToast('El combo necesita al menos nombre y precio.', 'error');
+            return;
+        }
+        data.combo = {
+            name: val('comboName'), switchTitle: val('comboSwitchTitle'), switchSub: val('comboSwitchSub'),
+            price: val('comboPrice'), wasPrice: val('comboWasPrice'), priceNote: val('comboPriceNote'),
+            addLines: lineas('comboAddLines'), backRules: lineas('comboBackRules'),
+            ...(val('comboBackWarning') ? { backWarning: val('comboBackWarning') } : {}),
+        };
+    } else {
+        data.combo = BORRAR;
+    }
+    Object.keys(data).forEach(k => {
+        if (data[k] === BORRAR) { if (id) data[k] = deleteField(); else delete data[k]; }
+    });
     try {
-        if (id) await updateDoc(doc(db, dbPath(`courses/${id}`)), data);
-        else     await addDoc(collection(db, dbPath('courses')), data);
+        const pos = await guardarConOrden(id, document.getElementById('courseOrder').value, data);
         closeModal(document.getElementById('courseModal'));
-        showToast(id ? 'Curso actualizado.' : 'Curso añadido correctamente.', 'success');
+        showToast(`${id ? 'Curso actualizado' : 'Curso añadido'} en la posición ${pos}.`, 'success');
     } catch (err) { showToast(`Error guardando curso: ${err.message}`, 'error'); }
 });
 document.getElementById('closeCourseModalBtn').addEventListener('click', () =>
     closeModal(document.getElementById('courseModal'))
+);
+
+// Condiciones comunes (reverso de todas las tarjetas) → config/cursos.comunes
+document.getElementById('course-common-btn').addEventListener('click', async () => {
+    const ta = document.getElementById('courseCommonText');
+    ta.value = 'Cargando…';
+    openModal(document.getElementById('courseCommonModal'));
+    try {
+        const snap = await getDoc(doc(db, dbPath('config/cursos')));
+        const lista = snap.exists() && Array.isArray(snap.data().comunes) && snap.data().comunes.length
+            ? snap.data().comunes : COMUNES_POR_DEFECTO;
+        ta.value = lista.join('\n');
+    } catch (err) { ta.value = COMUNES_POR_DEFECTO.join('\n'); }
+});
+document.getElementById('courseCommonForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const comunes = lineas('courseCommonText');
+    if (!comunes.length) { showToast('Escribe al menos una condición.', 'error'); return; }
+    try {
+        await setDoc(doc(db, dbPath('config/cursos')), { comunes, updatedAt: new Date() }, { merge: true });
+        closeModal(document.getElementById('courseCommonModal'));
+        showToast('Condiciones comunes guardadas: ya se ven en /cursos.', 'success');
+    } catch (err) { showToast(`No se pudo guardar: ${err.message}`, 'error'); }
+});
+document.getElementById('closeCourseCommonBtn').addEventListener('click', () =>
+    closeModal(document.getElementById('courseCommonModal'))
 );
 
 
