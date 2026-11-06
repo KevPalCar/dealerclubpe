@@ -30,7 +30,7 @@ function sello(ms) {
 
 // Enlace que abre Google Calendar con la cita ya llena (30 minutos).
 function enlaceCalendario(cita, numeroEmpresa) {
-  const confirmar = `https://wa.me/${numeroEmpresa}?text=${encodeURIComponent("Confirmo mi Pase VIP")}`;
+  const confirmar = `https://wa.me/${numeroEmpresa}?text=${encodeURIComponent(cita.video ? "Confirmo mi evaluación" : "Confirmo mi Pase VIP")}`;
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: cita.video ? "Evaluación gratis DealerClub (videollamada)" : "Pase VIP DealerClub",

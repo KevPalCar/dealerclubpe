@@ -19,7 +19,7 @@
   .btn:disabled, .ghost:disabled { opacity:.45; cursor:default; }
   .err { color:#ff7a7a; font-size:13px; min-height:18px; }
   /* App */
-  #app { display:none; height:100vh; grid-template-columns:320px 1fr; }
+  #app { display:none; height:100vh; grid-template-columns:320px minmax(0,1fr); }
   .col { border-right:1px solid var(--line); display:flex; flex-direction:column; min-height:0; }
   .top { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--line); }
   .top b { color:var(--gold); }
@@ -31,10 +31,10 @@
   .pill { font-size:10.5px; background:#5b2330; color:#ffb3b3; padding:1px 7px; border-radius:10px; }
   .pill.ad { background:#1f3b5b; color:#b3d4ff; margin-right:4px; }
   /* Chat */
-  #chat { display:flex; flex-direction:column; min-height:0; }
+  #chat { display:flex; flex-direction:column; min-height:0; min-width:0; }
   #chatTop { padding:12px 14px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  #msgs { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:8px; background:#0b0b0d; }
-  .b { max-width:74%; padding:8px 11px; border-radius:12px; font-size:14px; white-space:pre-wrap; word-wrap:break-word; }
+  #msgs { flex:1; overflow-y:auto; overflow-x:hidden; min-width:0; padding:14px; display:flex; flex-direction:column; gap:8px; background:#0b0b0d; }
+  .b { max-width:74%; min-width:0; padding:8px 11px; border-radius:12px; font-size:14px; white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; }
   .them { background:var(--them); align-self:flex-start; border-bottom-left-radius:3px; }
   .me { background:var(--me); align-self:flex-end; border-bottom-right-radius:3px; }
   .imgmsg { display:block; max-width:240px; max-height:320px; border-radius:8px; cursor:pointer; }
@@ -599,12 +599,12 @@ $("fuToggle").onclick = async () => {
 const AUTO_ETIQUETA = {
   seguimiento: "🤖 seguimiento automático",
   pactado: "🤖 seguimiento acordado con el cliente",
-  cita: "🤖 recordatorio automático del Pase VIP",
+  cita: "🤖 recordatorio automático de la cita",
 };
 const AUTO_NOMBRE = {
   seguimiento: "Seguimiento automático",
   pactado: "Seguimiento que el cliente aceptó",
-  cita: "Recordatorio del Pase VIP",
+  cita: "Recordatorio de la cita",
 };
 function cuando(ms) {
   if (ms - Date.now() <= 30 * 60 * 1000) return "en los próximos 30 min";
@@ -632,11 +632,12 @@ function pintarAutomaticos(data) {
     const row = document.createElement("div");
     row.className = "ar";
     const txt = document.createElement("span");
-    txt.textContent = `🤖 Programado: ${AUTO_NOMBRE[a.tipo] || a.tipo}, ${cuando(a.at)} (si el cliente no escribe antes)`;
+    const nombreAuto = a.tipo === "cita" ? (a.video ? "Recordatorio de la evaluación por videollamada" : "Recordatorio del Pase VIP") : (AUTO_NOMBRE[a.tipo] || a.tipo);
+    txt.textContent = `🤖 Programado: ${nombreAuto}, ${cuando(a.at)} (si el cliente no escribe antes)`;
     const btn = document.createElement("button");
     btn.className = "ghost"; btn.textContent = "Cancelar";
     btn.onclick = async () => {
-      if (!confirm(`¿Cancelar el mensaje "${AUTO_NOMBRE[a.tipo] || a.tipo}" en este chat?`)) return;
+      if (!confirm(`¿Cancelar el mensaje "${nombreAuto}" en este chat?`)) return;
       btn.disabled = true;
       try { await call("adminCancelAuto")({ phone: current, tipo: a.tipo }); autoSig = ""; loadChat(); }
       catch (e) { btn.disabled = false; alert("No se pudo cancelar: " + (e.message || e)); }

@@ -374,7 +374,7 @@ function proximosAutomaticos(conv, followUp, ahora = Date.now()) {
       encontrados.pactado = { tipo: "pactado", at: t };
     }
     const cita = !encontrados.cita && tocaCita(conv, t);
-    if (cita) encontrados.cita = { tipo: "cita", at: t, detalle: cita };
+    if (cita) encontrados.cita = { tipo: "cita", at: t, detalle: cita, video: !!conv.vipVideo };
   }
   return Object.values(encontrados).sort((a, b) => a.at - b.at);
 }

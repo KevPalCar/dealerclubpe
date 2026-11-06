@@ -182,6 +182,10 @@ function normalizarWhatsapp(texto) {
       .replace(/^#{1,6}[ \t]*/gm, "")
       // La línea de la oferta debe ir sola, nunca pegada a una frase.
       .replace(/[ \t]*(🎟️\s*Oferta gratuita)/g, "\n\n$1")
+      // Marcas de plantilla que el modelo copió sin reemplazar ("¡Listo, [nombre]!"):
+      // el nombre se quita con su coma; nunca se envía un corchete al cliente.
+      .replace(/^[ \t]*\[(nombre|name)[^\]]*\][ \t]*,?[ \t]*(\S)/gim, (_m, _n, c) => c.toUpperCase())
+      .replace(/,?[ \t]*\[(nombre|name)[^\]]*\]/gi, "")
       .replace(/\n{3,}/g, "\n\n")
       .trim()
   );
@@ -872,7 +876,7 @@ exports.webhook = onRequest({ secrets: cfg.ALL_SECRETS, timeoutSeconds: 120 }, a
 });
 
 // Helpers expuestos solo para pruebas locales (no afecta a producción).
-exports._test = { pideMaterial, campanaDeAnuncio, origenDeAnuncio, focoAnuncio, conBienvenidaAnuncio, recienLlegadoDeAnuncio, segmentoDe, parseIncoming, parseStatuses, motivoFallo, isValidSignature, inferirBrochure, anunciaEntrega, esElUltimoDelLead, resumenCotizacion, EVENTOS_FOCO };
+exports._test = { normalizarWhatsapp, pideMaterial, campanaDeAnuncio, origenDeAnuncio, focoAnuncio, conBienvenidaAnuncio, recienLlegadoDeAnuncio, segmentoDe, parseIncoming, parseStatuses, motivoFallo, isValidSignature, inferirBrochure, anunciaEntrega, esElUltimoDelLead, resumenCotizacion, EVENTOS_FOCO };
 
 // ---- Tareas programadas ------------------------------------
 // Seguimiento a leads en silencio: revisa cada 30 min, solo escribe dentro

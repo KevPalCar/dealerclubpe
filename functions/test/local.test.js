@@ -117,6 +117,12 @@ function check(name, cond) {
   check("no lo retoma si el asesor aún tiene tiempo", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 1 * H }] }, now) === null);
   check("no lo retoma si ya le respondieron o pasó la ventana", tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 3 * H }, { role: "assistant", text: "dime", ts: now - 2 * H }] }, now) === null && tocaRescate({ humanTakeover: true, history: [{ role: "user", text: "hola", ts: now - 30 * H }] }, now) === null);
 
+  // --- 2.6a) Nunca se envía "[nombre]" al cliente (caso real del 6 nov 2026) ---
+  const norm = _test.normalizarWhatsapp;
+  check("quita [nombre] con su coma", norm("¡Listo, [nombre]! Tu evaluación queda el lunes") === "¡Listo! Tu evaluación queda el lunes");
+  check("quita [nombre] al inicio y capitaliza", norm("[nombre], no quiero insistirte") === "No quiero insistirte");
+  check("no toca un nombre real", norm("Hola Juan, ¿cómo estás?") === "Hola Juan, ¿cómo estás?");
+
   // --- 2.6b) Catálogo en vivo: tarjetas de /cursos y estados (5 nov 2026) ---
   const { formatear } = require("../lib/catalog");
   const cat = formatear([
