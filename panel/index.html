@@ -41,6 +41,8 @@
   .medmsg { display:block; max-width:240px; }
   .doclink { color:var(--gold); text-decoration:none; font-weight:600; }
   .cap { margin-top:4px; font-size:13px; }
+  .msglink { color:#9fd4ff; text-decoration:underline; word-break:break-all; }
+  .me .msglink { color:#d6f5e3; }
   /* Estado de entrega bajo cada mensaje nuestro */
   .st { margin-top:4px; font-size:11px; text-align:right; opacity:.7; white-space:normal; }
   .st.read { color:#7fd0ff; opacity:1; }
@@ -343,6 +345,26 @@ async function openChat(phone, name) {
 }
 $("backBtn").onclick = () => { $("chat").classList.remove("show-m"); $("listCol").classList.remove("hide-m"); current = null; clearInterval(chatTimer); };
 
+// Texto del mensaje con sus enlaces cliqueables (ej. el del calendario de la
+// cita). Se arma con nodos, sin innerHTML: el texto viene del cliente.
+function conEnlaces(el, texto) {
+  const partes = String(texto || "").split(/(https?:\/\/[^\s<>"']+)/g);
+  for (const p of partes) {
+    if (/^https?:\/\//.test(p)) {
+      const limpio = p.replace(/[.,;:!?)\]]+$/, "");
+      const a = document.createElement("a");
+      a.href = limpio; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.className = "msglink";
+      a.textContent = /calendar\.google\.com/.test(limpio) ? "📅 Ver la cita en Google Calendar" : limpio;
+      a.title = limpio;
+      el.appendChild(a);
+      if (limpio.length < p.length) el.appendChild(document.createTextNode(p.slice(limpio.length)));
+    } else if (p) {
+      el.appendChild(document.createTextNode(p));
+    }
+  }
+}
+
 async function loadChat() {
   if (!current) return;
   try {
@@ -377,7 +399,7 @@ async function loadChat() {
         link.onclick = (e) => { e.preventDefault(); openMedia(m.storagePath); };
         d.appendChild(link);
       } else {
-        d.textContent = m.text;
+        conEnlaces(d, m.text);
       }
       // Lo que el bot mandó solo (sin que el cliente escribiera), para no confundirlo con una respuesta.
       const tipoAuto = m.auto || (m.followUp ? "seguimiento" : null);
@@ -389,7 +411,7 @@ async function loadChat() {
       }
       if (m.storagePath && m.caption) {
         const cap = document.createElement("div");
-        cap.className = "cap"; cap.textContent = m.caption;
+        cap.className = "cap"; conEnlaces(cap, m.caption);
         d.appendChild(cap);
       }
       // Estado de entrega que reporta WhatsApp (solo en lo que enviamos).
